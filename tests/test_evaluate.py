@@ -17,7 +17,8 @@ def make_test(func):
             index=index
         )
         expected = args['expected']
-
+        print("actual\n{!r}".format(actual))
+        print("expected\n{!r}".format(expected))
         pdt.assert_frame_equal(actual, expected)
 
     return impl
@@ -77,4 +78,44 @@ def test_evaluate_simple_arithmetic_v2():
             'a': [2, 4, 6],
             'b': [5, 7, 9],
         })
+    )
+
+
+@make_test
+def test_evaluate_aggregation():
+    return dict(
+        scope={
+            'tbl': pd.DataFrame({
+                'a': [1, 2, 3]
+            })
+        },
+        query='''
+            SELECT
+                SUM(a) as s, AVG(a) as a, MIN(a) as mi, MAX(a) as ma
+            FROM tbl
+        ''',
+        scalar=True,
+        expected=pd.DataFrame({
+            'a': [2.0],
+            's': [6],
+            'mi': [1],
+            'ma': [3],
+        }, columns=['s', 'a', 'mi', 'ma'])
+    )
+
+
+@make_test
+def test_evaluate_aggregation_grouped():
+    return dict(
+        scope={
+            'tbl': pd.DataFrame({
+                'a': [1, 2, 3, 4],
+                'g': [1, 0, 1, 0]
+            })
+        },
+        query='SELECT g, SUM(a) as a FROM tbl GROUP BY g',
+        expected=pd.DataFrame({
+            'a': [6, 4],
+            'g': [0, 1]
+        }, columns=['g', 'a'])
     )

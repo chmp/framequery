@@ -1,7 +1,11 @@
 from __future__ import print_function, division, absolute_import
 
-from .parser import as_parsed, ColumnReference
+from .parser import as_parsed, ColumnReference, DerivedColumn
 from ._visitor import node_name_to_handler_name
+
+from collections import OrderedDict
+
+import pandas as pd
 
 
 def evaluate(q, scope=None):
@@ -10,24 +14,54 @@ def evaluate(q, scope=None):
 
     q = as_parsed(q)
 
-    evaluator = Evaluator(scope)
-    return evaluator.evaluate(q)
+    evaluator = Evaluator()
+    return evaluator.evaluate(q, scope)
 
 
 class Evaluator(object):
-    def __init__(self, scope):
-        self.scope = scope
-
-    def evaluate(self, q):
+    def evaluate(self, q, scope):
         assert len(q.from_clause) == 1
 
         # TODO: filter table
-        table = lookup_table(self.scope, q.from_clause[0])
-        return self.evaluate_direct(q, table)
+        table = lookup_table(scope, q.from_clause[0])
 
-    def evaluate_direct(self, q, table):
-        result = {}
-        for idx, column in enumerate(q.select_list):
+        if q.group_by_clause is None:
+            return self.evaluate_direct(q.select_list, table)
+
+        else:
+            return self.evaluate_grouped(q, table)
+
+    def evaluate_grouped(self, q, table):
+        group_derived = self._groupby_as_derived(q.group_by_clause)
+        group_columns = self.evaluate_direct(group_derived, table)
+
+        grouped = table.groupby(list(group_columns.values()))
+
+        parts = []
+        for (group_idx, (key, group)) in enumerate(grouped):
+            group_table = {
+                k: v for (k, v) in group.items()
+            }
+
+            if len(group_columns) == 1:
+                key = [key]
+
+            group_table.update(zip(group_columns.keys(), key))
+
+            group_result = self.evaluate_direct(q.select_list, group_table)
+            group_result = self.wrap_result(group_result, index=[group_idx])
+            parts.append(group_result)
+
+        return self.concat(parts)
+
+    def _groupby_as_derived(self, group_by):
+        return [
+            DerivedColumn(col, alias=col.value[-1]) for col in group_by
+        ]
+
+    def evaluate_direct(self, select_list, table):
+        result = OrderedDict()
+        for idx, column in enumerate(select_list):
             alias = normalize_alias(table, idx, column)
             result[alias] = self.evaluate_value(column.value, table)
 
@@ -69,8 +103,34 @@ class Evaluator(object):
         else:
             raise ValueError("unknown operator {}".format(col.operator))
 
-    def wrap_result(self):
-        raise NotImplementedError()
+    def evaluate_value_general_set_function(self, col, table):
+        if col.quantifier is not None:
+            raise ValueError("quantifiers are currently not supported")
+
+        value = self.evaluate_value(col.value, table)
+        return self.aggregate(col.function, value)
+
+    def concat(self, parts):
+        return pd.concat(parts, axis=0)
+
+    def wrap_result(self, result, index=None):
+        return pd.DataFrame(result, index=index)
+
+    def aggregate(self, function, value):
+        if function == 'SUM':
+            return value.sum()
+
+        elif function == 'AVG':
+            return value.mean()
+
+        elif function == 'MIN':
+            return value.min()
+
+        elif function == 'MAX':
+            return value.max()
+
+        else:
+            raise NotImplementedError("unsupported aggregation function {}".format(function))
 
 
 def lookup_table(scope, table_ref):
