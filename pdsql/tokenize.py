@@ -6,6 +6,9 @@ __all__ = ['tokenize', 'Tokens']
 
 
 def tokenize(s):
+    # TODO: figure out how to handle newlines proper
+    s = s.replace('\n', ' ')
+
     stmt = single(sqlparse.parse(s))
     return list(
         token for token in stmt.flatten()
