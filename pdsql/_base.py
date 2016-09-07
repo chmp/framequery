@@ -13,7 +13,6 @@ class Node(object):
     @classmethod
     def parse(cls, q):
         stmt = tokenize(q)
-        print(stmt)
         return cls.get_parser().parse(stmt)
 
     @classmethod
@@ -58,6 +57,9 @@ class ForwardDecl(Node):
 
     @classmethod
     def define(cls, p):
+        if callable(p):
+            return p(cls)
+    
         cls._parser().define(p >> cls.from_parsed)
 
     @classmethod

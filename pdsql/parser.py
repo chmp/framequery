@@ -1,4 +1,5 @@
 from __future__ import print_function, division, absolute_import
+import six
 
 import operator
 
@@ -7,6 +8,17 @@ from funcparserlib.parser import some, maybe, skip, finished, forward_decl, many
 from .tokenize import Tokens
 from ._base import Node, ForwardDecl, Unvalued, TransparentNode, ListNode, RecordNode
 from ._util.grammar import optional, token, failing
+
+
+def parse(s):
+    return Select.parse(s)
+
+
+def as_parsed(s):
+    if isinstance(s, six.string_types):
+        return parse(s)
+
+    return s
 
 
 comma = token(Tokens.Punctuation, ',')
@@ -113,29 +125,6 @@ class BinaryExpression(RecordNode):
         return current
 
 
-class NumericValueExpression(TransparentNode):
-    # TODO: support signed expressions
-    factor = (
-        Integer.get_parser()
-    )
-
-    mul_op = (one_of(Tokens.Operator, '*/') >> get_value)
-    add_op = (one_of(Tokens.Operator, '+-') >> get_value)
-
-    term = (factor + many(mul_op + factor)) >> flatten >> BinaryExpression.from_list
-    parser = (term + many(add_op + term)) >> flatten >> BinaryExpression.from_list
-
-
-class CommonValueExpression(TransparentNode):
-    parser = (
-        NumericValueExpression.get_parser()
-    )
-
-
-class BooleanValueExpression(Node):
-    parser = failing()
-
-
 class ColumnReference(Node):
     # simplify grammar: alias for <identifier chain>
     parser = IdentifierChain.get_parser()
@@ -172,25 +161,33 @@ class CountAll(Node):
     )
 
 
-class RowValueExpression(TransparentNode):
-    # simplify grammar: alias for <nonparenthesized value expression primary>
-    # TODO: add missing cases
-    parser = (
-        # <set function specification>
+@ValueExpression.define
+def define_value_expression(cls):
+    # TODO: support signed expressions
+    factor = (
+        (skip(paren_open) + ValueExpression.get_parser() + skip(paren_close)) |
+
+        # boolean value expressions
+        failing() |
+
+        # row value expressions
         CountAll.get_parser() |
         GeneralSetFunction.get_parser() |
 
-        ColumnReference.get_parser()
+        ColumnReference.get_parser() |
+
+        Integer.get_parser()
+
+        # TODO: add support for non integers
     )
 
+    mul_op = (one_of(Tokens.Operator, '*/') >> get_value)
+    add_op = (one_of(Tokens.Operator, '+-') >> get_value)
 
-ValueExpression.define(
-    (skip(paren_open) + ValueExpression.get_parser() + skip(paren_close)) |
-
-    CommonValueExpression.get_parser() |
-    BooleanValueExpression.get_parser() |
-    RowValueExpression.get_parser()
-)
+    term = (factor + many(mul_op + factor)) >> flatten >> BinaryExpression.from_list
+    cls.define(
+        (term + many(add_op + term)) >> flatten >> BinaryExpression.from_list
+    )
 
 
 class AsClause(Node):
