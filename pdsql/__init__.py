@@ -2,22 +2,25 @@ from __future__ import print_function, division, absolute_import
 
 import operator
 
-import sqlparse
-from sqlparse.tokens import Token
 from funcparserlib.parser import some, maybe, skip, finished, forward_decl, many, pure
 
+from .tokenize import tokenize, Tokens
 
-pure_whitespace = some(lambda t: t.ttype is Token.Text.Whitespace)
+
+pure_whitespace = some(lambda t: t.ttype is Tokens.Whitespace)
 whitespace = skip(pure_whitespace)
 optional_whitespace = skip(maybe(pure_whitespace))
 
-comma = skip(some(lambda t: t.ttype is Token.Punctuation and t.value == ','))
+comma = skip(some(lambda t: t.ttype is Tokens.Punctuation and t.value == ','))
+
+pure_semicolon = some(lambda t: t.ttype is Tokens.Punctuation and t.value == ';')
+optional_semicolon = skip(maybe(pure_semicolon))
 
 
 class Node(object):
     @classmethod
     def parse(cls, q):
-        stmt = preparse(q)
+        stmt = tokenize(q)
         print(stmt)
         return cls.get_parser().parse(stmt)
 
@@ -30,14 +33,15 @@ class Node(object):
         return cls(val)
 
 
-
 class ForwardDecl(Node):
     @classmethod
     def _parser(cls):
-        if not hasattr(cls, '_lazy_parser'):
-            cls._lazy_parser = forward_decl()
+        try:
+            return cls._lazy_parser
 
-        return cls._lazy_parser
+        except AttributeError:
+            cls._lazy_parser = forward_decl()
+            return cls._lazy_parser
 
     @classmethod
     def define(cls, p):
@@ -71,19 +75,19 @@ class Literal(Node):
 
 
 class Integer(Value):
-    parser = some(lambda t: t.ttype is Token.Literal.Number.Integer)
+    parser = some(lambda t: t.ttype is Tokens.Integer)
     eval_value = int
 
 
 class Name(Value):
-    parser = some(lambda t: t.ttype is Token.Name)
+    parser = some(lambda t: t.ttype is Tokens.Name)
 
     def eval(self, table):
         return table[self.value]
 
 
 class Operator(Node):
-    parser = some(lambda t: t.ttype is Token.Operator)
+    parser = some(lambda t: t.ttype is Tokens.Operator)
 
     def __init__(self, operator):
         self.operator = get_operator(operator)
@@ -149,16 +153,23 @@ TermList.define(
 )
 
 class Select(Node):
-    select = some(lambda t: t.ttype is Token.Keyword.DML and t.value == 'SELECT')
-    from_ = some(lambda t: t.ttype is Token.Keyword and t.value == 'FROM')
+    select = some(lambda t: t.ttype is Tokens.DML and t.value == 'SELECT')
+    from_ = some(lambda t: t.ttype is Tokens.Keyword and t.value == 'FROM')
 
     selectable = (
         (whitespace + skip(from_) + whitespace + Name.get_parser()) |
         pure(None)
     )
 
-    parser = skip(select) + skip(whitespace) + TermList.get_parser() + selectable + skip(finished)
-
+    parser = (
+        skip(select) +
+        skip(whitespace) +
+        TermList.get_parser() +
+        selectable +
+        optional_semicolon +
+        skip(finished)
+    )
+    
     @classmethod
     def from_parsed(cls, parts):
         terms, selectable = parts
@@ -202,17 +213,3 @@ def get_operator(token):
         return operator.add
 
     raise ValueError()
-
-
-def preparse(s):
-    stmt = single(sqlparse.parse(s))
-    return list(stmt.flatten())
-
-
-def single(s):
-    result = list(zip((1, 2), s))
-
-    if len(result) != 1:
-        raise ValueError()
-
-    return result[0][1]

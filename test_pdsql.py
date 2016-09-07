@@ -33,3 +33,11 @@ def test_select_name():
     }
     assert Select.parse('SELECT a FROM tbl').eval(scope) == [42]
     assert Select.parse('SELECT a + 13 FROM tbl').eval(scope) == [55]
+
+
+def test_select_name_semicolon():
+    scope = {
+        'tbl': {'a': 42}
+    }
+    assert Select.parse('SELECT a FROM tbl;').eval(scope) == [42]
+    assert Select.parse('SELECT a + 13 FROM tbl;').eval(scope) == [55]
