@@ -95,10 +95,16 @@ class ListNode(Node):
 
     @classmethod
     def _parser(cls):
-        return (
+        p = (
             cls.item_parser +
             many(skip(cls.separator_parser) + cls.item_parser)
         )
+
+        prefix = getattr(cls, 'prefix_parser', None)
+        if prefix is not None:
+            p = skip(prefix) + p
+
+        return p
 
 
 class RecordNode(Node):
@@ -106,7 +112,9 @@ class RecordNode(Node):
     def from_parsed(cls, val):
         return cls(**dict(val))
 
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
+        kwargs.update(dict(zip(self.__fields__, args)))
+
         for key in self.__fields__:
             setattr(self, key, kwargs.get(key))
 
