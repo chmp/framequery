@@ -59,7 +59,7 @@ class ForwardDecl(Node):
     def define(cls, p):
         if callable(p):
             return p(cls)
-    
+
         cls._parser().define(p >> cls.from_parsed)
 
     @classmethod
