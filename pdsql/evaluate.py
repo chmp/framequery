@@ -1,10 +1,12 @@
 from __future__ import print_function, division, absolute_import
 
 from .parser import as_parsed, ColumnReference, DerivedColumn
+from ._pandas_util import strip_table_name_from_columns, ensure_table_columns
 from ._visitor import node_name_to_handler_name
 
 from collections import OrderedDict
 
+import numpy as np
 import pandas as pd
 
 
@@ -26,10 +28,13 @@ class Evaluator(object):
         table = lookup_table(scope, q.from_clause[0])
 
         if q.group_by_clause is None:
-            return self.evaluate_direct(q.select_list, table)
+            result = self.evaluate_direct(q.select_list, table)
+            result = self.wrap_result(result)
 
         else:
-            return self.evaluate_grouped(q, table)
+            result = self.evaluate_grouped(q, table)
+
+        return strip_table_name_from_columns(result)
 
     def evaluate_grouped(self, q, table):
         group_derived = self._groupby_as_derived(q.group_by_clause)
@@ -78,7 +83,7 @@ class Evaluator(object):
         return handler(col, table)
 
     def evaluate_value_integer(self, col, table):
-        return int(col.value)
+        return self.as_scalar(int(col.value))
 
     def evaluate_value_column_reference(self, col, table):
         col_ref = normalize_col_ref(table, col)
@@ -116,18 +121,21 @@ class Evaluator(object):
     def wrap_result(self, result, index=None):
         return pd.DataFrame(result, index=index)
 
+    def as_scalar(self, value):
+        return [value]
+
     def aggregate(self, function, value):
         if function == 'SUM':
-            return value.sum()
+            return self.as_scalar(value.sum())
 
         elif function == 'AVG':
-            return value.mean()
+            return self.as_scalar(value.mean())
 
         elif function == 'MIN':
-            return value.min()
+            return self.as_scalar(value.min())
 
         elif function == 'MAX':
-            return value.max()
+            return self.as_scalar(value.max())
 
         else:
             raise NotImplementedError("unsupported aggregation function {}".format(function))
