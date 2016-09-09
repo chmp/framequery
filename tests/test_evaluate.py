@@ -11,11 +11,7 @@ def make_test(func):
     def impl():
         args = func()
 
-        index = [0] if args.get('scalar') is True else None
-        actual = pd.DataFrame(
-            evaluate(args['query'], args.get('scope')),
-            index=index
-        )
+        actual = evaluate(args['query'], args.get('scope'))
         expected = args['expected']
         print("actual\n{!r}".format(actual))
         print("expected\n{!r}".format(expected))
@@ -29,7 +25,6 @@ def test_evaluate_no_table():
     return dict(
         query='SELECT 42 as b FROM DUAL',
         expected=pd.DataFrame({'b': [42]}),
-        scalar=True
     )
 
 
@@ -99,7 +94,6 @@ def test_evaluate_aggregation():
                 SUM(a) as s, AVG(a) as a, MIN(a) as mi, MAX(a) as ma
             FROM tbl
         ''',
-        scalar=True,
         expected=pd.DataFrame({
             'a': [2.0],
             's': [6],
@@ -123,4 +117,23 @@ def test_evaluate_aggregation_grouped():
             'a': [6, 4],
             'g': [0, 1]
         }, columns=['g', 'a'])
+    )
+
+
+@make_test
+def test_where():
+    return dict(
+        scope={
+            'tbl': pd.DataFrame({
+                'a': [1, 2, 3],
+                'c': [0, 0, 0],
+                'd': [1, 0, 1],
+            })
+        },
+        query='''
+            SELECT a
+            FROM tbl
+            WHERE c < d
+        ''',
+        expected=pd.DataFrame({ 'a': [1, 3] })
     )

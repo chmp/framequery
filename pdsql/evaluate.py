@@ -28,6 +28,10 @@ class Evaluator(object):
         # TODO: filter table
         table = lookup_table(scope, q.from_clause[0])
 
+        if q.where_clause is not None:
+            filter = self.evaluate_value(q.where_clause, table)
+            table = table[filter]
+
         if q.group_by_clause is None:
             result = self.evaluate_direct(q.select_list, table)
             result = self.wrap_result(result)
@@ -35,7 +39,8 @@ class Evaluator(object):
         else:
             result = self.evaluate_grouped(q, table)
 
-        return strip_table_name_from_columns(result)
+        result = strip_table_name_from_columns(result)
+        return result.reset_index(drop=True)
 
     def evaluate_grouped(self, q, table):
         group_derived = self._groupby_as_derived(q.group_by_clause)

@@ -278,8 +278,11 @@ class FromClause(TransparentNode):
     )
 
 
-class WhereCaluse(Node):
-    parser = failing()
+class WhereCaluse(TransparentNode):
+    parser = (
+        skip(token(Tokens.Keyword, 'WHERE')) +
+        ValueExpression.get_parser()
+    )
 
 
 class GroupByClause(ListNode):

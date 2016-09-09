@@ -116,6 +116,20 @@ def test_select_sum_group_by():
     )
 
 
+def test_select_column_where():
+    assert parse('SELECT a FROM foo WHERE c = d + 2') == Select(
+        select_list=[DerivedColumn(value=ColumnReference(['a']), alias=None)],
+        from_clause=[TableName('foo')],
+        where_clause=BinaryExpression.eq(
+            ColumnReference(['c']),
+            BinaryExpression.add(
+                ColumnReference(['d']),
+                Integer('2')
+            )
+        )
+    )
+
+
 def test_integer():
     assert Integer.parse('2') == Integer('2')
 
