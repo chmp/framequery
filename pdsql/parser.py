@@ -247,27 +247,47 @@ class SelectList(TransparentNode):
     parser = Asterisk.get_parser() | SelectSublist.get_parser()
 
 
-class TableName(Node):
-    parser = token(Tokens.Name)
+class TableName(RecordNode):
+    __fields__ = ['table', 'schema', 'alias']
 
-    @classmethod
-    def from_parsed(cls, val):
-        return cls(val.value)
+    schema = (token(Tokens.Name) >> get_value) + skip(period)
+    table = token(Tokens.Name) >> get_value
+    alias = skip(token(Tokens.Keyword, 'AS')) + (token(Tokens.Name) >> get_value)
+
+    parser = (
+        (maybe(schema) >> named('schema')) +
+        (table >> named('table')) +
+        (maybe(alias) >> named('alias'))
+    )
 
 
-TablePrimary = TableName
+class Join(RecordNode):
+    __fields__ = ['how', 'table', 'on']
+
+    how = (
+        pure('INNER') + skip(token(Tokens.Keyword, 'JOIN'))
+    )
+
+    on = skip(token(Tokens.Keyword, 'ON')) + ValueExpression.get_parser()
+
+    parser = (
+        (how >> named('how')) +
+        (TableName.get_parser() >> named('table')) +
+        (on >> named('on'))
+    )
 
 
-class JoinedTable(Node):
-    parser = failing()
+class JoinedTable(RecordNode):
+    __fields__ = ['table', 'joins']
 
-
-class TableReference(TransparentNode):
-    parser = TableName.get_parser() | JoinedTable.get_parser()
+    parser = (
+        (TableName.get_parser() >> named('table')) +
+        (Join.get_parser() + many(Join.get_parser()) >> concat >> named('joins'))
+    )
 
 
 class TableReferenceList(ListNode):
-    item_parser = TableReference.get_parser()
+    item_parser = JoinedTable.get_parser() | TableName.get_parser()
     separator_parser = comma
 
 

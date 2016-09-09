@@ -167,7 +167,7 @@ def lookup_table(scope, table_ref):
 
 def normalize_table_ref(scope, table_ref):
     # TODO: handle schemas, etc ...
-    return table_ref.value
+    return table_ref.table
 
 
 def normalize_col_ref(table, col_ref):

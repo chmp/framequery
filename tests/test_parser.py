@@ -193,3 +193,47 @@ def test_count_all():
 
 def test_general_set_function():
     assert GeneralSetFunction.parse('SUM(a)') == GeneralSetFunction('SUM', ColumnReference(['a']))
+
+
+def test_table_reference_list_base():
+    assert TableReferenceList.parse('a') == [TableName('a')]
+    assert TableReferenceList.parse('a as b') == [TableName('a', alias='b')]
+    assert TableReferenceList.parse('a, b') == [TableName('a'), TableName('b')]
+
+
+def test_table_reference_list_single_join():
+    assert TableReferenceList.parse('a JOIN b on aidx = bidx') == [
+        JoinedTable(
+            TableName('a'),
+            [
+                Join(
+                    'INNER', TableName('b'),
+                    BinaryExpression.eq(
+                        ColumnReference(['aidx']), ColumnReference(['bidx'])
+                    )
+                )
+            ]
+        )
+    ]
+
+
+def test_table_reference_list_two_joins():
+    assert TableReferenceList.parse('a JOIN b on aidx = bidx JOIN c ON cidx = bidx') == [
+        JoinedTable(
+            TableName('a'),
+            [
+                Join(
+                    'INNER', TableName('b'),
+                    BinaryExpression.eq(
+                        ColumnReference(['aidx']), ColumnReference(['bidx'])
+                    )
+                ),
+                Join(
+                    'INNER', TableName('c'),
+                    BinaryExpression.eq(
+                        ColumnReference(['cidx']), ColumnReference(['bidx'])
+                    )
+                )
+            ]
+        )
+    ]
