@@ -32,6 +32,7 @@ class Tokens(object):
     Integer = Token.Literal.Number.Integer
     Name = Token.Name
     Operator = Token.Operator
+    Comparison = Token.Operator.Comparison
 
     Keyword = Token.Keyword
     DML = Token.Keyword.DML
@@ -42,7 +43,8 @@ def main():
     import sys
 
     for q in sys.argv[1:]:
-        print(tokenize(q))
+        tokenized = tokenize(q)
+        print([(p, p.ttype) for p in tokenized])
 
 
 if __name__ == "__main__":

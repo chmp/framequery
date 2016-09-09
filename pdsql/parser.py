@@ -91,24 +91,26 @@ class SetQuantifier(Node):
     parser = failing()
 
 
+_make_op = lambda op: classmethod(lambda cls, left, right: BinaryExpression(op, left, right))
+
+
 class BinaryExpression(RecordNode):
     __fields__ = ['operator', 'left', 'right']
 
-    @classmethod
-    def add(cls, left, right):
-        return BinaryExpression('+', left, right)
+    add = _make_op('+')
+    sub = _make_op('-')
+    mul = _make_op('*')
+    div = _make_op('/')
 
-    @classmethod
-    def sub(cls, left, right):
-        return BinaryExpression('-', left, right)
+    eq = _make_op('=')
+    ne = _make_op('!=')
+    lt = _make_op('<')
+    gt = _make_op('>')
+    le = _make_op('<=')
+    ge = _make_op('>=')
 
-    @classmethod
-    def mul(cls, left, right):
-        return BinaryExpression('*', left, right)
-
-    @classmethod
-    def div(cls, left, right):
-        return BinaryExpression('/', left, right)
+    and_ = _make_op('AND')
+    or_ = _make_op('OR')
 
     @classmethod
     def from_list(cls, parts):
@@ -161,14 +163,27 @@ class CountAll(Node):
     )
 
 
+def _make_ops(op_class, instances, arg):
+    op = one_of(op_class, instances) >> get_value
+    return (arg + many(op + arg)) >> flatten >> BinaryExpression.from_list
+
+
+def _build_arithmetic_tower(root, *levels):
+    current = root
+
+    for arity, op in levels:
+        assert arity == 2
+        op = op >> get_value
+        current = (current + many(op + current)) >> flatten >> BinaryExpression.from_list
+
+    return current
+
+
 @ValueExpression.define
 def define_value_expression(cls):
     # TODO: support signed expressions
     factor = (
         (skip(paren_open) + ValueExpression.get_parser() + skip(paren_close)) |
-
-        # boolean value expressions
-        failing() |
 
         # row value expressions
         CountAll.get_parser() |
@@ -181,12 +196,19 @@ def define_value_expression(cls):
         # TODO: add support for non integers
     )
 
-    mul_op = (one_of(Tokens.Operator, '*/') >> get_value)
-    add_op = (one_of(Tokens.Operator, '+-') >> get_value)
-
-    term = (factor + many(mul_op + factor)) >> flatten >> BinaryExpression.from_list
     cls.define(
-        (term + many(add_op + term)) >> flatten >> BinaryExpression.from_list
+        _build_arithmetic_tower(
+            factor,
+            # TODO: support bitwise not
+            (2, one_of(Tokens.Operator, '*/%')),
+            (2, one_of(Tokens.Operator, '+-&|^')),
+            (2, one_of(Tokens.Comparison, ['=', '!=', '>', '<', '>=', '<=', '<>', '!>', '!<'])),
+            # TODO: support logical not
+            (2, one_of(Tokens.Keyword, ['AND'])),
+
+            # TODO: support ALL, ANY, SOME, BETWEEN
+            (2, one_of(Tokens.Keyword, ['IN', 'OR', 'LIKE'])),
+        )
     )
 
 

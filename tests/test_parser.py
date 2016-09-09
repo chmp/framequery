@@ -140,6 +140,39 @@ def test_arithmetic_value_expression():
     )
 
 
+def test_boolean_expressions_0():
+    assert ValueExpression.parse('a = b') == BinaryExpression.eq(
+        ColumnReference(['a']), ColumnReference(['b'])
+    )
+
+    assert ValueExpression.parse('a != b') == BinaryExpression.ne(
+        ColumnReference(['a']), ColumnReference(['b'])
+    )
+
+    assert ValueExpression.parse('a < b') == BinaryExpression.lt(
+        ColumnReference(['a']), ColumnReference(['b'])
+    )
+
+    assert ValueExpression.parse('a > b') == BinaryExpression.gt(
+        ColumnReference(['a']), ColumnReference(['b'])
+    )
+
+    assert ValueExpression.parse('a >= b') == BinaryExpression.ge(
+        ColumnReference(['a']), ColumnReference(['b'])
+    )
+
+    assert ValueExpression.parse('a <= b') == BinaryExpression.le(
+        ColumnReference(['a']), ColumnReference(['b'])
+    )
+
+
+def test_boolean_expressions_1():
+    assert ValueExpression.parse('a = b AND c != d') == BinaryExpression.and_(
+        BinaryExpression.eq(ColumnReference(['a']), ColumnReference(['b'])),
+        BinaryExpression.ne(ColumnReference(['c']), ColumnReference(['d'])),
+    )
+
+
 def test_count_all():
     assert CountAll.parse('COUNT(*)') == GeneralSetFunction('COUNT', Asterisk())
 

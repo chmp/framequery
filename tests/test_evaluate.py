@@ -73,10 +73,15 @@ def test_evaluate_simple_arithmetic_v2():
                 'b': [4, 5, 6]
             })
         },
-        query='SELECT 2 * a as a, a + b as b FROM tbl',
+        query='''
+            SELECT
+                2 * a as a, a + b as b, (a < b) AND (b > a) as c
+            FROM tbl
+        ''',
         expected=pd.DataFrame({
             'a': [2, 4, 6],
             'b': [5, 7, 9],
+            'c': [True, True, True],
         })
     )
 

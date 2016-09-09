@@ -1,13 +1,14 @@
 from __future__ import print_function, division, absolute_import
 
-from .parser import as_parsed, ColumnReference, DerivedColumn
-from ._pandas_util import strip_table_name_from_columns, ensure_table_columns
-from ._visitor import node_name_to_handler_name
-
 from collections import OrderedDict
+import operator
 
 import numpy as np
 import pandas as pd
+
+from .parser import as_parsed, ColumnReference, DerivedColumn
+from ._pandas_util import strip_table_name_from_columns, ensure_table_columns
+from ._visitor import node_name_to_handler_name
 
 
 def evaluate(q, scope=None):
@@ -93,20 +94,29 @@ class Evaluator(object):
         left = self.evaluate_value(col.left, table)
         right = self.evaluate_value(col.right, table)
 
-        if col.operator == '*':
-            return left * right
+        operator_map = {
+            '*': operator.mul,
+            '/': operator.truediv,
+            '+': operator.add,
+            '-': operator.sub,
+            'AND': operator.and_,
+            'OR': operator.or_,
+            '<': operator.lt,
+            '>': operator.gt,
+            '<=': operator.le,
+            '>=': operator.ge,
+            '=': operator.eq,
+            '!=': operator.ne,
+        }
 
-        elif col.operator == '/':
-            return left / right
+        try:
+            op = operator_map[col.operator]
 
-        elif col.operator == '+':
-            return left + right
-
-        elif col.operator == '-':
-            return left - right
+        except AttributeError:
+            raise ValueError("unknown operator {}".format(col.operator))
 
         else:
-            raise ValueError("unknown operator {}".format(col.operator))
+            return op(left, right)
 
     def evaluate_value_general_set_function(self, col, table):
         if col.quantifier is not None:
