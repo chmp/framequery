@@ -312,8 +312,11 @@ class GroupByClause(ListNode):
     separator_parser = comma
 
 
-class HavingClause(Node):
-    parser = failing()
+class HavingClause(TransparentNode):
+    parser = (
+        skip(token(Tokens.Keyword, 'HAVING')) +
+        ValueExpression.get_parser()
+    )
 
 
 class Select(RecordNode):
