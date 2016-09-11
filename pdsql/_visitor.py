@@ -3,9 +3,9 @@ from __future__ import print_function, division, absolute_import
 import six
 
 import collections
-import re
 
 from ._base import RecordNode
+from ._util.introspect import node_name_to_handler_name
 
 
 class Visitor(object):
@@ -55,14 +55,3 @@ class Visitor(object):
     @staticmethod
     def _get_class_name(node):
         return node.__class__.__name__
-
-
-def node_name_to_handler_name(name, prefix='visit'):
-    return '{}_{}'.format(prefix, _camelcase_to_python(name))
-
-
-def _camelcase_to_python(s):
-    # taken from http://stackoverflow.com/a/1176023
-    s = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', s)
-    s = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s).lower()
-    return s

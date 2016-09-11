@@ -128,3 +128,8 @@ class RecordNode(Node):
     def key(self):
         self_dict = {k: getattr(self, k) for k in self.__fields__}
         return self.__class__, self_dict
+
+    def with_values(self, **kwargs):
+        _, values = self.key()
+        values.update(kwargs)
+        return self.__class__(**values)

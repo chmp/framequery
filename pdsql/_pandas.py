@@ -1,0 +1,157 @@
+"""Support for running a DAG on pandas dataframes
+"""
+from __future__ import print_function, division, absolute_import
+
+import collections
+import itertools as it
+
+from ._expression import ExpressionEvaluator
+from ._pandas_util import ensure_table_columns, as_pandas_join_condition
+from .parser import GeneralSetFunction, ColumnReference
+from ._util.introspect import call_handler
+
+import pandas as pd
+
+
+class PandasExecutor(ExpressionEvaluator):
+    def __init__(self, id_generator=None):
+        if id_generator is None:
+            id_generator = default_id_generator()
+
+        self.id_generator = id_generator
+
+    def evaluate(self, node, arg):
+        return call_handler(self, 'evaluate', node, arg)
+
+    def evaluate_get_table(self, node, scope):
+        table = scope[node.table]
+        alias = node.alias if node.alias is not None else node.table
+        return ensure_table_columns(alias, table)
+
+    def evaluate_literal(self, node, _):
+        return node.value
+
+    def evaluate_join(self, node, scope):
+        left = self.evaluate(node.left, scope)
+        right = self.evaluate(node.right, scope)
+
+        assert node.how in {'inner', 'outer', 'left', 'right'}
+        left_on, right_on = as_pandas_join_condition(left.columns, right.columns, node.on)
+
+        return pd.merge(left, right, how=node.how, left_on=left_on, right_on=right_on)
+
+    def evaluate_transform(self, node, scope):
+        table = self.evaluate(node.table, scope)
+
+        result = collections.OrderedDict()
+
+        table_id = next(self.id_generator)
+        for col in node.columns:
+            col_id = col.alias if col.alias is not None else next(self.id_generator)
+            value = self.evaluate_value(col.value, table)
+
+            result[table_id, col_id] = value
+
+        return pd.DataFrame(result)
+
+    def evaluate_aggregate(self, node, scope):
+        table = self.evaluate(node.table, scope)
+
+        if node.group_by is None:
+            return self._evaluate_aggregation_non_grouped(node, table)
+
+        else:
+            return self._evaluate_aggregation_grouped(node, table)
+
+    def _evaluate_aggregation_grouped(self, node, table):
+        grouped = self._group(table, node.group_by)
+        result = self._evaluate_aggregation_base(node, grouped, table.columns)
+
+        df = pd.DataFrame(result)
+        df = df.reset_index()
+        df.columns = pd.MultiIndex.from_tuples(list(
+            t[0] if isinstance(t[0], tuple) else t
+            for t in df.columns
+        ))
+        return df
+
+    def _group(self, table, group_by):
+        if not all(isinstance(obj, ColumnReference) for obj in group_by):
+            raise ValueError("indirect group-bys not supported")
+
+        group_by = [self._normalize_col_ref(ref.value, table.columns) for ref in group_by]
+        return table.groupby(group_by)
+
+    def _evaluate_aggregation_non_grouped(self, node, table):
+        return pd.DataFrame(
+            self._evaluate_aggregation_base(node, table, table.columns),
+            index=[0],
+        )
+
+    def _evaluate_aggregation_base(self, node, table, columns):
+        table_id = next(self.id_generator)
+        result = collections.OrderedDict()
+
+        for col in node.columns:
+            col_id = col.alias if col.alias is not None else next(self.id_generator)
+            result[table_id, col_id] = self._agg(col.value, table, columns)
+
+        return result
+
+    def _agg(self, node, table, columns):
+        if not isinstance(node, GeneralSetFunction):
+            raise ValueError("indirect aggregations not supported")
+
+        function = node.function
+        value = node.value
+
+        if not isinstance(value, ColumnReference):
+            raise ValueError("indirect aggregations not supported")
+
+        col_ref = self._normalize_col_ref(value.value, columns)
+        col = _get(table, col_ref)
+
+        # TODO: handle set quantifiers
+        assert node.quantifier is None
+
+        # TODO: how to handle missing values, in particular for count.
+
+        if function == 'SUM':
+            result = col.sum()
+
+        elif function == 'AVG':
+            result = col.mean()
+
+        elif function == 'MIN':
+            result = col.min()
+
+        elif function == 'MAX':
+            result = col.max()
+
+        elif function == 'COUNT':
+            result = _count(col)
+
+        else:
+            raise ValueError("unknown aggregation function {}".format(function))
+
+        if isinstance(result, pd.DataFrame):
+            return result[col_ref]
+
+        return result
+
+
+def default_id_generator():
+    for i in it.count():
+        yield '${}'.format(i)
+
+
+def _count(obj):
+    result = obj.size
+    return result() if callable(result) else result
+
+
+def _get(obj, tuple_key):
+    if isinstance(obj, pd.DataFrame):
+        return obj[tuple_key]
+
+    return obj[tuple_key,]
