@@ -2,6 +2,8 @@
 """
 from __future__ import print_function, division, absolute_import
 
+from ._base import Record
+
 
 class Literal(object):
     """Marker node to tag literal values.
@@ -10,10 +12,8 @@ class Literal(object):
         self.value = value
 
 
-class GetTable(object):
-    def __init__(self, table, alias=None):
-        self.table = table
-        self.alias = alias
+class GetTable(Record):
+    __fields__ = ['table', 'alias']
 
 
 class Join(object):
@@ -24,26 +24,19 @@ class Join(object):
         self.on = on
 
 
-class Transform(object):
+class Transform(Record):
     """Generate a new dataframe by transforming the input columns.
     """
-    def __init__(self, columns, table):
-        self.columns = columns
-        self.table = table
+    __fields__ = ['table', 'columns']
 
 
-class Aggregate(object):
+class Aggregate(Record):
     """Aggregate the dataframe.
     """
-    def __init__(self, columns, table, group_by=None):
-        self.columns = columns
-        self.table = table
-        self.group_by = group_by
+    __fields__ = ['table', 'columns', 'group_by']
 
 
-class Filter(object):
+class Filter(Record):
     """Filter a dataframe to the matching rows.
     """
-    def __init__(self, filter, table):
-        self.filter = filter
-        self.table = table
+    __fields__ = ['table', 'filter']

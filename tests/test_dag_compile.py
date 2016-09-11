@@ -1,4 +1,6 @@
+from pdsql import compile
 from pdsql.parser import *
+from pdsql import _dag, _parser
 from pdsql._dag_compile import split_aggregate
 
 
@@ -86,3 +88,50 @@ def test_sum_with_integer():
             alias='$0',
         )
     ]
+
+
+def test_compile_simple_select_all():
+    assert compile('SELECT * FROM my_table') == _dag.GetTable('my_table')
+
+
+def test_compile_simple_with_filter():
+    assert compile('SELECT * FROM my_table WHERE a = 1') == _dag.Filter(
+        _dag.GetTable('my_table'),
+        _parser.ValueExpression.parse('a = 1'),
+    )
+
+    assert compile('SELECT * FROM my_table HAVING a = 1') == _dag.Filter(
+        _dag.GetTable('my_table'),
+        _parser.ValueExpression.parse('a = 1'),
+    )
+
+def test_compile_transform():
+    assert compile('SELECT a as b, 2 * a FROM my_table') == _dag.Transform(
+        _dag.GetTable('my_table'),
+        [_parser.DerivedColumn.parse('a as b'),
+         _parser.DerivedColumn.parse('2 * a')]
+    )
+
+
+def test_compile_transform_with_aggs():
+    assert compile('SELECT SUM(a) as b FROM my_table') == _dag.Transform(
+        _dag.Aggregate(
+            _dag.Transform(
+                _dag.GetTable('my_table'),
+                [_parser.DerivedColumn(
+                    _parser.ColumnReference(['a']),
+                    alias='$0',
+                )],
+            ),
+            [
+                _parser.DerivedColumn(
+                    _parser.GeneralSetFunction(
+                        'SUM',
+                        _parser.ColumnReference(['$0']),
+                    ),
+                    alias="$1",
+                )
+            ]
+        ),
+        [_parser.DerivedColumn(_parser.ColumnReference(['$1']), alias="b")]
+    )

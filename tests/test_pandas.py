@@ -84,7 +84,7 @@ def test_transform():
 
     def perform(q):
         ex = PandasExecutor()
-        node = Transform([DerivedColumn.parse(q)], Literal(df))
+        node = Transform(Literal(df), [DerivedColumn.parse(q)])
         return ex.evaluate(node, None)
 
     expected = pd.DataFrame({
@@ -107,7 +107,7 @@ def test_aggregate_no_groups():
         return pd.DataFrame(values, index=[0])
 
     def perform(q):
-        node = Aggregate([DerivedColumn.parse(q)], Literal(df))
+        node = Aggregate(Literal(df), [DerivedColumn.parse(q)])
 
         ex = PandasExecutor()
         return ex.evaluate(node, None)
@@ -130,7 +130,7 @@ def test_aggregate_with_groups():
 
     def perform(q):
         node = Aggregate(
-            [DerivedColumn.parse(q)], Literal(df),
+            Literal(df), [DerivedColumn.parse(q)],
             group_by=[ColumnReference(['g'])]
         )
 

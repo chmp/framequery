@@ -109,11 +109,7 @@ class ListNode(Node):
         return p
 
 
-class RecordNode(Node):
-    @classmethod
-    def from_parsed(cls, val):
-        return cls(**dict(val))
-
+class Record(Node):
     def __init__(self, *args, **kwargs):
         kwargs.update(dict(zip(self.__fields__, args)))
 
@@ -133,3 +129,9 @@ class RecordNode(Node):
         _, values = self.key()
         values.update(kwargs)
         return self.__class__(**values)
+
+
+class RecordNode(Record, Node):
+    @classmethod
+    def from_parsed(cls, val):
+        return cls(**dict(val))
