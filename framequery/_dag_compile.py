@@ -190,6 +190,10 @@ class SplitAggregateTransformer(object):
             left_pre_aggs + right_pre_aggs,
         )
 
+    def split_unary_expression(self, node):
+        inner_node, aggs, pre_aggs = self.split(node.operand)
+        return (node.with_values(operand=inner_node), aggs, pre_aggs)
+
     def split_integer(self, node):
         return node, [], []
 

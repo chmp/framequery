@@ -187,6 +187,20 @@ def test_boolean_expressions_1():
     )
 
 
+def test_boolean_not():
+    assert ValueExpression.parse('NOT a AND NOT b') == BinaryExpression.and_(
+        UnaryExpression.not_(ColumnReference(['a'])),
+        UnaryExpression.not_(ColumnReference(['b'])),
+    )
+
+
+def test_signs():
+    assert ValueExpression.parse('- a +  + b') == BinaryExpression.add(
+        UnaryExpression.neg(ColumnReference(['a'])),
+        UnaryExpression.pos(ColumnReference(['b'])),
+    )
+
+
 def test_count_all():
     assert CountAll.parse('COUNT(*)') == GeneralSetFunction('COUNT', Asterisk())
 

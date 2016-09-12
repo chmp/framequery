@@ -130,6 +130,15 @@ def test_simple_arithmetic_v2():
     )
 
 
+def test_simple_arithmetic_v3():
+    pdt.assert_frame_equal(
+        _context().select('SELECT - a + + b as a FROM my_table'),
+        pd.DataFrame({
+            ('$0', 'a'): [4 - 1, 5 - 2, 6 - 3]
+        }),
+    )
+
+
 def test_evaluate_aggregation():
     pdt.assert_frame_equal(
         _context().select('''

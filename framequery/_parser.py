@@ -91,26 +91,35 @@ class SetQuantifier(Node):
     parser = failing()
 
 
-_make_op = lambda op: classmethod(lambda cls, left, right: BinaryExpression(op, left, right))
+_make_unary_op = lambda op: classmethod(lambda cls, operand: UnaryExpression(op, operand))
+_make_binary_op = lambda op: classmethod(lambda cls, left, right: BinaryExpression(op, left, right))
+
+
+class UnaryExpression(RecordNode):
+    __fields__ = ['operator', 'operand']
+
+    not_ = _make_unary_op('NOT')
+    pos = _make_unary_op('+')
+    neg = _make_unary_op('-')
 
 
 class BinaryExpression(RecordNode):
     __fields__ = ['operator', 'left', 'right']
 
-    add = _make_op('+')
-    sub = _make_op('-')
-    mul = _make_op('*')
-    div = _make_op('/')
+    add = _make_binary_op('+')
+    sub = _make_binary_op('-')
+    mul = _make_binary_op('*')
+    div = _make_binary_op('/')
 
-    eq = _make_op('=')
-    ne = _make_op('!=')
-    lt = _make_op('<')
-    gt = _make_op('>')
-    le = _make_op('<=')
-    ge = _make_op('>=')
+    eq = _make_binary_op('=')
+    ne = _make_binary_op('!=')
+    lt = _make_binary_op('<')
+    gt = _make_binary_op('>')
+    le = _make_binary_op('<=')
+    ge = _make_binary_op('>=')
 
-    and_ = _make_op('AND')
-    or_ = _make_op('OR')
+    and_ = _make_binary_op('AND')
+    or_ = _make_binary_op('OR')
 
     @classmethod
     def from_list(cls, parts):
@@ -172,7 +181,7 @@ class CountAll(Node):
     )
 
 
-def _make_ops(op_class, instances, arg):
+def _make_binary_ops(op_class, instances, arg):
     op = one_of(op_class, instances) >> get_value
     return (arg + many(op + arg)) >> flatten >> BinaryExpression.from_list
 
@@ -181,9 +190,19 @@ def _build_arithmetic_tower(root, *levels):
     current = root
 
     for arity, op in levels:
-        assert arity == 2
-        op = op >> get_value
-        current = (current + many(op + current)) >> flatten >> BinaryExpression.from_list
+        if arity == 2:
+            op = op >> get_value
+            current = (current + many(op + current)) >> flatten >> BinaryExpression.from_list
+
+        elif arity == 1:
+            unary_op = (
+                (op >> get_value >> named('operator')) +
+                (current >> named('operand'))
+            ) >> UnaryExpression.from_parsed
+            current = unary_op | current
+
+        else:
+            raise ValueError("cannot handle arity {}".format(arity))
 
     return current
 
@@ -210,9 +229,10 @@ def define_value_expression(cls):
             factor,
             # TODO: support bitwise not
             (2, one_of(Tokens.Operator, '*/%')),
+            (1, one_of(Tokens.Operator, '+-')),
             (2, one_of(Tokens.Operator, '+-&|^')),
             (2, one_of(Tokens.Comparison, ['=', '!=', '>', '<', '>=', '<=', '<>', '!>', '!<'])),
-            # TODO: support logical not
+            (1, one_of(Tokens.Keyword, ['NOT'])),
             (2, one_of(Tokens.Keyword, ['AND'])),
 
             # TODO: support ALL, ANY, SOME, BETWEEN

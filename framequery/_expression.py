@@ -12,8 +12,22 @@ class ExpressionEvaluator(object):
     def evaluate_value(self, node, scope):
         return call_handler(self, 'evaluate_value', node, scope)
 
+    def evaluate_value_unary_expression(self, col, table):
+        op = col.operator.upper()
+        operand = self.evaluate_value(col.operand, table)
+
+        if op == '-':
+            return -operand
+
+        elif op == '+':
+            return operand
+
+        elif op == 'NOT':
+            return ~operand
+
     def evaluate_value_binary_expression(self, col, table):
         _logger.info("evaluate binary expression %s", col.operator)
+        op = col.operator.upper()
         left = self.evaluate_value(col.left, table)
         right = self.evaluate_value(col.right, table)
 
@@ -32,14 +46,15 @@ class ExpressionEvaluator(object):
             '!=': operator.ne,
         }
 
-        try:
-            op = operator_map[col.operator]
+        if op in operator_map:
+            op = operator_map[op]
+            return op(left, right)
 
-        except AttributeError:
-            raise ValueError("unknown operator {}".format(col.operator))
+        elif op == 'IN':
+            return left.isin(right)
 
         else:
-            return op(left, right)
+            raise ValueError("unknown operator {}".format(operator))
 
     def evaluate_value_integer(self, col, table):
         _logger.debug("eval integer")
