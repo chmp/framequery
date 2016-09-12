@@ -5,7 +5,7 @@ import operator
 
 from funcparserlib.parser import some, maybe, skip, finished, forward_decl, many, pure
 
-from .tokenize import Tokens
+from ._tokenize import Tokens
 from ._base import Node, ForwardDecl, Unvalued, TransparentNode, ListNode, RecordNode
 from ._util.grammar import optional, token, failing
 

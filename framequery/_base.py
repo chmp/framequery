@@ -2,7 +2,7 @@ from __future__ import print_function, division, absolute_import
 
 from funcparserlib.parser import forward_decl, many, skip
 
-from .tokenize import tokenize
+from ._tokenize import tokenize
 
 
 class Node(object):
