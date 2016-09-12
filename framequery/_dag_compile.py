@@ -125,9 +125,22 @@ class DagCompiler(object):
         return _dag.Limit(table, node.limit_clause.offset, node.limit_clause.limit)
 
     def compile_from_clause(self, from_clause):
+        assert len(from_clause) == 1
         table = from_clause[0]
-        assert isinstance(table, _parser.TableName)
-        return _dag.GetTable(table.table, alias=table.alias)
+
+        if isinstance(table, _parser.TableName):
+            return _dag.GetTable(table.table, alias=table.alias)
+
+        assert isinstance(table, _parser.JoinedTable)
+
+        result = self.compile_from_clause([table.table])
+
+        for join in table.joins:
+            right = self.compile_from_clause([join.table])
+            result = _dag.Join(result, right, how=join.how.lower(), on=join.on)
+
+        return result
+
 
     def _tmp_column(self):
         return '${}'.format(next(self.id_generator))

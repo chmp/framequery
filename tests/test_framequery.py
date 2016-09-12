@@ -146,6 +146,21 @@ def test_evaluate_aggregation():
     )
 
 
+def test_evaluate_join():
+    pdt.assert_frame_equal(
+        _context().select('''
+            SELECT a, d
+            FROM my_table
+            JOIN my_other_table
+            ON g = h
+        '''),
+        pd.DataFrame({
+            ('$0', 'a'): [1, 2, 3],
+            ('$0', 'd'): [10, 10, 11],
+        }),
+    )
+
+
 def test_where():
     pdt.assert_frame_equal(
         _context().select('''
@@ -188,5 +203,9 @@ def _context():
             'c': [7, 8, 9],
             'g': [0, 0, 1],
             'one': [1, 1, 1],
+        }),
+        'my_other_table': pd.DataFrame({
+            'h': [0, 1],
+            'd': [10, 11],
         }),
     })
