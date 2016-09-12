@@ -1,4 +1,4 @@
-from framequery.parser import *
+from framequery._parser import *
 
 
 def test_select_all():

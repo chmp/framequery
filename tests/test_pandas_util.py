@@ -35,7 +35,7 @@ def test_strip_table_name_from_columns():
 
 
 def test_flatten_join_condition():
-    from framequery.parser import BinaryExpression, ColumnReference
+    from framequery._parser import BinaryExpression, ColumnReference
 
     _col = lambda *parts: ColumnReference(list(parts))
 

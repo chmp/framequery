@@ -4,7 +4,7 @@ import itertools as it
 
 import pandas as pd
 
-from .parser import BinaryExpression, ColumnReference
+from ._parser import BinaryExpression, ColumnReference
 
 
 def ensure_table_columns(name, df):

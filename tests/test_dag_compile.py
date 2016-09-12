@@ -1,5 +1,5 @@
 from framequery import compile
-from framequery.parser import *
+from framequery._parser import *
 from framequery import _dag, _parser
 from framequery._dag_compile import split_aggregate
 
