@@ -10,6 +10,9 @@ from .parser import BinaryExpression, ColumnReference
 def ensure_table_columns(name, df):
     """Encode column and table names in the dataframe.
     """
+    if len(df.columns) == 0:
+        return df
+
     old_columns = list(df.columns)
     new_columns = list(_as_pair(name, col) for col in old_columns)
 
@@ -53,6 +56,10 @@ def as_pandas_join_condition(left_columns, right_columns, condition):
             left.append(b)
 
     return left, right
+
+
+def is_scalar(obj):
+    return not hasattr(obj, 'shape')
 
 
 def _is_left(left_columns, right_columns, ref):

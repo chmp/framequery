@@ -6,8 +6,8 @@ import collections
 import itertools as it
 
 from ._expression import ExpressionEvaluator
-from ._pandas_util import ensure_table_columns, as_pandas_join_condition
-from .parser import GeneralSetFunction, ColumnReference
+from ._pandas_util import ensure_table_columns, as_pandas_join_condition, is_scalar
+from ._parser import GeneralSetFunction, ColumnReference, get_selected_column_name
 from ._util.introspect import call_handler
 
 import pandas as pd
@@ -24,7 +24,12 @@ class PandasExecutor(ExpressionEvaluator):
         return call_handler(self, 'evaluate', node, arg)
 
     def evaluate_get_table(self, node, scope):
-        table = scope[node.table]
+        if node.table == 'DUAL':
+            table = pd.DataFrame()
+
+        else:
+            table = scope[node.table]
+
         alias = node.alias if node.alias is not None else node.table
         return ensure_table_columns(alias, table)
 
@@ -47,12 +52,21 @@ class PandasExecutor(ExpressionEvaluator):
 
         table_id = next(self.id_generator)
         for col in node.columns:
-            col_id = col.alias if col.alias is not None else next(self.id_generator)
+            col_id = self._get_selected_column_name(col)
             value = self.evaluate_value(col.value, table)
 
             result[table_id, col_id] = value
 
-        return pd.DataFrame(result)
+        all_scalar = all(is_scalar(val) for val in result.values())
+
+        return pd.DataFrame(result) if not all_scalar else pd.DataFrame(result, index=[0])
+
+    def _get_selected_column_name(self, col):
+        col_id = get_selected_column_name(col)
+        if col_id is not None:
+            return col_id
+
+        return next(self.id_generator)
 
     def evaluate_aggregate(self, node, scope):
         table = self.evaluate(node.table, scope)
@@ -62,6 +76,11 @@ class PandasExecutor(ExpressionEvaluator):
 
         else:
             return self._evaluate_aggregation_grouped(node, table)
+
+    def evaluate_filter(self, node, scope):
+        table = self.evaluate(node.table, scope)
+        condition = self.evaluate_value(node.filter, table)
+        return table[condition]
 
     def _evaluate_aggregation_grouped(self, node, table):
         grouped = self._group(table, node.group_by)

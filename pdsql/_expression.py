@@ -1,8 +1,11 @@
 from __future__ import print_function
 
 import operator
+import logging
 
 from ._util.introspect import call_handler
+
+_logger = logging.getLogger(__name__)
 
 
 class ExpressionEvaluator(object):
@@ -10,6 +13,7 @@ class ExpressionEvaluator(object):
         return call_handler(self, 'evaluate_value', node, scope)
 
     def evaluate_value_binary_expression(self, col, table):
+        _logger.info("evaluate binary expression %s", col.operator)
         left = self.evaluate_value(col.left, table)
         right = self.evaluate_value(col.right, table)
 
@@ -38,9 +42,11 @@ class ExpressionEvaluator(object):
             return op(left, right)
 
     def evaluate_value_integer(self, col, table):
-        return self.as_scalar(int(col.value))
+        _logger.debug("eval integer")
+        return int(col.value)
 
     def evaluate_value_column_reference(self, col, table):
+        _logger.info("eval column reference %s", col.value)
         ref = self._normalize_col_ref(col.value, table.columns)
         return table[ref]
 

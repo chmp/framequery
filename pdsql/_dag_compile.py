@@ -3,7 +3,7 @@ from __future__ import print_function, division, absolute_import
 import itertools as it
 
 from . import _parser, _dag
-from ._parser import DerivedColumn, ColumnReference
+from ._parser import DerivedColumn, ColumnReference, get_selected_column_name
 from ._util.introspect import call_handler
 
 
@@ -72,13 +72,34 @@ class DagCompiler(object):
             id_generator=self.id_generator
         )
 
+        group_by, group_by_cols = self._normalize_group_by(node.group_by_clause)
+
+        pre_aggregates.extend(group_by_cols)
         if pre_aggregates:
             table = _dag.Transform(table, pre_aggregates)
 
         if aggregates:
-            table = _dag.Aggregate(table, aggregates)
+            table = _dag.Aggregate(table, aggregates, group_by=group_by)
 
         return _dag.Transform(table, columns)
+
+    def _normalize_group_by(self, group_by):
+        if group_by is None:
+            return None, []
+
+        result_group_by = []
+        result_pre_aggs = []
+
+        for col in group_by:
+            col_id = self._group_by_col_alias(col)
+            result_group_by.append(ColumnReference([col_id]))
+            result_pre_aggs.append(DerivedColumn(col, alias=col_id))
+
+        return result_group_by, result_pre_aggs
+
+    def _group_by_col_alias(self, col):
+        col_id = get_selected_column_name(col)
+        return col_id if col_id is not None else self._tmp_column()
 
     def _filter_post_transform(self, node, table):
         if node.having_clause is None:
@@ -90,6 +111,9 @@ class DagCompiler(object):
         table = from_clause[0]
         assert isinstance(table, _parser.TableName)
         return _dag.GetTable(table.table, alias=table.alias)
+
+    def _tmp_column(self):
+        return '${}'.format(next(self.id_generator))
 
 
 class SplitAggregateTransformer(object):
