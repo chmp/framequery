@@ -1,15 +1,23 @@
 from __future__ import print_function, division, absolute_import
 
-from ._dag_compile import compile_dag
-from ._parser import Select
+import inspect
 
+from ._context import Context
+
+
+def make_context(scope=None):
+    if scope is None:
+        scope = inspect.currentframe()
+
+    return Context(scope=scope)
 
 def select(query, scope=None):
     # TODO: get scope from stack if not passed
     if scope is None:
-        raise NotImplementedError()
+        scope = insepct.currentframe()
+
+    return make_context(scope=scope).select(query)
 
 
 def compile(query):
-    node = Select.parse(query)
-    return compile_dag(node)
+    return make_context().compile(query)
