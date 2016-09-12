@@ -4,6 +4,7 @@ from __future__ import print_function, division, absolute_import
 
 import collections
 import itertools as it
+import operator
 
 from ._expression import ExpressionEvaluator
 from ._pandas_util import ensure_table_columns, as_pandas_join_condition, is_scalar
@@ -15,10 +16,15 @@ import pandas as pd
 
 class PandasExecutor(ExpressionEvaluator):
     def __init__(self, id_generator=None):
+        super(PandasExecutor, self).__init__()
+
         if id_generator is None:
             id_generator = default_id_generator()
 
         self.id_generator = id_generator
+
+        self.functions['ABS'] = abs
+        self.functions['POW'] = operator.pow
 
     def evaluate(self, node, arg):
         return call_handler(self, 'evaluate', node, arg)

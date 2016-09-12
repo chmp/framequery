@@ -181,6 +181,22 @@ class CountAll(Node):
     )
 
 
+class FunctionArguments(ListNode):
+    item_parser = ValueExpression.get_parser()
+    separator_parser = comma
+
+
+class FunctionCall(RecordNode):
+    __fields__ = ['function', 'arguments']
+
+    parser = (
+        (name >> get_value >> named('function')) +
+        skip(paren_open) +
+        ((FunctionArguments.get_parser() | pure([])) >> named('arguments')) +
+        skip(paren_close)
+    )
+
+
 def _make_binary_ops(op_class, instances, arg):
     op = one_of(op_class, instances) >> get_value
     return (arg + many(op + arg)) >> flatten >> BinaryExpression.from_list
@@ -216,7 +232,7 @@ def define_value_expression(cls):
         # row value expressions
         CountAll.get_parser() |
         GeneralSetFunction.get_parser() |
-
+        FunctionCall.get_parser() |
         ColumnReference.get_parser() |
 
         Integer.get_parser()

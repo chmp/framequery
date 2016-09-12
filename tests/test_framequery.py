@@ -139,6 +139,15 @@ def test_simple_arithmetic_v3():
     )
 
 
+def test_simple_arithmetic_function_calls():
+    pdt.assert_frame_equal(
+        _context().select('SELECT ABS(a - 4 * g) as a FROM my_table'),
+        pd.DataFrame({
+            ('$0', 'a'): [1, 2, 1],
+        }),
+    )
+
+
 def test_evaluate_aggregation():
     pdt.assert_frame_equal(
         _context().select('''

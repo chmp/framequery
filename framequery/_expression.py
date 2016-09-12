@@ -9,8 +9,16 @@ _logger = logging.getLogger(__name__)
 
 
 class ExpressionEvaluator(object):
+    def __init__(self):
+        self.functions = {}
+
     def evaluate_value(self, node, scope):
         return call_handler(self, 'evaluate_value', node, scope)
+
+    def evaluate_value_function_call(self, node, scope):
+        args = [self.evaluate_value(arg, scope) for arg in node.arguments]
+        func = self.functions[node.function.upper()]
+        return func(*args)
 
     def evaluate_value_unary_expression(self, col, table):
         op = col.operator.upper()

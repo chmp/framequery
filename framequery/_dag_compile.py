@@ -194,6 +194,19 @@ class SplitAggregateTransformer(object):
         inner_node, aggs, pre_aggs = self.split(node.operand)
         return (node.with_values(operand=inner_node), aggs, pre_aggs)
 
+    def split_function_call(self, node):
+        args = []
+        aggs = []
+        pre_aggs = []
+
+        for arg in node.arguments:
+            t = self.split(arg)
+            args.append(t[0])
+            aggs.extend(t[1])
+            pre_aggs.extend(t[2])
+
+        return node.with_values(arguments=args), aggs, pre_aggs
+
     def split_integer(self, node):
         return node, [], []
 

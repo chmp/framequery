@@ -194,6 +194,19 @@ def test_boolean_not():
     )
 
 
+def test_function_all():
+    assert ValueExpression.parse('NOW()') == FunctionCall('NOW', [])
+    assert ValueExpression.parse('ABS(b + c)') == FunctionCall('ABS', [
+        BinaryExpression.add(
+            ColumnReference(['b']),
+            ColumnReference(['c']),
+        ),
+    ])
+    assert ValueExpression.parse('POW(a, 2)') == FunctionCall('POW', [
+        ColumnReference(['a']), Integer('2')
+    ])
+
+
 def test_signs():
     assert ValueExpression.parse('- a +  + b') == BinaryExpression.add(
         UnaryExpression.neg(ColumnReference(['a'])),
