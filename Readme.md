@@ -39,6 +39,18 @@ the `scope` parameter. The example would read
 See the tests, in particular `tests/test_framequery.py`, for examples of
 supported queries.
 
+## Internals
+
+`framequery` executes SQL statements via a multi-step process:
+
+1. The query is parsed and an SQL AST assembled.
+2. The AST is compiled into a DAG reprsenting transformation of dataframes.
+3. The generated DAG is finally interpreted and the transformations are applied
+   to the supplied dataframes.
+
+The AST classes can be found inside `framequery._parser`, whereas the DAG
+classes are found inside `framequery._dag`.
+
 ## Running tests
 
 Inside the project root, execute

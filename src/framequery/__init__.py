@@ -15,7 +15,10 @@ def select(query, scope=None):
     :param str query: the select statement as a string.
 
     :param Optional[Mapping[str,pandas.DataFrame]] scope: the scope as a mapping
-        of table name to DataFrame.
+        of table name to DataFrame. If not given the locals and globals of the
+        calling scope are used to build the dictionary.
+
+    :returns pandas.DataFrame: the result of the query.
     """
     if scope is None:
         scope = inspect.currentframe()
@@ -24,4 +27,6 @@ def select(query, scope=None):
 
 
 def compile(query):
+    """Compile a query into a DAG of highlevel dataframe transformations.
+    """
     return make_context({}).compile(query)

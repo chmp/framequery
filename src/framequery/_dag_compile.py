@@ -1,3 +1,5 @@
+"""Compile the SQL AST into dataframe transformations.
+"""
 from __future__ import print_function, division, absolute_import
 
 import itertools as it

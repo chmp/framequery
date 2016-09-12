@@ -1,4 +1,4 @@
-from framequery._visitor import *
+from framequery._util.introspect import node_name_to_handler_name
 
 
 def test_example():

@@ -1,9 +1,11 @@
+"""Generate an AST represention of a SQL statement.
+"""
 from __future__ import print_function, division, absolute_import
-import six
 
 import operator
 
 from funcparserlib.parser import some, maybe, skip, finished, forward_decl, many, pure
+import six
 
 from ._tokenize import Tokens
 from ._base import Node, ForwardDecl, Unvalued, TransparentNode, ListNode, RecordNode

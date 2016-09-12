@@ -13,10 +13,14 @@ class Literal(object):
 
 
 class GetTable(Record):
+    """Retrieve a table from the scope.
+    """
     __fields__ = ['table', 'alias']
 
 
 class Join(object):
+    """Join two tables.
+    """
     def __init__(self, left, right, how, on):
         self.left = left
         self.right = right
