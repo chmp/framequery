@@ -8,6 +8,14 @@ def _split(q):
     return split_aggregate(ValueExpression.parse(q))
 
 
+def _ref(*parts):
+    return _parser.ColumnReference(list(parts))
+
+
+def _derived(*parts, **kwargs):
+    return _parser.DerivedColumn(_ref(*parts), **kwargs)
+
+
 def test_column_reference():
     result, aggs, pre_aggs = _split('foo')
 
@@ -117,21 +125,41 @@ def test_compile_transform_with_aggs():
     assert compile('SELECT SUM(a) as b FROM my_table') == _dag.Transform(
         _dag.Aggregate(
             _dag.Transform(
-                _dag.GetTable('my_table'),
-                [_parser.DerivedColumn(
-                    _parser.ColumnReference(['a']),
-                    alias='$0',
-                )],
+                _dag.GetTable('my_table'), [_derived('a', alias='$0')],
             ),
             [
                 _parser.DerivedColumn(
-                    _parser.GeneralSetFunction(
-                        'SUM',
-                        _parser.ColumnReference(['$0']),
-                    ),
+                    _parser.GeneralSetFunction.sum(_ref('$0')),
                     alias="$1",
                 )
             ]
         ),
-        [_parser.DerivedColumn(_parser.ColumnReference(['$1']), alias="b")]
+        [_derived('$1', alias='b')],
     )
+
+
+def test_compile_transform_with_multiple_aggs():
+    actual = compile('SELECT SUM(a) as b, AVG(b) as c FROM my_table')
+    expected = _dag.Transform(
+        _dag.Aggregate(
+            _dag.Transform(
+                _dag.GetTable('my_table'),
+                [_derived('a', alias='$0'), _derived('b', alias='$2')],
+            ),
+            [
+                _parser.DerivedColumn(
+                    _parser.GeneralSetFunction.sum(_ref('$0')),
+                    alias="$1",
+                ),
+                _parser.DerivedColumn(
+                    _parser.GeneralSetFunction.avg(_ref('$2')),
+                    alias="$3",
+                )
+            ]
+        ),
+        [_derived('$1', alias='b'), _derived('$3', alias='c')],
+    )
+
+    print("actual", actual)
+    print("expected", expected)
+    assert actual == expected

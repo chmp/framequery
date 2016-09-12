@@ -132,8 +132,17 @@ class ColumnReference(Node):
     parser = IdentifierChain.get_parser()
 
 
+_make_set_func = lambda op: classmethod(lambda cls, value, quantifier=None: cls(op, value, quantifier))
+
+
 class GeneralSetFunction(RecordNode):
     __fields__ = ['function', 'value', 'quantifier']
+
+    sum = _make_set_func('SUM')
+    min = _make_set_func('MIN')
+    max = _make_set_func('MAX')
+    avg = _make_set_func('AVG')
+    count = _make_set_func('COUNT')
 
     known_set_functions = [
         'AVG', 'MAX', 'MIN', 'SUM', 'EVERY', 'ANY', 'SOME'

@@ -71,9 +71,6 @@ class DagCompiler(object):
             node.select_list,
             id_generator=self.id_generator
         )
-        print(columns)
-        print(aggregates)
-        print(pre_aggregates)
 
         if pre_aggregates:
             table = _dag.Transform(table, pre_aggregates)

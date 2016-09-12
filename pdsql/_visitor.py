@@ -3,9 +3,13 @@ from __future__ import print_function, division, absolute_import
 import six
 
 import collections
+import logging
 
 from ._base import RecordNode
 from ._util.introspect import node_name_to_handler_name
+
+
+_logger = logging.getLogger(__name__)
 
 
 class Visitor(object):
@@ -34,7 +38,7 @@ class Visitor(object):
         if isinstance(node, list):
             return node
 
-        print("cannot recurse", self._get_class_name(node))
+        _logger.debug("cannot recurse %s", self._get_class_name(node))
         return []
 
     def children(self, node):
