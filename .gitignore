@@ -2,3 +2,8 @@ __pycache__/
 .cache/
 *.txt
 *.pyc
+
+
+/.tox
+/.eggs
+*.egg-info/
