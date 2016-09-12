@@ -68,6 +68,10 @@ class ExpressionEvaluator(object):
         _logger.debug("eval integer")
         return int(col.value)
 
+    def evaluate_value_float(self, col, table):
+        _logger.debug("eval float")
+        return float(col.value)
+
     def evaluate_value_column_reference(self, col, table):
         _logger.info("eval column reference %s", col.value)
         ref = self._normalize_col_ref(col.value, table.columns)

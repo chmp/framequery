@@ -210,6 +210,9 @@ class SplitAggregateTransformer(object):
     def split_integer(self, node):
         return node, [], []
 
+    def split_float(self, node):
+        return node, [], []
+
     def _tmp_column(self):
         return '${}'.format(next(self.id_generator))
 

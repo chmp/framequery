@@ -164,6 +164,18 @@ def test_evaluate_aggregation():
     )
 
 
+def test_evaluate_aggregation_expession():
+    pdt.assert_frame_equal(
+        _context().select('''
+            SELECT SUM(a) - 3 * AVG(a) as a
+            FROM my_table
+        '''),
+        pd.DataFrame({
+            ('$2', 'a'): [0.0],
+        }),
+    )
+
+
 def test_evaluate_join():
     pdt.assert_frame_equal(
         _context().select('''

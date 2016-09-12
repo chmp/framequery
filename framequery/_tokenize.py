@@ -30,6 +30,8 @@ class Tokens(object):
     Punctuation = Token.Punctuation
 
     Integer = Token.Literal.Number.Integer
+    Float = Token.Literal.Number.Float
+    
     Name = Token.Name
     Operator = Token.Operator
     Comparison = Token.Operator.Comparison

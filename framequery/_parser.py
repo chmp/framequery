@@ -78,6 +78,10 @@ class Integer(Node):
     parser = token(Tokens.Integer) >> get_value
 
 
+class Float(Node):
+    parser = token(Tokens.Float) >> get_value
+
+
 class ValueExpression(TransparentNode, ForwardDecl):
     pass
 
@@ -235,9 +239,10 @@ def define_value_expression(cls):
         FunctionCall.get_parser() |
         ColumnReference.get_parser() |
 
+        Float.get_parser() |
         Integer.get_parser()
 
-        # TODO: add support for non integers
+        # TODO: add support for non numbers
     )
 
     cls.define(
