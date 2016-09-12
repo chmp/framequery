@@ -44,7 +44,7 @@ def specific_name(name):
 
 def one_of(ttype, names):
     return some(lambda t:
-        t.ttype is ttype and any(t.value == name for name in names)
+        t.ttype is ttype and any(t.value.upper() == name for name in names)
     )
 
 

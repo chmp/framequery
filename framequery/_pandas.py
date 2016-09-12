@@ -84,7 +84,7 @@ class PandasExecutor(ExpressionEvaluator):
 
     def evaluate_sort(self, node, scope):
         table = self.evaluate(node.table, scope)
-        
+
         values = []
         ascending = []
 
@@ -149,7 +149,7 @@ class PandasExecutor(ExpressionEvaluator):
         if not isinstance(node, GeneralSetFunction):
             raise ValueError("indirect aggregations not supported")
 
-        function = node.function
+        function = node.function.upper()
         value = node.value
 
         if not isinstance(value, ColumnReference):
