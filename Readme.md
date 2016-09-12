@@ -1,6 +1,6 @@
 # framequery - SQL on dataframes
 
-## Example
+## Usage
 
 ```python
 import pandas as pd
@@ -22,13 +22,31 @@ sales_by_country = fq.select("""
 """)
 ```
 
+The dataframes to use, can be specified by explicitly passing a dictionary as
+the `scope` parameter. The example would read
+`fq.select(..., scope={'stores': stores, 'sales': sales})`.
+
 ## Limitations
 
 - support for only numeric expressions
 - support for joins only with equality conditions
 - no support for over-clauses
-- many, many more, SQL is crazy complex
+- no subqueries
+- no support for non select statements (update, insert, ...)
+- many, many more, SQL is crazy complex. The topics listed explicitly, however,
+  are on the agenda to be fixed.
 
+See the tests, in particular `tests/test_framequery.py`, for examples of
+supported queries.
+
+## Running tests
+
+Inside the project root, execute
+
+```
+    pip install tox
+    tox
+```
 
 ## License
 
