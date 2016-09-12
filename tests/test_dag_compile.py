@@ -1,7 +1,7 @@
-from pdsql import compile
-from pdsql.parser import *
-from pdsql import _dag, _parser
-from pdsql._dag_compile import split_aggregate
+from framequery import compile
+from framequery.parser import *
+from framequery import _dag, _parser
+from framequery._dag_compile import split_aggregate
 
 
 def _split(q):

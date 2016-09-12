@@ -1,4 +1,4 @@
-from pdsql._visitor import *
+from framequery._visitor import *
 
 
 def test_example():

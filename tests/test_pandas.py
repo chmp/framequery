@@ -1,6 +1,6 @@
-from pdsql._pandas import PandasExecutor
-from pdsql._dag import *
-from pdsql.parser import ColumnReference, DerivedColumn, ValueExpression
+from framequery._pandas import PandasExecutor
+from framequery._dag import *
+from framequery.parser import ColumnReference, DerivedColumn, ValueExpression
 
 import pandas as pd
 import pandas.util.testing as pdt

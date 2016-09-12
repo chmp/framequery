@@ -1,4 +1,4 @@
-from pdsql.parser import *
+from framequery.parser import *
 
 
 def test_select_all():

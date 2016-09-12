@@ -1,5 +1,5 @@
-import pdsql
-from pdsql import make_context
+import framequery as fq
+from framequery import make_context
 
 import pandas as pd
 import pandas.util.testing as pdt
@@ -137,7 +137,7 @@ def test_introspection_support():
     })
 
     pdt.assert_frame_equal(
-        pdsql.select('''
+        fq.select('''
             SELECT a
             FROM my_table
             WHERE g < one

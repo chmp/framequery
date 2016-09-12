@@ -1,4 +1,4 @@
-from pdsql._pandas_util import *
+from framequery._pandas_util import *
 
 import pandas as pd
 import pandas.util.testing as pdt
@@ -35,7 +35,7 @@ def test_strip_table_name_from_columns():
 
 
 def test_flatten_join_condition():
-    from pdsql.parser import BinaryExpression, ColumnReference
+    from framequery.parser import BinaryExpression, ColumnReference
 
     _col = lambda *parts: ColumnReference(list(parts))
 

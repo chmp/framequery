@@ -1,4 +1,4 @@
-from pdsql.query import contains_aggregates
+from framequery.query import contains_aggregates
 
 
 def test_contains_aggregates():
