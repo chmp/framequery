@@ -328,6 +328,34 @@ class HavingClause(TransparentNode):
     )
 
 
+class OrderByClause(TransparentNode):
+    parser = failing()
+
+
+def as_int(val):
+    return int(val.value)
+
+
+class LimitClause(RecordNode):
+    __fields__ = ['offset', 'limit']
+    parser = skip(token(Tokens.Keyword, 'LIMIT')) + (
+        (
+            (Integer.get_parser() >> as_int >> named('offset')) +
+            skip(comma) +
+            (Integer.get_parser() >> as_int >> named('limit'))
+        ) |
+        (
+            (Integer.get_parser() >> as_int >> named('limit')) +
+            skip(token(Tokens.Keyword, 'OFFSET')) +
+            (Integer.get_parser() >> as_int >> named('offset'))
+        ) |
+        (
+            (Integer.get_parser() >> as_int >> named('limit')) +
+            (pure(0) >> named('offset'))
+        )
+    )
+
+
 class Select(RecordNode):
     select_ = token(Tokens.DML, 'SELECT')
 
@@ -339,12 +367,14 @@ class Select(RecordNode):
         (optional(WhereCaluse.get_parser()) >> named('where_clause')) +
         (optional(GroupByClause.get_parser()) >> named('group_by_clause')) +
         (optional(HavingClause.get_parser()) >> named('having_clause')) +
+        (optional(OrderByClause.get_parser()) >> named('order_by_clause')) +
+        (optional(LimitClause.get_parser()) >> named('limit_clause')) +
         skip(finished)
     )
 
     __fields__ = [
         'set_quantifier', 'select_list', 'from_clause', 'where_clause',
-        'group_by_clause', 'having_clause', 'window_clause',
+        'group_by_clause', 'having_clause', 'order_by_clause', 'limit_clause',
     ]
 
 

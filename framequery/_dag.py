@@ -40,3 +40,9 @@ class Filter(Record):
     """Filter a dataframe to the matching rows.
     """
     __fields__ = ['table', 'filter']
+
+
+class Limit(Record):
+    """Limit the dataframe to the given rows.
+    """
+    __fields__ = ['table', 'offset', 'limit']

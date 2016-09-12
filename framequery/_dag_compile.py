@@ -54,6 +54,7 @@ class DagCompiler(object):
         table = self._filter_pre_transform(node, table)
         table = self._transform_table(node, table)
         table = self._filter_post_transform(node, table)
+        table = self._limit(node, table)
         return table
 
     def _filter_pre_transform(self, node, table):
@@ -106,6 +107,12 @@ class DagCompiler(object):
             return table
 
         return _dag.Filter(table, node.having_clause)
+
+    def _limit(self, node, table):
+        if node.limit_clause is None:
+            return table
+
+        return _dag.Limit(table, node.limit_clause.offset, node.limit_clause.limit)
 
     def compile_from_clause(self, from_clause):
         table = from_clause[0]

@@ -75,6 +75,29 @@ def test_select_column_without_rename():
     )
 
 
+def test_select_column_without_rename_limit():
+    pdt.assert_frame_equal(
+        _context().select('SELECT a FROM my_table LIMIT 2'),
+        pd.DataFrame({
+            ('$0', 'a'): [1, 2]
+        }),
+    )
+
+    pdt.assert_frame_equal(
+        _context().select('SELECT a FROM my_table LIMIT 1, 2'),
+        pd.DataFrame({
+            ('$0', 'a'): [2, 3]
+        }),
+    )
+
+    pdt.assert_frame_equal(
+        _context().select('SELECT a FROM my_table LIMIT 2 OFFSET 1'),
+        pd.DataFrame({
+            ('$0', 'a'): [2, 3]
+        }),
+    )
+
+
 def test_simple_arithmetic():
     pdt.assert_frame_equal(
         _context().select('SELECT 2 * a as a FROM my_table'),

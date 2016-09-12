@@ -82,6 +82,11 @@ class PandasExecutor(ExpressionEvaluator):
         condition = self.evaluate_value(node.filter, table)
         return table[condition]
 
+    def evaluate_limit(self, node, scope):
+        table = self.evaluate(node.table, scope)
+        table = table.iloc[node.offset:node.offset + node.limit]
+        return table.reset_index(drop=True)
+
     def _evaluate_aggregation_grouped(self, node, table):
         grouped = self._group(table, node.group_by)
         result = self._evaluate_aggregation_base(node, grouped, table.columns)
