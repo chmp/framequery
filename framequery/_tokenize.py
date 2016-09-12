@@ -36,6 +36,7 @@ class Tokens(object):
 
     Keyword = Token.Keyword
     DML = Token.Keyword.DML
+    Order = Token.Keyword.Order
 
     Wildcard = Token.Wildcard
 

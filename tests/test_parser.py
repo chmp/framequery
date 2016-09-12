@@ -237,3 +237,11 @@ def test_table_reference_list_two_joins():
             ]
         )
     ]
+
+
+def test_order_by():
+    assert OrderByClause.parse('ORDER BY g DESC, a ASC, c') == [
+        OrderByItem(ColumnReference(['g']), 'DESC'),
+        OrderByItem(ColumnReference(['a']), 'ASC'),
+        OrderByItem(ColumnReference(['c']), 'DESC'),
+    ]

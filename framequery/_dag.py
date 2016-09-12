@@ -42,6 +42,12 @@ class Filter(Record):
     __fields__ = ['table', 'filter']
 
 
+class Sort(Record):
+    """Sort the table by the given value expression.
+    """
+    __fields__ = ['table', 'values']
+
+
 class Limit(Record):
     """Limit the dataframe to the given rows.
     """

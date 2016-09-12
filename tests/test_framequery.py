@@ -98,6 +98,15 @@ def test_select_column_without_rename_limit():
     )
 
 
+def test_order_by():
+    pdt.assert_frame_equal(
+        _context().select('SELECT a FROM my_table ORDER BY g, a ASC'),
+        pd.DataFrame({
+            ('$0', 'a'): [3, 1, 2],
+        }),
+    )
+
+
 def test_simple_arithmetic():
     pdt.assert_frame_equal(
         _context().select('SELECT 2 * a as a FROM my_table'),

@@ -82,6 +82,29 @@ class PandasExecutor(ExpressionEvaluator):
         condition = self.evaluate_value(node.filter, table)
         return table[condition]
 
+    def evaluate_sort(self, node, scope):
+        table = self.evaluate(node.table, scope)
+        
+        values = []
+        ascending = []
+
+        for col in node.values:
+            val, asc = self._split_order_by_item(col, table)
+            values.append(val)
+            ascending.append(asc)
+
+        table = table.sort_values(values, ascending=ascending)
+        return table.reset_index(drop=True)
+
+    def _split_order_by_item(self, item, table):
+        assert isinstance(item.value, ColumnReference)
+
+        return (
+            self._normalize_col_ref(item.value.value, table.columns),
+            item.order == 'ASC'
+        )
+
+
     def evaluate_limit(self, node, scope):
         table = self.evaluate(node.table, scope)
         table = table.iloc[node.offset:node.offset + node.limit]

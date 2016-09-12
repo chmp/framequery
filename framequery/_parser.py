@@ -328,8 +328,33 @@ class HavingClause(TransparentNode):
     )
 
 
-class OrderByClause(TransparentNode):
-    parser = failing()
+class OrderByItem(RecordNode):
+    __fields__ = ["value", "order"]
+
+    parser = (
+        (
+            (ColumnReference.get_parser() >> named('value')) +
+            (token(Tokens.Order, 'ASC') >> get_value >> named('order'))
+        ) |
+        (
+            (ColumnReference.get_parser() >> named('value')) +
+            (token(Tokens.Order, 'DESC') >> get_value >> named('order'))
+        ) |
+        (
+            (ColumnReference.get_parser() >> named('value')) +
+            (pure('DESC') >> named('order'))
+        )
+    )
+
+
+class OrderByClause(ListNode):
+    prefix_parser = (
+        token(Tokens.Keyword, 'ORDER') +
+        token(Tokens.Keyword, 'BY')
+    )
+
+    item_parser = OrderByItem.get_parser()
+    separator_parser = comma
 
 
 def as_int(val):

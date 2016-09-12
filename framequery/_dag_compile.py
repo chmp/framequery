@@ -50,11 +50,13 @@ class DagCompiler(object):
         return call_handler(self, "compile", node)
 
     def compile_select(self, node):
+        # NOTE: ordering is performed in the transform step to allow ordering on
+        #       non-selected columns.
         table = self.compile_from_clause(node.from_clause)
         table = self._filter_pre_transform(node, table)
         table = self._transform_table(node, table)
-        table = self._filter_post_transform(node, table)
         table = self._limit(node, table)
+        table = self._filter_post_transform(node, table)
         return table
 
     def _filter_pre_transform(self, node, table):
@@ -66,6 +68,7 @@ class DagCompiler(object):
     def _transform_table(self, node, table):
         if node.select_list == _parser.Asterisk():
             assert node.group_by_clause is None
+            table = self._order(node, table)
             return table
 
         columns, aggregates, pre_aggregates = split_aggregates(
@@ -82,6 +85,7 @@ class DagCompiler(object):
         if aggregates:
             table = _dag.Aggregate(table, aggregates, group_by=group_by)
 
+        table = self._order(node, table)
         return _dag.Transform(table, columns)
 
     def _normalize_group_by(self, group_by):
@@ -107,6 +111,12 @@ class DagCompiler(object):
             return table
 
         return _dag.Filter(table, node.having_clause)
+
+    def _order(self, node, table):
+        if node.order_by_clause is None:
+            return table
+
+        return _dag.Sort(table, node.order_by_clause)
 
     def _limit(self, node, table):
         if node.limit_clause is None:
