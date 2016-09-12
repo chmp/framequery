@@ -1,3 +1,4 @@
+import pdsql
 from pdsql import make_context
 
 import pandas as pd
@@ -116,6 +117,27 @@ def test_evaluate_aggregation():
 def test_where():
     pdt.assert_frame_equal(
         _context().select('''
+            SELECT a
+            FROM my_table
+            WHERE g < one
+        '''),
+        pd.DataFrame({
+            ('$0', 'a'): [1, 2],
+        }),
+    )
+
+
+def test_introspection_support():
+    my_table = pd.DataFrame({
+        'a': [1, 2, 3],
+        'b': [4, 5, 6],
+        'c': [7, 8, 9],
+        'g': [0, 0, 1],
+        'one': [1, 1, 1],
+    })
+
+    pdt.assert_frame_equal(
+        pdsql.select('''
             SELECT a
             FROM my_table
             WHERE g < one

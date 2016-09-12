@@ -43,6 +43,6 @@ def _get_caller_scope(frame):
     if frame.f_back is None:
         raise ValueError("needs to be called inside a function")
 
-    scope = dict(frame.f_globals)
-    scope.update(frame.f_locals)
+    scope = dict(frame.f_back.f_globals)
+    scope.update(frame.f_back.f_locals)
     return scope
