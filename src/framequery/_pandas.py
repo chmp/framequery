@@ -6,12 +6,13 @@ import collections
 import itertools as it
 import operator
 
+import pandas as pd
+import six
+
 from ._expression import ExpressionEvaluator
 from ._pandas_util import ensure_table_columns, as_pandas_join_condition, is_scalar
 from ._parser import GeneralSetFunction, ColumnReference, get_selected_column_name
 from ._util.introspect import call_handler
-
-import pandas as pd
 
 
 class PandasExecutor(ExpressionEvaluator):
@@ -123,7 +124,7 @@ class PandasExecutor(ExpressionEvaluator):
         df = pd.DataFrame(result)
         df = df.reset_index()
         df.columns = pd.MultiIndex.from_tuples(list(
-            t[0] if isinstance(t[0], tuple) else t
+            _string_pair(t[0] if isinstance(t[0], tuple) else t)
             for t in df.columns
         ))
         return df
@@ -191,6 +192,11 @@ class PandasExecutor(ExpressionEvaluator):
             return result[col_ref]
 
         return result
+
+
+def _string_pair(t):
+    a, b = t
+    return six.text_type(a), six.text_type(b)
 
 
 def default_id_generator():
