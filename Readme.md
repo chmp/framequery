@@ -31,7 +31,6 @@ the `scope` parameter. The example would read
 - support for only numeric expressions
 - support for joins only with equality conditions
 - no support for over-clauses
-- no subqueries
 - no support for non select statements (update, insert, ...)
 - many, many more, SQL is crazy complex. The topics listed explicitly, however,
   are on the agenda to be fixed.

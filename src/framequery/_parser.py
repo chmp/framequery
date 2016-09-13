@@ -260,14 +260,11 @@ def define_value_expression(cls):
     )
 
 
-class AsClause(Node):
-    parser = (
-        skip(as_) + name
-    )
-
-    @classmethod
-    def from_parsed(cls, val):
-        return val.value
+class Select(ForwardDecl, RecordNode):
+    __fields__ = [
+        'set_quantifier', 'select_list', 'from_clause', 'where_clause',
+        'group_by_clause', 'having_clause', 'order_by_clause', 'limit_clause',
+    ]
 
 
 class DerivedColumn(RecordNode):
@@ -275,7 +272,7 @@ class DerivedColumn(RecordNode):
 
     parser = (
         (ValueExpression.get_parser() >> named('value')) +
-        (optional(AsClause.get_parser()) >> named('alias'))
+        (optional((skip(as_) + name) >> get_value) >> named('alias'))
     )
 
 
@@ -335,7 +332,9 @@ class JoinedTable(RecordNode):
 
 
 class TableReferenceList(ListNode):
-    item_parser = JoinedTable.get_parser() | TableName.get_parser()
+    subquery = skip(paren_open) + Select.get_parser() + skip(paren_close)
+
+    item_parser = subquery | JoinedTable.get_parser() | TableName.get_parser()
     separator_parser = comma
 
 
@@ -420,7 +419,8 @@ class LimitClause(RecordNode):
     )
 
 
-class Select(RecordNode):
+@Select.define
+def define_select(cls):
     select_ = token(Tokens.DML, 'SELECT')
 
     set_quantifier = (
@@ -429,7 +429,7 @@ class Select(RecordNode):
         pure('ALL')
     )
 
-    parser = (
+    cls.define(
         skip(select_) +
         (set_quantifier >> named('set_quantifier')) +
         (SelectList.get_parser() >> named('select_list')) +
@@ -438,14 +438,8 @@ class Select(RecordNode):
         (optional(GroupByClause.get_parser()) >> named('group_by_clause')) +
         (optional(HavingClause.get_parser()) >> named('having_clause')) +
         (optional(OrderByClause.get_parser()) >> named('order_by_clause')) +
-        (optional(LimitClause.get_parser()) >> named('limit_clause')) +
-        skip(finished)
+        (optional(LimitClause.get_parser()) >> named('limit_clause'))
     )
-
-    __fields__ = [
-        'set_quantifier', 'select_list', 'from_clause', 'where_clause',
-        'group_by_clause', 'having_clause', 'order_by_clause', 'limit_clause',
-    ]
 
 
 def get_selected_column_name(node):

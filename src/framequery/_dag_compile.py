@@ -145,6 +145,9 @@ class DagCompiler(object):
         if isinstance(table, _parser.TableName):
             return _dag.GetTable(table.table, alias=table.alias)
 
+        if isinstance(table, _parser.Select):
+            return self.compile(table)
+
         assert isinstance(table, _parser.JoinedTable)
 
         result = self.compile_from_clause([table.table])

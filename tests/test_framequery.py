@@ -34,6 +34,19 @@ def test_simple_select():
     )
 
 
+def test_simple_subquery():
+    pdt.assert_frame_equal(
+        _context().select('SELECT * FROM (SELECT * FROM my_table)'),
+        pd.DataFrame({
+            ('my_table', 'a'): [1, 2, 3],
+            ('my_table', 'b'): [4, 5, 6],
+            ('my_table', 'c'): [7, 8, 9],
+            ('my_table', 'g'): [0, 0, 1],
+            ('my_table', 'one'): [1, 1, 1],
+        }),
+    )
+
+
 def test_simple_filter():
     pdt.assert_frame_equal(
         _context().select('SELECT * FROM my_table WHERE g = 0'),
@@ -213,6 +226,23 @@ def test_where():
             ('$0', 'a'): [1, 2],
         }),
     )
+
+
+def test_where():
+    pdt.assert_frame_equal(
+        _context().select('''
+            SELECT a
+            FROM (
+                SELECT a, 2 * a as c
+                FROM my_table
+            )
+            WHERE c >= 4
+        '''),
+        pd.DataFrame({
+            ('$1', 'a'): [2, 3],
+        }),
+    )
+
 
 
 def test_introspection_support():

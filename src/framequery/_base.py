@@ -1,6 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
-from funcparserlib.parser import forward_decl, many, skip
+from funcparserlib.parser import forward_decl, many, skip, finished
 
 from ._tokenize import tokenize
 
@@ -13,7 +13,7 @@ class Node(object):
     @classmethod
     def parse(cls, q):
         stmt = tokenize(q)
-        return cls.get_parser().parse(stmt)
+        return (cls.get_parser() + skip(finished)).parse(stmt)
 
     @classmethod
     def get_parser(cls):
