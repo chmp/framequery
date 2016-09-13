@@ -2,6 +2,14 @@
 
 ## Usage
 
+Install framequery via:
+
+```bash
+pip install framequery
+```
+
+Use `framequery.select` to execute queries against dataframes in your scope:
+
 ```python
 import pandas as pd
 
@@ -26,10 +34,20 @@ The dataframes to use, can be specified by explicitly passing a dictionary as
 the `scope` parameter. The example would read
 `fq.select(..., scope={'stores': stores, 'sales': sales})`.
 
-## Limitations
+## SQL Support
 
-- support for only numeric expressions
-- support for joins only with equality conditions
+The following operations are supported:
+
+- Select using where, group-by, having, order-by, limit
+- Inner and outer joins using equality conditions
+- Subqueries
+- Numeric expressions
+
+
+The following limitations do exist:
+
+- no support for non-numeric expressions
+- no support for joins with inequality conditions
 - no support for over-clauses
 - no support for non select statements (update, insert, ...)
 - many, many more, SQL is crazy complex. The topics listed explicitly, however,

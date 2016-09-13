@@ -6,6 +6,11 @@ from ._context import Context
 from ._graphviz import to_dot, show
 
 
+__all__ = [
+    'select', 'compile', 'to_dot', 'show', 'make_context',
+]
+
+
 def make_context(scope):
     return Context(scope=scope)
 
