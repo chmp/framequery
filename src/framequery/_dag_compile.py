@@ -165,10 +165,17 @@ class DagCompiler(object):
 
         for join in table.joins:
             right = self.compile_from_clause([join.table])
-            result = _dag.Join(result, right, how=join.how.lower(), on=join.on)
+
+            if isinstance(join, _parser.Join):
+                result = _dag.Join(result, right, how=join.how.lower(), on=join.on)
+
+            elif isinstance(join, _parser.CrossJoin):
+                result = _dag.CrossJoin(result, right)
+
+            else:
+                raise ValueError("unknown join {}".format(join))
 
         return result
-
 
     def _tmp_column(self):
         return '${}'.format(next(self.id_generator))

@@ -333,12 +333,23 @@ class Join(RecordNode):
     )
 
 
+class CrossJoin(RecordNode):
+    __fields__ = ['table']
+    parser = skip(token(Tokens.Keyword, 'CROSS JOIN')) + TableName.get_parser()
+
+    @classmethod
+    def from_parsed(cls, table):
+        return cls(table)
+
+
 class JoinedTable(RecordNode):
     __fields__ = ['table', 'joins']
 
+    join = Join.get_parser() | CrossJoin.get_parser()
+
     parser = (
         (TableName.get_parser() >> named('table')) +
-        (Join.get_parser() + many(Join.get_parser()) >> concat >> named('joins'))
+        (join + many(join) >> concat >> named('joins'))
     )
 
 

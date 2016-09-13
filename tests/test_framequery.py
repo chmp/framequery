@@ -234,6 +234,21 @@ def test_evaluate_cross_join_filter():
     )
 
 
+def test_evaluate_explicit_cross_join_filter():
+    pdt.assert_frame_equal(
+        _context().select('''
+            SELECT a, d
+            FROM my_table
+            CROSS JOIN my_other_table
+            WHERE g = h
+        '''),
+        pd.DataFrame({
+            ('$0', 'a'): [1, 2, 3],
+            ('$0', 'd'): [10, 10, 11],
+        }),
+    )
+
+
 def test_where():
     pdt.assert_frame_equal(
         _context().select('''
