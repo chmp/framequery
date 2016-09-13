@@ -59,6 +59,7 @@ class DagCompiler(object):
         table = self._transform_table(node, table)
         table = self._limit(node, table)
         table = self._filter_post_transform(node, table)
+        table = self._drop_duplicates(node, table)
         return table
 
     def _filter_pre_transform(self, node, table):
@@ -125,6 +126,17 @@ class DagCompiler(object):
             return table
 
         return _dag.Limit(table, node.limit_clause.offset, node.limit_clause.limit)
+
+    def _drop_duplicates(self, node, table):
+        set_quantifier = node.set_quantifier.upper()
+        if set_quantifier == 'ALL':
+            return table
+
+        elif set_quantifier == 'DISTINCT':
+            return _dag.DropDuplicates(table)
+
+        else:
+            raise ValueError('unknown set quantifier {}'.format(set_quantifier))
 
     def compile_from_clause(self, from_clause):
         assert len(from_clause) == 1

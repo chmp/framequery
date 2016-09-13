@@ -56,3 +56,9 @@ class Limit(Record):
     """Limit the dataframe to the given rows.
     """
     __fields__ = ['table', 'offset', 'limit']
+
+
+class DropDuplicates(Record):
+    """Remove any duplicates from the table.
+    """
+    __fields__ = ['table']

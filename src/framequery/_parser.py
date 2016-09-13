@@ -93,10 +93,6 @@ class IdentifierChain(ListNode):
     separator_parser = period
 
 
-class SetQuantifier(Node):
-    parser = failing()
-
-
 _make_unary_op = lambda op: classmethod(lambda cls, operand: UnaryExpression(op, operand))
 _make_binary_op = lambda op: classmethod(lambda cls, left, right: BinaryExpression(op, left, right))
 
@@ -427,9 +423,15 @@ class LimitClause(RecordNode):
 class Select(RecordNode):
     select_ = token(Tokens.DML, 'SELECT')
 
+    set_quantifier = (
+        (token(Tokens.Keyword, 'ALL') >> get_value) |
+        (token(Tokens.Keyword, 'DISTINCT') >> get_value) |
+        pure('ALL')
+    )
+
     parser = (
         skip(select_) +
-        (optional(SetQuantifier.get_parser()) >> named('set_quantifier')) +
+        (set_quantifier >> named('set_quantifier')) +
         (SelectList.get_parser() >> named('select_list')) +
         (FromClause.get_parser() >> named('from_clause')) +
         (optional(WhereCaluse.get_parser()) >> named('where_clause')) +

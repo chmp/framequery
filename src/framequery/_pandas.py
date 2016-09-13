@@ -117,6 +117,12 @@ class PandasExecutor(ExpressionEvaluator):
         table = table.iloc[node.offset:node.offset + node.limit]
         return table.reset_index(drop=True)
 
+    def evaluate_drop_duplicates(self, node, scope):
+        table = self.evaluate(node.table, scope)
+        table = table.drop_duplicates()
+        table = table.reset_index(drop=True)
+        return table
+
     def _evaluate_aggregation_grouped(self, node, table):
         grouped = self._group(table, node.group_by)
         result = self._evaluate_aggregation_base(node, grouped, table.columns)

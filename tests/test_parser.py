@@ -6,7 +6,8 @@ def test_select_all():
         select_list=Asterisk(),
         from_clause=[
             TableName('foo'), TableName('bar'), TableName('baz')
-        ]
+        ],
+        set_quantifier='ALL',
     )
 
 
@@ -15,7 +16,8 @@ def test_select_column():
         select_list=[DerivedColumn(value=ColumnReference(['a']), alias=None)],
         from_clause=[
             TableName('foo'), TableName('bar'), TableName('baz')
-        ]
+        ],
+        set_quantifier='ALL',
     )
 
 
@@ -23,6 +25,7 @@ def test_select_column_alias():
     assert parse('SELECT a as b FROM foo') == Select(
         select_list=[DerivedColumn(value=ColumnReference(['a']), alias='b')],
         from_clause=[TableName('foo')],
+        set_quantifier='ALL',
     )
 
 
@@ -37,6 +40,7 @@ def test_select_column_addition():
             )
         ],
         from_clause=[TableName('foo')],
+        set_quantifier='ALL',
     )
 
 
@@ -45,14 +49,16 @@ def test_select_column_parens():
         select_list=[DerivedColumn(value=ColumnReference(['a']), alias=None)],
         from_clause=[
             TableName('foo'), TableName('bar'), TableName('baz')
-        ]
+        ],
+        set_quantifier='ALL',
     )
 
 
 def test_select_number():
     assert parse('SELECT 42 FROM DUAL') == Select(
         select_list=[DerivedColumn(value=Integer('42'))],
-        from_clause=[TableName('DUAL')]
+        from_clause=[TableName('DUAL')],
+        set_quantifier='ALL',
     )
 
 
@@ -65,7 +71,8 @@ def test_select_multiple_columns():
         ],
         from_clause=[
             TableName('foo'), TableName('bar'), TableName('baz')
-        ]
+        ],
+        set_quantifier='ALL',
     )
 
 
@@ -78,7 +85,8 @@ def test_select_multiple_columns_alias():
         ],
         from_clause=[
             TableName('foo'), TableName('bar'), TableName('baz')
-        ]
+        ],
+        set_quantifier='ALL',
     )
 
 
@@ -91,7 +99,8 @@ def test_select_count_all():
         ],
         from_clause=[
             TableName('foo'), TableName('bar'), TableName('baz')
-        ]
+        ],
+        set_quantifier='ALL',
     )
 
 
@@ -100,7 +109,8 @@ def test_select_sum():
         select_list=[
             DerivedColumn(value=GeneralSetFunction('SUM', ColumnReference(['a'])))
         ],
-        from_clause=[TableName('foo')]
+        from_clause=[TableName('foo')],
+        set_quantifier='ALL',
     )
 
 
@@ -112,7 +122,8 @@ def test_select_sum_group_by():
         group_by_clause=[
             ColumnReference(['c']), ColumnReference(['d']), ColumnReference(['e'])
         ],
-        from_clause=[TableName('foo')]
+        from_clause=[TableName('foo')],
+        set_quantifier='ALL',
     )
 
 
@@ -126,7 +137,8 @@ def test_select_column_where():
                 ColumnReference(['d']),
                 Integer('2')
             )
-        )
+        ),
+        set_quantifier='ALL',
     )
 
 
