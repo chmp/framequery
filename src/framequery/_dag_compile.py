@@ -57,9 +57,9 @@ class DagCompiler(object):
         table = self.compile_from_clause(node.from_clause)
         table = self._filter_pre_transform(node, table)
         table = self._transform_table(node, table)
-        table = self._limit(node, table)
         table = self._filter_post_transform(node, table)
         table = self._drop_duplicates(node, table)
+        table = self._limit(node, table)
         return table
 
     def _filter_pre_transform(self, node, table):

@@ -3,6 +3,7 @@ from __future__ import print_function, division, absolute_import
 import inspect
 
 from ._context import Context
+from ._graphviz import to_dot, show
 
 
 def make_context(scope):
