@@ -4,15 +4,18 @@ from __future__ import print_function, division, absolute_import
 
 import collections
 import itertools as it
+import logging
 import operator
 
 import pandas as pd
 import six
 
 from ._expression import ExpressionEvaluator
-from ._pandas_util import ensure_table_columns, as_pandas_join_condition, is_scalar
+from ._pandas_util import ensure_table_columns, as_pandas_join_condition, is_scalar, cross_join
 from ._parser import GeneralSetFunction, ColumnReference, get_selected_column_name
 from ._util.introspect import call_handler
+
+_logger = logging.getLogger(__name__)
 
 
 class PandasExecutor(ExpressionEvaluator):
@@ -51,6 +54,13 @@ class PandasExecutor(ExpressionEvaluator):
         left_on, right_on = as_pandas_join_condition(left.columns, right.columns, node.on)
 
         return pd.merge(left, right, how=node.how, left_on=left_on, right_on=right_on)
+
+    def evaluate_cross_join(self, node, scope):
+        _logger.warning("evaluating cross join, possible performance problem")
+        left = self.evaluate(node.left, scope)
+        right = self.evaluate(node.right, scope)
+
+        return cross_join(left, right)
 
     def evaluate_transform(self, node, scope):
         table = self.evaluate(node.table, scope)

@@ -23,6 +23,18 @@ def ensure_table_columns(name, df):
     )
 
 
+def cross_join(df1, df2):
+    # TODO: miminize memory overhead
+    df1 = df1.copy()
+    df1[('$$', 'key')] = 1
+
+    df2 = df2.copy()
+    df2[('$$', 'key')] = 1
+
+    result = pd.merge(df1, df2, on=[('$$', 'key')])
+    return result[[col for col in result.columns if col != ('$$', 'key')]]
+
+
 def strip_table_name_from_columns(df):
     old_columns = list(df.columns)
     new_columns = list(_as_name(col) for col in old_columns)

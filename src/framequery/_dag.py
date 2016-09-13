@@ -18,14 +18,16 @@ class GetTable(Record):
     __fields__ = ['table', 'alias']
 
 
-class Join(object):
+class Join(Record):
     """Join two tables.
     """
-    def __init__(self, left, right, how, on):
-        self.left = left
-        self.right = right
-        self.how = how
-        self.on = on
+    __fields__ = ['left', 'right', 'how', 'on']
+
+
+class CrossJoin(Record):
+    """Compute the cartesian product between two tables.
+    """
+    __fields__ = ['left', 'right']
 
 
 class Transform(Record):

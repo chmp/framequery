@@ -139,9 +139,20 @@ class DagCompiler(object):
             raise ValueError('unknown set quantifier {}'.format(set_quantifier))
 
     def compile_from_clause(self, from_clause):
-        assert len(from_clause) == 1
-        table = from_clause[0]
+        if len(from_clause) == 0:
+            raise ValueError("cannot handle empty from clauses")
 
+        head, tail = from_clause[0], from_clause[1:]
+
+        result = self._compile_single_table(head)
+
+        for next in tail:
+            next = self._compile_single_table(next)
+            result = _dag.CrossJoin(result, next)
+
+        return result
+
+    def _compile_single_table(self, table):
         if isinstance(table, _parser.TableName):
             return _dag.GetTable(table.table, alias=table.alias)
 

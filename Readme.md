@@ -40,9 +40,9 @@ The following operations are supported:
 
 - Select using where, group-by, having, order-by, limit
 - Inner and outer joins using equality conditions
+- Cross joins (albeit with serious performance implications)
 - Subqueries
 - Numeric expressions
-
 
 The following limitations do exist:
 

@@ -34,6 +34,28 @@ def test_strip_table_name_from_columns():
     pdt.assert_frame_equal(actual, expected)
 
 
+def test_cross_join():
+    df1 = pd.DataFrame({
+        ('$0', 'a'): [1, 2, 3],
+    })
+
+    df2 = pd.DataFrame({
+        ('$1', 'b'): [4, 5, 6],
+    })
+
+    actual = (
+        cross_join(df1, df2)
+        .sort_values([('$0', 'a'), ('$1', 'b')])
+        .reset_index(drop=True)
+    )
+    expected = pd.DataFrame({
+        ('$0', 'a'): [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        ('$1', 'b'): [4, 5, 6, 4, 5, 6, 4, 5, 6],
+    })
+
+    pdt.assert_frame_equal(actual, expected)
+
+
 def test_flatten_join_condition():
     from framequery._parser import BinaryExpression, ColumnReference
 
