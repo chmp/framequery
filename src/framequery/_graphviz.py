@@ -21,6 +21,7 @@ def show(node):
     return Image(data=stdout)
 
 
+# TODO: add unit tests
 class GraphvizGenerator(object):
     def __init__(self):
         self.id_generator = id_generator()
@@ -74,6 +75,16 @@ class GraphvizGenerator(object):
             u'{} -> {} [label="left"]'.format(label, left_id),
             u'{} -> {} [label="right"]'.format(label, right_id),
             u'{} [label="Join"]'.format(label),
+        ]
+
+    def compile_node_cross_join(self, node, label):
+        left_source, left_id = self._compile_child(node.left)
+        right_source, right_id = self._compile_child(node.right)
+
+        return left_source + right_source + [
+            u'{} -> {} [label="left"]'.format(label, left_id),
+            u'{} -> {} [label="right"]'.format(label, right_id),
+            u'{} [label="CrossJoin"]'.format(label),
         ]
 
     def compile_node_sort(self, node, label):

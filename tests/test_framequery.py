@@ -5,6 +5,8 @@ import pandas as pd
 import pandas.util.testing as pdt
 
 
+# TODO: add integration tests using real databases
+
 def test_dual():
     pdt.assert_frame_equal(
         _context().select('SELECT * FROM DUAL'),
@@ -230,6 +232,22 @@ def test_evaluate_cross_join_filter():
         pd.DataFrame({
             ('$0', 'a'): [1, 2, 3],
             ('$0', 'd'): [10, 10, 11],
+        }),
+    )
+
+
+def test_evaluate_non_equality_join():
+    pdt.assert_frame_equal(
+        _context().select('''
+            SELECT a, d
+            FROM my_table
+            INNER JOIN my_other_table
+            ON g != h
+        '''),
+        pd.DataFrame({
+            ('$0', 'a'): [1, 2, 3],
+            # NOTE: d is exactyl reversed due to the inequality condition
+            ('$0', 'd'): [11, 11, 10],
         }),
     )
 

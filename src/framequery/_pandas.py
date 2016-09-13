@@ -10,8 +10,15 @@ import operator
 import pandas as pd
 import six
 
+from . import _dag
 from ._expression import ExpressionEvaluator
-from ._pandas_util import ensure_table_columns, as_pandas_join_condition, is_scalar, cross_join
+from ._pandas_util import (
+    as_pandas_join_condition,
+    cross_join,
+    ensure_table_columns,
+    is_equality_join,
+    is_scalar,
+)
 from ._parser import GeneralSetFunction, ColumnReference, get_selected_column_name
 from ._util.introspect import call_handler
 
@@ -47,6 +54,9 @@ class PandasExecutor(ExpressionEvaluator):
         return node.value
 
     def evaluate_join(self, node, scope):
+        if not is_equality_join(node.on):
+            return self._evaluate_non_equality_join(node, scope)
+
         left = self.evaluate(node.left, scope)
         right = self.evaluate(node.right, scope)
 
@@ -54,6 +64,16 @@ class PandasExecutor(ExpressionEvaluator):
         left_on, right_on = as_pandas_join_condition(left.columns, right.columns, node.on)
 
         return pd.merge(left, right, how=node.how, left_on=left_on, right_on=right_on)
+
+    def _evaluate_non_equality_join(self, node, scope):
+        """Replace inner joins with a non-equality condition by a cross join with filter.
+        """
+        if node.how != 'inner':
+            raise ValueError("can only handle non equality conditions for inner joins")
+
+        # TODO: optimize to use inner join with equality condition if possible
+        subdag = _dag.Filter(_dag.CrossJoin(node.left, node.right), node.on)
+        return self.evaluate(subdag, scope)
 
     def evaluate_cross_join(self, node, scope):
         _logger.warning("evaluating cross join, possible performance problem")

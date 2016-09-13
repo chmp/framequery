@@ -40,14 +40,16 @@ The following operations are supported:
 
 - Select using where, group-by, having, order-by, limit
 - Inner and outer joins using equality conditions
-- Cross joins (albeit with serious performance implications)
+- Inner joins with in-equality conditions (currently with high performance
+  costs)
+- Cross joins (currently, with high performance costs)
 - Subqueries
 - Numeric expressions
 
 The following limitations do exist:
 
 - no support for non-numeric expressions
-- no support for joins with inequality conditions
+- no support for outer joins with inequality conditions
 - no support for over-clauses
 - no support for non select statements (update, insert, ...)
 - many, many more, SQL is crazy complex. The topics listed explicitly, however,

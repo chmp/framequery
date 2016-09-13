@@ -96,6 +96,23 @@ def flatten_join_condition(condition):
     return list(_flatten_join_condition(condition))
 
 
+def is_equality_join(condition):
+    if not isinstance(condition, BinaryExpression):
+        return False
+
+    if condition.operator == 'AND':
+        return is_equality_join(condition.left) and is_equality_join(condition.right)
+
+    elif condition.operator == '=':
+        return (
+            isinstance(condition.left, ColumnReference) and
+            isinstance(condition.right, ColumnReference)
+        )
+
+    else:
+        return False
+
+
 def _flatten_join_condition(condition):
     if not isinstance(condition, BinaryExpression):
         raise ValueError("can only handle equality joins")
