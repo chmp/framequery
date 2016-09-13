@@ -310,7 +310,18 @@ class Join(RecordNode):
     __fields__ = ['how', 'table', 'on']
 
     how = (
-        pure('INNER') + skip(token(Tokens.Keyword, 'JOIN'))
+        (
+            skip(one_of(Tokens.Keyword, ['LEFT OUTER JOIN', 'LEFT JOIN'])) +
+            pure('LEFT')
+        ) |
+        (
+            skip(one_of(Tokens.Keyword, ['RIGHT OUTER JOIN', 'RIGHT JOIN'])) +
+            pure('RIGHT')
+        ) |
+        (
+            skip(one_of(Tokens.Keyword, ['INNER JOIN', 'JOIN'])) +
+            pure('INNER')
+        )
     )
 
     on = skip(token(Tokens.Keyword, 'ON')) + ValueExpression.get_parser()
