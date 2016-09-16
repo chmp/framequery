@@ -205,8 +205,6 @@ class PandasExecutor(ExpressionEvaluator):
         # TODO: handle set quantifiers
         assert node.quantifier is None
 
-        # TODO: how to handle missing values, in particular for count.
-
         if function == 'SUM':
             result = col.sum()
 
@@ -220,7 +218,7 @@ class PandasExecutor(ExpressionEvaluator):
             result = col.max()
 
         elif function == 'COUNT':
-            result = _count(col)
+            result = col.count()
 
         else:
             raise ValueError("unknown aggregation function {}".format(function))
@@ -239,11 +237,6 @@ def _string_pair(t):
 def default_id_generator():
     for i in it.count():
         yield '${}'.format(i)
-
-
-def _count(obj):
-    result = obj.size
-    return result() if callable(result) else result
 
 
 def _get(obj, tuple_key):
