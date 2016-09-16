@@ -96,11 +96,12 @@ def test_simple_filter():
 
 def test_evaluate_aggregation_grouped():
     pdt.assert_frame_equal(
-        _context().select('SELECT g, SUM(b) as a FROM my_table GROUP BY g'),
+        _context().select('SELECT g, SUM(b) as a, FIRST_VALUE(a) as fa FROM my_table GROUP BY g'),
         pd.DataFrame({
             ('$2', 'g'): [0, 1],
             ('$2', 'a'): [9, 6],
-        })[[('$2', 'g'), ('$2', 'a')]],
+            ('$2', 'fa'): [1, 3],
+        })[[('$2', 'g'), ('$2', 'a'), ('$2', 'fa')]],
     )
 
 
@@ -221,7 +222,7 @@ def test_evaluate_aggregation():
     pdt.assert_frame_equal(
         _context().select('''
             SELECT
-                SUM(a) as s, AVG(a) as a, MIN(a) as mi, MAX(a) as ma
+                SUM(a) as s, AVG(a) as a, MIN(a) as mi, MAX(a) as ma, FIRST_VALUE(a) as fa
             FROM my_table
         '''),
         pd.DataFrame({
@@ -229,7 +230,8 @@ def test_evaluate_aggregation():
             ('$2', 's'): [6],
             ('$2', 'mi'): [1],
             ('$2', 'ma'): [3],
-        })[[('$2', 's'), ('$2', 'a'), ('$2', 'mi'), ('$2', 'ma')]],
+            ('$2', 'fa'): [1]
+        })[[('$2', 's'), ('$2', 'a'), ('$2', 'mi'), ('$2', 'ma'), ('$2', 'fa')]],
     )
 
 

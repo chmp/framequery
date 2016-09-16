@@ -47,7 +47,7 @@ class PandasExecutor(ExpressionEvaluator):
             scope[name] = self.evaluate(sub_node, scope)
 
         return self.evaluate(node.node, scope)
-        
+
     def evaluate_get_table(self, node, scope):
         if node.table == 'DUAL':
             table = pd.DataFrame()
@@ -212,23 +212,23 @@ class PandasExecutor(ExpressionEvaluator):
         # TODO: handle set quantifiers
         assert node.quantifier is None
 
-        if function == 'SUM':
-            result = col.sum()
+        impls = {
+            'SUM': lambda col: col.sum(),
+            'AVG': lambda col: col.mean(),
+            'MIN': lambda col: col.min(),
+            'MAX': lambda col: col.max(),
+            'COUNT': lambda col: col.count(),
+            'FIRST_VALUE': _first,
+        }
 
-        elif function == 'AVG':
-            result = col.mean()
+        try:
+            impl = impls[function]
 
-        elif function == 'MIN':
-            result = col.min()
-
-        elif function == 'MAX':
-            result = col.max()
-
-        elif function == 'COUNT':
-            result = col.count()
+        except KeyError:
+            raise ValueError("unknown aggregation function {}".format(function))
 
         else:
-            raise ValueError("unknown aggregation function {}".format(function))
+            result = impl(col)
 
         if isinstance(result, pd.DataFrame):
             return result[col_ref]
@@ -251,3 +251,10 @@ def _get(obj, tuple_key):
         return obj[tuple_key]
 
     return obj[tuple_key,]
+
+
+def _first(s):
+    if isinstance(s, pd.Series):
+        return s.iloc[0]
+
+    return s.first()

@@ -158,7 +158,7 @@ class GeneralSetFunction(RecordNode):
     known_set_functions = [
         'AVG', 'MAX', 'MIN', 'SUM', 'EVERY', 'ANY', 'SOME'
         'COUNT', 'STDDEV_POP', 'STDDEV_SAMP', 'VAR_SAMP', 'VAR_POP',
-        'COLLECT', 'FUSION', 'INTERSECTION', 'COUNT',
+        'COLLECT', 'FUSION', 'INTERSECTION', 'COUNT', 'FIRST_VALUE',
     ]
 
     parser = (
