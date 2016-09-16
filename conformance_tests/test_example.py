@@ -35,6 +35,42 @@ class TestUngroupedtAggregates(ExampleEnvironment, ConformanceTest):
         FROM my_table
     '''
 
+class TestUngroupedtAggregatesCTE(ExampleEnvironment, ConformanceTest):
+    query = '''
+        WITH
+            foo AS (
+                SELECT a + b AS a FROM my_table
+            ),
+            bar AS (
+                SELECT a * a AS a FROM foo
+            )
+        SELECT
+            sum(a) as sum_a,
+            avg(a) as avg_a,
+            count(a) as count_a,
+            min(a) as min_a,
+            max(a) as max_a
+
+        FROM bar
+    '''
+
+
+class TestUngroupedtAggregatesSubQuery(ExampleEnvironment, ConformanceTest):
+    query = '''
+        SELECT
+            sum(a) as sum_a,
+            avg(a) as avg_a,
+            count(a) as count_a,
+            min(a) as min_a,
+            max(a) as max_a
+
+        FROM (
+            SELECT a * a AS a FROM (
+                SELECT a + b AS a FROM my_table
+            )
+        )
+    '''
+
 
 class TestUngroupedtAggregatesNoAs(ExampleEnvironment, ConformanceTest):
     query = '''
