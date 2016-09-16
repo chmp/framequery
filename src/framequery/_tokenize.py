@@ -5,6 +5,7 @@ from sqlparse.tokens import Token
 __all__ = ['tokenize', 'Tokens']
 
 
+# TODO: normalize tokens, to become more independent of sqlparse
 def tokenize(s):
     # TODO: figure out how to handle newlines proper
     s = s.replace('\n', ' ')
@@ -31,7 +32,7 @@ class Tokens(object):
 
     Integer = Token.Literal.Number.Integer
     Float = Token.Literal.Number.Float
-    
+
     Name = Token.Name
     Operator = Token.Operator
     Comparison = Token.Operator.Comparison
@@ -39,6 +40,7 @@ class Tokens(object):
     Keyword = Token.Keyword
     DML = Token.Keyword.DML
     Order = Token.Keyword.Order
+    CTE = Token.Keyword.CTE
 
     Wildcard = Token.Wildcard
 

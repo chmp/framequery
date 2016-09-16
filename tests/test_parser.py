@@ -11,6 +11,24 @@ def test_select_all():
     )
 
 
+def test_select_all_cte():
+    assert parse('WITH cte AS (SELECT * FROM foo) SELECT * FROM cte') == Select(
+        select_list=Asterisk(),
+        from_clause=[TableName('cte')],
+        set_quantifier='ALL',
+        common_table_expressions=[
+            CommonTableExpression(
+                'cte',
+                Select(
+                    select_list=Asterisk(),
+                    from_clause=[TableName('foo')],
+                    set_quantifier='ALL',
+                )
+            )
+        ]
+    )
+
+
 def test_select_column():
     assert parse('SELECT a FROM foo, bar, baz') == Select(
         select_list=[DerivedColumn(value=ColumnReference(['a']), alias=None)],

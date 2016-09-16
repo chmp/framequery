@@ -36,6 +36,29 @@ def test_simple_select():
     )
 
 
+def test_simple_sum_cte():
+    pdt.assert_frame_equal(
+        _context().select('''
+            WITH
+                foo AS (
+                    SELECT
+                        a + b as a,
+                        c + g as b
+                    FROM my_table
+                ),
+                bar AS (
+                    SELECT a + b as c
+                    FROM foo
+                )
+
+            SELECT sum(c) as d FROM bar
+        '''),
+        pd.DataFrame({
+            ('$4', 'd'): [1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 1],
+        }),
+    )
+
+
 def test_simple_subquery():
     pdt.assert_frame_equal(
         _context().select('SELECT * FROM (SELECT * FROM my_table)'),

@@ -44,6 +44,7 @@ The following operations are supported:
   costs)
 - Cross joins (currently, with high performance costs)
 - Subqueries
+- Common table expressions 
 - Numeric expressions
 
 The following limitations do exist:

@@ -40,6 +40,14 @@ class PandasExecutor(ExpressionEvaluator):
     def evaluate(self, node, arg):
         return call_handler(self, 'evaluate', node, arg)
 
+    def evaluate_define_tables(self, node, scope):
+        scope = scope.copy()
+
+        for name, sub_node in node.tables:
+            scope[name] = self.evaluate(sub_node, scope)
+
+        return self.evaluate(node.node, scope)
+        
     def evaluate_get_table(self, node, scope):
         if node.table == 'DUAL':
             table = pd.DataFrame()
@@ -141,7 +149,6 @@ class PandasExecutor(ExpressionEvaluator):
             self._normalize_col_ref(item.value.value, table.columns),
             item.order == 'ASC'
         )
-
 
     def evaluate_limit(self, node, scope):
         table = self.evaluate(node.table, scope)

@@ -5,11 +5,16 @@ from __future__ import print_function, division, absolute_import
 from ._base import Record
 
 
-class Literal(object):
+class DefineTables(Record):
+    """Add tables to the scope, before evaluating the subdag.
+    """
+    __fields__ = ['node', 'tables']
+
+
+class Literal(Record):
     """Marker node to tag literal values.
     """
-    def __init__(self, value):
-        self.value = value
+    __fields__ = ['value']
 
 
 class GetTable(Record):

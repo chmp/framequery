@@ -60,6 +60,10 @@ class DagCompiler(object):
         table = self._filter_post_transform(node, table)
         table = self._drop_duplicates(node, table)
         table = self._limit(node, table)
+
+        if node.common_table_expressions:
+            table = self._add_definitions(node, table)
+
         return table
 
     def _filter_pre_transform(self, node, table):
@@ -137,6 +141,13 @@ class DagCompiler(object):
 
         else:
             raise ValueError('unknown set quantifier {}'.format(set_quantifier))
+
+    def _add_definitions(self, node, table):
+        tables = [
+            (cte.name, self.compile(cte.select))
+            for cte in node.common_table_expressions
+        ]
+        return _dag.DefineTables(table, tables)
 
     def compile_from_clause(self, from_clause):
         if len(from_clause) == 0:

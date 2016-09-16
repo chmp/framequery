@@ -264,6 +264,7 @@ class Select(ForwardDecl, RecordNode):
     __fields__ = [
         'set_quantifier', 'select_list', 'from_clause', 'where_clause',
         'group_by_clause', 'having_clause', 'order_by_clause', 'limit_clause',
+        'common_table_expressions',
     ]
 
 
@@ -441,6 +442,23 @@ class LimitClause(RecordNode):
     )
 
 
+class CommonTableExpression(RecordNode):
+    __fields__ = ['name', 'select']
+
+    parser = (
+        (token(Tokens.Name) >> get_value >> named('name')) +
+        skip(as_ + paren_open) +
+        (Select.get_parser() >> named('select')) +
+        skip(paren_close)
+    )
+
+
+class CommonTableExpressions(ListNode):
+    prefix_parser = token(Tokens.CTE, 'WITH')
+    item_parser = CommonTableExpression.get_parser()
+    separator_parser = comma
+
+
 @Select.define
 def define_select(cls):
     select_ = token(Tokens.DML, 'SELECT')
@@ -452,6 +470,7 @@ def define_select(cls):
     )
 
     cls.define(
+        (optional(CommonTableExpressions.get_parser()) >> named('common_table_expressions')) +
         skip(select_) +
         (set_quantifier >> named('set_quantifier')) +
         (SelectList.get_parser() >> named('select_list')) +
