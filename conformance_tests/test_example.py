@@ -36,6 +36,19 @@ class TestUngroupedtAggregates(ExampleEnvironment, ConformanceTest):
     '''
 
 
+class TestUngroupedtAggregatesNoAs(ExampleEnvironment, ConformanceTest):
+    query = '''
+        SELECT
+            sum(a) sum_a,
+            avg(a) avg_a,
+            count(a) count_a,
+            min(a) min_a,
+            max(a) max_a
+
+        FROM my_table
+    '''
+
+
 class TestUngroupedAggregates(ExampleEnvironment, ConformanceTest):
     query = '''
         SELECT

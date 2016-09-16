@@ -23,6 +23,15 @@ def test_dual():
     )
 
 
+def test_dual_no_as():
+    pdt.assert_frame_equal(
+        _context().select('SELECT 42 a FROM DUAL'),
+        pd.DataFrame({
+            ('$0', 'a'): [42],
+        }),
+    )
+
+
 def test_simple_select():
     pdt.assert_frame_equal(
         _context().select('SELECT * FROM my_table'),
@@ -93,6 +102,17 @@ def test_evaluate_aggregation_grouped():
             ('$2', 'a'): [9, 6],
         })[[('$2', 'g'), ('$2', 'a')]],
     )
+
+
+def test_evaluate_aggregation_grouped_no_as():
+    pdt.assert_frame_equal(
+        _context().select('SELECT g, SUM(b) a FROM my_table GROUP BY g'),
+        pd.DataFrame({
+            ('$2', 'g'): [0, 1],
+            ('$2', 'a'): [9, 6],
+        })[[('$2', 'g'), ('$2', 'a')]],
+    )
+
 
 
 def test_select_column():

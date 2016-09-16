@@ -273,7 +273,12 @@ class DerivedColumn(RecordNode):
 
     parser = (
         (ValueExpression.get_parser() >> named('value')) +
-        (optional((skip(as_) + name) >> get_value) >> named('alias'))
+        (
+            optional(
+                skip(optional(as_)) +
+                (name >> get_value)
+            ) >> named('alias')
+        )
     )
 
 
