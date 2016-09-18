@@ -2,6 +2,7 @@ from __future__ import print_function, division, absolute_import
 
 import itertools as it
 
+import numpy as np
 import pandas as pd
 
 from ._parser import BinaryExpression, ColumnReference
@@ -33,6 +34,67 @@ def cross_join(df1, df2):
 
     result = pd.merge(df1, df2, on=[('$$', 'key')])
     return result[[col for col in result.columns if col != ('$$', 'key')]]
+
+
+def general_merge(left, right, how, condition):
+    """Perform a merge on a condition given by a callable.
+
+    .. warning::
+
+        This function constructs the full outer-product of both dataframes and
+        only filters it afterwards. Therefore, the general merge operation may
+        use considerable ammounts of memory.
+    """
+    added_cols = {'$$.row_left', '$$.row_right', '$$.key'}
+    left = _add_row_and_key(left.copy(), 'row_left')
+    right = _add_row_and_key(right.copy(), 'row_right')
+
+    merged = pd.merge(left, right, on='$$.key')
+    merged = merged[condition(merged)]
+
+    left = _drop_column(left, '$$.key')
+    right = _drop_column(right, '$$.key')
+
+    if how == 'left':
+        merged = _general_merge_left(merged, left, right)
+
+    elif how == 'right':
+        merged = _general_merge_right(merged, left, right)
+
+    elif how == 'outer':
+        merged = _general_merge_outer(merged, left, right)
+
+    merged = merged[[col for col in merged if col not in added_cols]]
+    merged = merged.reset_index(drop=True)
+
+    return merged
+
+
+def _add_row_and_key(df, row_key):
+    df['$$.{}'.format(row_key)] = np.arange(df.shape[0])
+    df['$$.key'] = 1
+    return df
+
+
+def _drop_column(df, col_to_remove):
+    return df[[col for col in df.columns if col != col_to_remove]]
+
+
+def _general_merge_left(merged, left, right):
+    merged = merged[['$$.row_left'] + list(right.columns)]
+    return pd.merge(left, merged, on="$$.row_left", how="left")
+
+
+def _general_merge_right(merged, left, right):
+    merged = merged[['$$.row_right'] + list(left.columns)]
+    return pd.merge(merged, right, on='$$.row_right', how="right")
+
+
+def _general_merge_outer(merged, left, right):
+    merged = merged[['$$.row_left', '$$.row_right']]
+    merged = pd.merge(left, merged, on='$$.row_left', how='outer')
+    merged = pd.merge(merged, right, on='$$.row_right', how='outer')
+    return merged
 
 
 def strip_table_name_from_columns(df):

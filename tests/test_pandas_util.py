@@ -56,6 +56,42 @@ def test_cross_join():
     pdt.assert_frame_equal(actual, expected)
 
 
+def test_generalized_merge():
+    left = pd.DataFrame({
+        '$0.a': [1, 2, 1, 2],
+        '$0.b': [1, 2, 3, 4]
+    })
+
+    right = pd.DataFrame({
+        '$1.c': [3, 2, 3, 2],
+        '$1.d': [1, 2, 3, 4]
+    })
+
+    def expected(how):
+        return df_sorted(
+            pd.merge(
+                left, right,
+                how=how, left_on='$0.a', right_on='$1.c'
+            )
+        )
+
+    def actual(how):
+        return df_sorted(
+            general_merge(
+                left, right, how, lambda df: df['$0.a'] == df['$1.c']
+            )
+        )
+
+    pdt.assert_frame_equal(actual('inner'), expected('inner'))
+    pdt.assert_frame_equal(actual('left'), expected('left'))
+    pdt.assert_frame_equal(actual('right'), expected('right'))
+    pdt.assert_frame_equal(actual('outer'), expected('outer'))
+
+
+def df_sorted(df):
+    return df.sort_values(list(df.columns)).reset_index(drop=True)
+
+
 def test_flatten_join_condition():
     from framequery._parser import BinaryExpression, ColumnReference
 
