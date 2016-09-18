@@ -100,7 +100,7 @@ class PandasExecutor(ExpressionEvaluator):
             col_id = self._get_selected_column_name(col)
             value = self.evaluate_value(col.value, table)
 
-            result[table_id, col_id] = value
+            result['{}.{}'.format(table_id, col_id)] = value
 
         all_scalar = all(is_scalar(val) for val in result.values())
 
@@ -167,10 +167,6 @@ class PandasExecutor(ExpressionEvaluator):
 
         df = pd.DataFrame(result)
         df = df.reset_index()
-        df.columns = pd.MultiIndex.from_tuples(list(
-            _string_pair(t[0] if isinstance(t[0], tuple) else t)
-            for t in df.columns
-        ))
         return df
 
     def _group(self, table, group_by):
@@ -192,7 +188,7 @@ class PandasExecutor(ExpressionEvaluator):
 
         for col in node.columns:
             col_id = col.alias if col.alias is not None else next(self.id_generator)
-            result[table_id, col_id] = self._agg(col.value, table, columns)
+            result['{}.{}'.format(table_id, col_id)] = self._agg(col.value, table, columns)
 
         return result
 

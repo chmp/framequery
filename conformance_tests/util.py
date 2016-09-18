@@ -141,9 +141,9 @@ class TableRealization(object):
         conn.executemany(self.table.get_insert_statement(), values)
 
     def get_dataframe(self):
-        columns = [(self.table.name, col.name) for col in self.table.columns]
+        columns = ['{}.{}'.format(self.table.name, col.name) for col in self.table.columns]
         data = {
-            (self.table.name, col): values
+            '{}.{}'.format(self.table.name, col): values
             for col, values in self.values.items()
         }
         return pd.DataFrame(data, columns=columns)

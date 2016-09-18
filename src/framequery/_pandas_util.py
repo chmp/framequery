@@ -19,7 +19,7 @@ def ensure_table_columns(name, df):
 
     return pd.DataFrame(
         _get_data(new_columns, old_columns, df),
-        columns=pd.MultiIndex.from_tuples(new_columns),
+        columns=new_columns,
         index=df.index,
     )
 
@@ -147,8 +147,9 @@ def _is_left(left_columns, right_columns, ref):
 
 
 def get_col_ref(columns, ref):
+    # TODO: cleanup: current version does not work with . in column names
     for col in columns:
-        if all(t == u for (t, u) in zip(reversed(col), reversed(ref))):
+        if col.endswith('.'.join(ref)):
             return col
 
     return None
@@ -206,15 +207,19 @@ def _get_data(new_columns, old_columns, df):
 
 
 def _as_pair(key, obj):
-    if not isinstance(obj, tuple):
-        return (key, obj)
-
-    return (key, obj[-1])
+    _, col = _split_table_column(obj)
+    return '{}.{}'.format(key, col)
 
 
 def _as_name(obj):
-    if not isinstance(obj, tuple):
-        return obj
+    _, col = _split_table_column(obj)
+    return col
 
-    else:
-        return obj[-1]
+
+def _split_table_column(obj):
+    parts = obj.split('.', 1)
+
+    if len(parts) == 1:
+        return None, parts[0]
+
+    return tuple(parts)

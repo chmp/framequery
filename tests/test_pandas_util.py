@@ -13,8 +13,8 @@ def test_ensure_table_columns():
     }, index=[4]))
 
     expected = pd.DataFrame({
-        ("my_table", "a"): [1],
-        ("my_table", "b"): [2],
+        "my_table.a": [1],
+        "my_table.b": [2],
     }, index=[4])
 
     pdt.assert_frame_equal(actual, expected)
@@ -22,8 +22,8 @@ def test_ensure_table_columns():
 
 def test_strip_table_name_from_columns():
     actual = strip_table_name_from_columns(pd.DataFrame({
-        ("my_table", "a"): [1],
-        ("my_table", "b"): [2],
+        "my_table.a": [1],
+        "my_table.b": [2],
     }, index=[4]))
 
     expected = pd.DataFrame({
@@ -36,21 +36,21 @@ def test_strip_table_name_from_columns():
 
 def test_cross_join():
     df1 = pd.DataFrame({
-        ('$0', 'a'): [1, 2, 3],
+        '$0.a': [1, 2, 3],
     })
 
     df2 = pd.DataFrame({
-        ('$1', 'b'): [4, 5, 6],
+        '$1.b': [4, 5, 6],
     })
 
     actual = (
         cross_join(df1, df2)
-        .sort_values([('$0', 'a'), ('$1', 'b')])
+        .sort_values(['$0.a', '$1.b'])
         .reset_index(drop=True)
     )
     expected = pd.DataFrame({
-        ('$0', 'a'): [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        ('$1', 'b'): [4, 5, 6, 4, 5, 6, 4, 5, 6],
+        '$0.a': [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        '$1.b': [4, 5, 6, 4, 5, 6, 4, 5, 6],
     })
 
     pdt.assert_frame_equal(actual, expected)
@@ -119,11 +119,11 @@ def test_flatten_join_condition():
 
 
 def test_get_col_ref():
-    cols = [('A', 'a'), ('B', 'b'), ('B', 'c')]
+    cols = [('A.a'), ('B.b'), ('B.c')]
 
-    assert get_col_ref(cols, ('A', 'a')) == ('A', 'a')
-    assert get_col_ref(cols, ('B', 'c')) == ('B', 'c')
-    assert get_col_ref(cols, ('a',)) == ('A', 'a')
+    assert get_col_ref(cols, ('A', 'a')) == ('A.a')
+    assert get_col_ref(cols, ('B', 'c')) == ('B.c')
+    assert get_col_ref(cols, ('a',)) == ('A.a')
 
     assert get_col_ref(cols, ('C', 'c')) is None
     assert get_col_ref(cols, ('d',)) is None
@@ -138,23 +138,23 @@ def test_as_pandas_join_condition():
         else BinaryExpression.eq(_col(head[0]), _col(head[1]))
     )
 
-    left_cols = [('A', 'a'), ('A', 'b'), ('A', 'c')]
-    right_cols = [('B', 'd'), ('B', 'e')]
+    left_cols = ['A.a', 'A.b', 'A.c']
+    right_cols = ['B.d', 'B.e']
 
     assert as_pandas_join_condition(
         left_cols, right_cols,
         _bin_expr(('a', 'd'))
     ) == (
-        [('A', 'a')],
-        [('B', 'd')],
+        ['A.a'],
+        ['B.d'],
     )
 
     assert as_pandas_join_condition(
         left_cols, right_cols,
         _bin_expr(('a', 'd'), (['B', 'e'], 'c'))
     ) == (
-        [('A', 'a'), ('A', 'c')],
-        [('B', 'd'), ('B', 'e')],
+        ['A.a', 'A.c'],
+        ['B.d', 'B.e'],
     )
 
     with pytest.raises(ValueError):
@@ -163,6 +163,6 @@ def test_as_pandas_join_condition():
             left_cols, right_cols,
             _bin_expr(('a', 'b'))
         ) == (
-            [('A', 'a')],
-            [('B', 'b')]
+            ['A.a'],
+            ['B.b']
         )

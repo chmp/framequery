@@ -18,8 +18,8 @@ def test_get_table_simple():
     actual = ex.evaluate(GetTable('foo'), scope)
 
     expected = pd.DataFrame({
-        ("foo", "a"): [0, 1, 2],
-        ("foo", "b"): [3, 4, 5],
+        "foo.a": [0, 1, 2],
+        "foo.b": [3, 4, 5],
     })
     pdt.assert_frame_equal(actual, expected)
 
@@ -36,8 +36,8 @@ def test_get_table_alias():
     actual = ex.evaluate(GetTable('foo', alias="bar"), scope)
 
     expected = pd.DataFrame({
-        ("bar", "a"): [0, 1, 2],
-        ("bar", "b"): [3, 4, 5],
+        "bar.a": [0, 1, 2],
+        "bar.b": [3, 4, 5],
     })
     pdt.assert_frame_equal(actual, expected)
 
@@ -49,20 +49,20 @@ def test_literal():
 
 def test_join_simple():
     left = pd.DataFrame({
-        ('left', 'a'): [0, 0, 1, 1],
-        ('left', 'c'): [1, 2, 3, 4]
+        'left.a': [0, 0, 1, 1],
+        'left.c': [1, 2, 3, 4]
     })
 
     right = pd.DataFrame({
-        ('right', 'b'): [0, 1],
-        ('right', 'd'): [10, 20]
+        'right.b': [0, 1],
+        'right.d': [10, 20]
     })
 
     expected = pd.DataFrame({
-        ('left', 'a'): [0, 0, 1, 1],
-        ('left', 'c'): [1, 2, 3, 4],
-        ('right', 'b'): [0, 0, 1, 1],
-        ('right', 'd'): [10, 10, 20, 20],
+        'left.a': [0, 0, 1, 1],
+        'left.c': [1, 2, 3, 4],
+        'right.b': [0, 0, 1, 1],
+        'right.d': [10, 10, 20, 20],
     })
 
     def perform(expr):
@@ -78,8 +78,8 @@ def test_join_simple():
 
 def test_transform():
     df = pd.DataFrame({
-        ('df', 'a'): [0, 1, 2, 3],
-        ('df', 'b'): [4, 5, 6, 7],
+        'df.a': [0, 1, 2, 3],
+        'df.b': [4, 5, 6, 7],
     })
 
     def perform(q):
@@ -88,7 +88,7 @@ def test_transform():
         return ex.evaluate(node, None)
 
     expected = pd.DataFrame({
-        ('$0', 'c'): [4, 6, 8, 10],
+        '$0.c': [4, 6, 8, 10],
     })
 
     pdt.assert_frame_equal(perform('a + b as c'), expected)
@@ -99,8 +99,8 @@ def test_transform():
 
 def test_aggregate_no_groups():
     df = pd.DataFrame({
-        ('df', 'g'): [0, 0, 1, 1],
-        ('df', 'a'): [4, 5, 6, 7],
+        'df.g': [0, 0, 1, 1],
+        'df.a': [4, 5, 6, 7],
     })
 
     def _scalar_df(values):
@@ -112,17 +112,17 @@ def test_aggregate_no_groups():
         ex = PandasExecutor()
         return ex.evaluate(node, None)
 
-    pdt.assert_frame_equal(perform('SUM(a) as c'), _scalar_df({('$0', 'c'): 22}))
-    pdt.assert_frame_equal(perform('AVG(a) as c'), _scalar_df({('$0', 'c'): 22 / 4.0}))
-    pdt.assert_frame_equal(perform('MIN(a) as c'), _scalar_df({('$0', 'c'): 4}))
-    pdt.assert_frame_equal(perform('MAX(a) as c'), _scalar_df({('$0', 'c'): 7}))
-    pdt.assert_frame_equal(perform('COUNT(a) as c'), _scalar_df({('$0', 'c'): 4}))
+    pdt.assert_frame_equal(perform('SUM(a) as c'), _scalar_df({'$0.c': 22}))
+    pdt.assert_frame_equal(perform('AVG(a) as c'), _scalar_df({'$0.c': 22 / 4.0}))
+    pdt.assert_frame_equal(perform('MIN(a) as c'), _scalar_df({'$0.c': 4}))
+    pdt.assert_frame_equal(perform('MAX(a) as c'), _scalar_df({'$0.c': 7}))
+    pdt.assert_frame_equal(perform('COUNT(a) as c'), _scalar_df({'$0.c': 4}))
 
 
 def test_aggregate_with_groups():
     df = pd.DataFrame({
-        ('df', 'g'): [0, 0, 1, 1],
-        ('df', 'a'): [4, 5, 6, 7],
+        'df.g': [0, 0, 1, 1],
+        'df.a': [4, 5, 6, 7],
     })
 
     def _scalar_df(values):
@@ -140,39 +140,39 @@ def test_aggregate_with_groups():
     pdt.assert_frame_equal(
         perform('SUM(a) as c'),
         pd.DataFrame({
-            ('df', 'g'): [0, 1],
-            ('$0', 'c'): [9, 13],
+            'df.g': [0, 1],
+            '$0.c': [9, 13],
         })
     )
 
     pdt.assert_frame_equal(
         perform('MIN(a) as c'),
         pd.DataFrame({
-            ('df', 'g'): [0, 1],
-            ('$0', 'c'): [4, 6],
+            'df.g': [0, 1],
+            '$0.c': [4, 6],
         })
     )
 
     pdt.assert_frame_equal(
         perform('MAX(a) as c'),
         pd.DataFrame({
-            ('df', 'g'): [0, 1],
-            ('$0', 'c'): [5, 7],
+            'df.g': [0, 1],
+            '$0.c': [5, 7],
         })
     )
 
     pdt.assert_frame_equal(
         perform('AVG(a) as c'),
         pd.DataFrame({
-            ('df', 'g'): [0, 1],
-            ('$0', 'c'): [4.5, 6.5],
+            'df.g': [0, 1],
+            '$0.c': [4.5, 6.5],
         })
     )
 
     pdt.assert_frame_equal(
         perform('COUNT(a) as c'),
         pd.DataFrame({
-            ('df', 'g'): [0, 1],
-            ('$0', 'c'): [2, 2],
+            'df.g': [0, 1],
+            '$0.c': [2, 2],
         })
     )

@@ -18,7 +18,7 @@ def test_dual():
     pdt.assert_frame_equal(
         _context().select('SELECT 42 as a FROM DUAL'),
         pd.DataFrame({
-            ('$0', 'a'): [42],
+            '$0.a': [42],
         }),
     )
 
@@ -27,7 +27,7 @@ def test_dual_no_as():
     pdt.assert_frame_equal(
         _context().select('SELECT 42 a FROM DUAL'),
         pd.DataFrame({
-            ('$0', 'a'): [42],
+            '$0.a': [42],
         }),
     )
 
@@ -36,11 +36,11 @@ def test_simple_select():
     pdt.assert_frame_equal(
         _context().select('SELECT * FROM my_table'),
         pd.DataFrame({
-            ('my_table', 'a'): [1, 2, 3],
-            ('my_table', 'b'): [4, 5, 6],
-            ('my_table', 'c'): [7, 8, 9],
-            ('my_table', 'g'): [0, 0, 1],
-            ('my_table', 'one'): [1, 1, 1],
+            'my_table.a': [1, 2, 3],
+            'my_table.b': [4, 5, 6],
+            'my_table.c': [7, 8, 9],
+            'my_table.g': [0, 0, 1],
+            'my_table.one': [1, 1, 1],
         }),
     )
 
@@ -63,7 +63,7 @@ def test_simple_sum_cte():
             SELECT sum(c) as d FROM bar
         '''),
         pd.DataFrame({
-            ('$4', 'd'): [1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 1],
+            '$4.d': [1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 1],
         }),
     )
 
@@ -72,11 +72,11 @@ def test_simple_subquery():
     pdt.assert_frame_equal(
         _context().select('SELECT * FROM (SELECT * FROM my_table)'),
         pd.DataFrame({
-            ('my_table', 'a'): [1, 2, 3],
-            ('my_table', 'b'): [4, 5, 6],
-            ('my_table', 'c'): [7, 8, 9],
-            ('my_table', 'g'): [0, 0, 1],
-            ('my_table', 'one'): [1, 1, 1],
+            'my_table.a': [1, 2, 3],
+            'my_table.b': [4, 5, 6],
+            'my_table.c': [7, 8, 9],
+            'my_table.g': [0, 0, 1],
+            'my_table.one': [1, 1, 1],
         }),
     )
 
@@ -85,11 +85,11 @@ def test_simple_filter():
     pdt.assert_frame_equal(
         _context().select('SELECT * FROM my_table WHERE g = 0'),
         pd.DataFrame({
-            ('my_table', 'a'): [1, 2],
-            ('my_table', 'b'): [4, 5],
-            ('my_table', 'c'): [7, 8],
-            ('my_table', 'g'): [0, 0],
-            ('my_table', 'one'): [1, 1],
+            'my_table.a': [1, 2],
+            'my_table.b': [4, 5],
+            'my_table.c': [7, 8],
+            'my_table.g': [0, 0],
+            'my_table.one': [1, 1],
         }),
     )
 
@@ -98,10 +98,10 @@ def test_evaluate_aggregation_grouped():
     pdt.assert_frame_equal(
         _context().select('SELECT g, SUM(b) as a, FIRST_VALUE(a) as fa FROM my_table GROUP BY g'),
         pd.DataFrame({
-            ('$2', 'g'): [0, 1],
-            ('$2', 'a'): [9, 6],
-            ('$2', 'fa'): [1, 3],
-        })[[('$2', 'g'), ('$2', 'a'), ('$2', 'fa')]],
+            '$2.g': [0, 1],
+            '$2.a': [9, 6],
+            '$2.fa': [1, 3],
+        })[['$2.g', '$2.a', '$2.fa']],
     )
 
 
@@ -109,9 +109,9 @@ def test_evaluate_aggregation_grouped_no_as():
     pdt.assert_frame_equal(
         _context().select('SELECT g, SUM(b) a FROM my_table GROUP BY g'),
         pd.DataFrame({
-            ('$2', 'g'): [0, 1],
-            ('$2', 'a'): [9, 6],
-        })[[('$2', 'g'), ('$2', 'a')]],
+            '$2.g': [0, 1],
+            '$2.a': [9, 6],
+        })[['$2.g', '$2.a']],
     )
 
 
@@ -120,7 +120,7 @@ def test_select_column():
     pdt.assert_frame_equal(
         _context().select('SELECT a as a FROM my_table'),
         pd.DataFrame({
-            ('$0', 'a'): [1, 2, 3]
+            '$0.a': [1, 2, 3]
         }),
     )
 
@@ -129,7 +129,7 @@ def test_select_column_without_rename():
     pdt.assert_frame_equal(
         _context().select('SELECT a FROM my_table'),
         pd.DataFrame({
-            ('$0', 'a'): [1, 2, 3]
+            '$0.a': [1, 2, 3]
         }),
     )
 
@@ -138,8 +138,8 @@ def test_simple_select_distinct():
     pdt.assert_frame_equal(
         _context().select('SELECT DISTINCT g, one FROM my_table'),
         pd.DataFrame({
-            ('$0', 'g'): [0, 1],
-            ('$0', 'one'): [1, 1],
+            '$0.g': [0, 1],
+            '$0.one': [1, 1],
         }),
     )
 
@@ -149,21 +149,21 @@ def test_select_column_without_rename_limit():
     pdt.assert_frame_equal(
         _context().select('SELECT a FROM my_table LIMIT 2'),
         pd.DataFrame({
-            ('$0', 'a'): [1, 2]
+            '$0.a': [1, 2]
         }),
     )
 
     pdt.assert_frame_equal(
         _context().select('SELECT a FROM my_table LIMIT 1, 2'),
         pd.DataFrame({
-            ('$0', 'a'): [2, 3]
+            '$0.a': [2, 3]
         }),
     )
 
     pdt.assert_frame_equal(
         _context().select('SELECT a FROM my_table LIMIT 2 OFFSET 1'),
         pd.DataFrame({
-            ('$0', 'a'): [2, 3]
+            '$0.a': [2, 3]
         }),
     )
 
@@ -172,7 +172,7 @@ def test_order_by():
     pdt.assert_frame_equal(
         _context().select('SELECT a FROM my_table ORDER BY g, a ASC'),
         pd.DataFrame({
-            ('$0', 'a'): [3, 1, 2],
+            '$0.a': [3, 1, 2],
         }),
     )
 
@@ -181,7 +181,7 @@ def test_simple_arithmetic():
     pdt.assert_frame_equal(
         _context().select('SELECT 2 * a as a FROM my_table'),
         pd.DataFrame({
-            ('$0', 'a'): [2, 4, 6],
+            '$0.a': [2, 4, 6],
         }),
     )
 
@@ -193,9 +193,9 @@ def test_simple_arithmetic_v2():
             FROM my_table
         '''),
         pd.DataFrame({
-            ('$0', 'a'): [2, 4, 6],
-            ('$0', 'b'): [5, 7, 9],
-            ('$0', 'c'): [True, True, True],
+            '$0.a': [2, 4, 6],
+            '$0.b': [5, 7, 9],
+            '$0.c': [True, True, True],
         }),
     )
 
@@ -204,7 +204,7 @@ def test_simple_arithmetic_v3():
     pdt.assert_frame_equal(
         _context().select('SELECT - a + + b as a FROM my_table'),
         pd.DataFrame({
-            ('$0', 'a'): [4 - 1, 5 - 2, 6 - 3]
+            '$0.a': [4 - 1, 5 - 2, 6 - 3]
         }),
     )
 
@@ -213,7 +213,7 @@ def test_simple_arithmetic_function_calls():
     pdt.assert_frame_equal(
         _context().select('SELECT ABS(a - 4 * g) as a FROM my_table'),
         pd.DataFrame({
-            ('$0', 'a'): [1, 2, 1],
+            '$0.a': [1, 2, 1],
         }),
     )
 
@@ -226,12 +226,12 @@ def test_evaluate_aggregation():
             FROM my_table
         '''),
         pd.DataFrame({
-            ('$2', 'a'): [2.0],
-            ('$2', 's'): [6],
-            ('$2', 'mi'): [1],
-            ('$2', 'ma'): [3],
-            ('$2', 'fa'): [1]
-        })[[('$2', 's'), ('$2', 'a'), ('$2', 'mi'), ('$2', 'ma'), ('$2', 'fa')]],
+            '$2.a': [2.0],
+            '$2.s': [6],
+            '$2.mi': [1],
+            '$2.ma': [3],
+            '$2.fa': [1]
+        })[['$2.s', '$2.a', '$2.mi', '$2.ma', '$2.fa']],
     )
 
 
@@ -242,15 +242,15 @@ def test_evaluate_aggregation_expession():
             FROM my_table
         '''),
         pd.DataFrame({
-            ('$2', 'a'): [0.0],
+            '$2.a': [0.0],
         }),
     )
 
 
 def test_evaluate_join():
     expected = pd.DataFrame({
-        ('$0', 'a'): [1, 2, 3],
-        ('$0', 'd'): [10, 10, 11],
+        '$0.a': [1, 2, 3],
+        '$0.d': [10, 10, 11],
     })
 
     def _compare(q):
@@ -275,8 +275,8 @@ def test_evaluate_cross_join_filter():
             WHERE g = h
         '''),
         pd.DataFrame({
-            ('$0', 'a'): [1, 2, 3],
-            ('$0', 'd'): [10, 10, 11],
+            '$0.a': [1, 2, 3],
+            '$0.d': [10, 10, 11],
         }),
     )
 
@@ -290,9 +290,9 @@ def test_evaluate_non_equality_join():
             ON g != h
         '''),
         pd.DataFrame({
-            ('$0', 'a'): [1, 2, 3],
+            '$0.a': [1, 2, 3],
             # NOTE: d is exactyl reversed due to the inequality condition
-            ('$0', 'd'): [11, 11, 10],
+            '$0.d': [11, 11, 10],
         }),
     )
 
@@ -306,8 +306,8 @@ def test_evaluate_explicit_cross_join_filter():
             WHERE g = h
         '''),
         pd.DataFrame({
-            ('$0', 'a'): [1, 2, 3],
-            ('$0', 'd'): [10, 10, 11],
+            '$0.a': [1, 2, 3],
+            '$0.d': [10, 10, 11],
         }),
     )
 
@@ -320,7 +320,7 @@ def test_where():
             WHERE g < one
         '''),
         pd.DataFrame({
-            ('$0', 'a'): [1, 2],
+            '$0.a': [1, 2],
         }),
     )
 
@@ -336,7 +336,7 @@ def test_where():
             WHERE c >= 4
         '''),
         pd.DataFrame({
-            ('$1', 'a'): [2, 3],
+            '$1.a': [2, 3],
         }),
     )
 
@@ -358,7 +358,7 @@ def test_introspection_support():
             WHERE g < one
         '''),
         pd.DataFrame({
-            ('$0', 'a'): [1, 2],
+            '$0.a': [1, 2],
         }),
     )
 
@@ -390,8 +390,8 @@ def test_readme_example():
     pdt.assert_frame_equal(
         sales_by_country,
         pd.DataFrame({
-            ('$2', 'country'): [0, 1],
-            ('$2', 'sales'): [11, 15],
+            '$2.country': [0, 1],
+            '$2.sales': [11, 15],
         }),
     )
 

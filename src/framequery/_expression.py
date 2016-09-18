@@ -6,6 +6,7 @@ import operator
 import logging
 
 from ._util.introspect import call_handler
+from ._pandas_util import _split_table_column
 
 _logger = logging.getLogger(__name__)
 
@@ -83,12 +84,13 @@ class ExpressionEvaluator(object):
         ref = ref[-2:]
 
         if len(ref) == 2:
-            return tuple(ref)
+            return '{}.{}'.format(*ref)
 
-        candidates = [
-            (source, name) for (source, name) in columns
-            if name == ref[-1]
-        ]
+        candidates = []
+        for col in columns:
+            _, name = _split_table_column(col)
+            if name == ref[-1]:
+                candidates.append(col)
 
         if len(candidates) == 0:
             raise ValueError("column {} not found".format(ref))
@@ -96,4 +98,4 @@ class ExpressionEvaluator(object):
         if len(candidates) > 1:
             raise ValueError("column {} is ambigious".format(ref))
 
-        return tuple(candidates[0])
+        return candidates[0]
