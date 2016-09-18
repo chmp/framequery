@@ -99,8 +99,7 @@ class TestUngroupedAggregates(ExampleEnvironment, ConformanceTest):
         GROUP BY b
     '''
 
-    # TODO: check what is standard SQL
-    # pandas removes NULLs in groupby, sqlite keeps them
+    # pandas removes NULLs in groupby, SQL keeps them
     def postprocess(self, df):
         return df[~df['b'].isnull()]
 
@@ -120,8 +119,7 @@ class TestUngroupedAggregatesWhere(ExampleEnvironment, ConformanceTest):
         GROUP BY b
     '''
 
-    # TODO: check what is standard SQL
-    # pandas removes NULLs in groupby, sqlite keeps them
+    # pandas removes NULLs in groupby, SQL keeps them
     def postprocess(self, df):
         return df[~df['b'].isnull()]
 
@@ -136,7 +134,6 @@ class TestJoin(ExampleEnvironment, ConformanceTest):
         ON a = c
     '''
 
-    # TODO: check what is standard SQL for NULLs
-    # Pandas keeps NULLs in the joined columns, sqlite removes NULLs
+    # Pandas keeps NULLs in the joined columns, SQL removes NULLs
     def postprocess(self, df):
         return df[~df['a'].isnull()].sort_values(['a', 'b', 'c', 'd'])
