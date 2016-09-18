@@ -14,6 +14,7 @@ from . import _dag
 from ._expression import ExpressionEvaluator
 from ._pandas_util import (
     as_pandas_join_condition,
+    column_from_parts,
     cross_join,
     ensure_table_columns,
     is_equality_join,
@@ -100,7 +101,7 @@ class PandasExecutor(ExpressionEvaluator):
             col_id = self._get_selected_column_name(col)
             value = self.evaluate_value(col.value, table)
 
-            result['{}.{}'.format(table_id, col_id)] = value
+            result[column_from_parts(table_id, col_id)] = value
 
         all_scalar = all(is_scalar(val) for val in result.values())
 
@@ -188,7 +189,7 @@ class PandasExecutor(ExpressionEvaluator):
 
         for col in node.columns:
             col_id = col.alias if col.alias is not None else next(self.id_generator)
-            result['{}.{}'.format(table_id, col_id)] = self._agg(col.value, table, columns)
+            result[column_from_parts(table_id, col_id)] = self._agg(col.value, table, columns)
 
         return result
 

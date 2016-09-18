@@ -6,7 +6,7 @@ import operator
 import logging
 
 from ._util.introspect import call_handler
-from ._pandas_util import _split_table_column
+from ._pandas_util import column_from_parts, column_match
 
 _logger = logging.getLogger(__name__)
 
@@ -84,13 +84,16 @@ class ExpressionEvaluator(object):
         ref = ref[-2:]
 
         if len(ref) == 2:
-            return '{}.{}'.format(*ref)
+            table, column = ref
+            return column_from_parts(table=table, column=column)
 
-        candidates = []
-        for col in columns:
-            _, name = _split_table_column(col)
-            if name == ref[-1]:
-                candidates.append(col)
+        column = ref[0]
+
+        candidates = [
+            candidate
+            for candidate in columns
+            if column_match(candidate, column)
+        ]
 
         if len(candidates) == 0:
             raise ValueError("column {} not found".format(ref))

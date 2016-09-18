@@ -15,7 +15,7 @@ def ensure_table_columns(name, df):
         return df
 
     old_columns = list(df.columns)
-    new_columns = list(_as_pair(name, col) for col in old_columns)
+    new_columns = list(column_set_table(col, name) for col in old_columns)
 
     return pd.DataFrame(
         _get_data(new_columns, old_columns, df),
@@ -99,7 +99,7 @@ def _general_merge_outer(merged, left, right):
 
 def strip_table_name_from_columns(df):
     old_columns = list(df.columns)
-    new_columns = list(_as_name(col) for col in old_columns)
+    new_columns = list(column_get_column(col) for col in old_columns)
 
     return pd.DataFrame(
         _get_data(new_columns, old_columns, df),
@@ -206,14 +206,43 @@ def _get_data(new_columns, old_columns, df):
     }
 
 
-def _as_pair(key, obj):
-    _, col = _split_table_column(obj)
-    return '{}.{}'.format(key, col)
+def column_set_table(column, table):
+    """Given a string column, possibly containing a table, set the table.
+
+        >>> column_set_table('foo', 'bar')
+        'bar.foo'
+
+        >>> column_set_table('foo.bar', 'baz')
+        'baz.bar'
+    """
+    return column_from_parts(table, column_get_column(column))
 
 
-def _as_name(obj):
-    _, col = _split_table_column(obj)
-    return col
+def column_get_column(column):
+    """Given a string column, possibly containing a table, extract the column.
+
+        >>> column_get_column('foo')
+        'foo'
+
+        >>> column_get_column('foo.bar')
+        'bar'
+    """
+    _, column = _split_table_column(column)
+    return column
+
+
+def column_from_parts(table, column):
+    """Given string parts, construct the full column name.
+
+        >>> column_from_parts('foo', 'bar')
+        'foo.bar'
+    
+    """
+    return '{}.{}'.format(table, column)
+
+
+def column_match(column, column_part):
+    return column_get_column(column) == column_part
 
 
 def _split_table_column(obj):
