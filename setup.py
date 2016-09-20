@@ -21,6 +21,7 @@ setup(
     license='MIT',
     packages=find_packages('src'),
     package_dir={'': 'src'},
+    url="https://github.com/chmp/framequery",
     setup_requires=['pytest-runner'],
     install_requires=['funcparserlib', 'pandas', 'six', 'sqlparse'],
     tests_require=['pytest'],

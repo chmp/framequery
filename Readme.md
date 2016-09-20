@@ -30,8 +30,8 @@ sales_by_country = fq.select("""
 """)
 ```
 
-The dataframes to use, can be specified by explicitly passing a dictionary as
-the `scope` parameter. The example would read
+By passing the `scope` parameters, the dataframes to use can be specified
+explicitly. The example would read
 `fq.select(..., scope={'stores': stores, 'sales': sales})`.
 
 ## SQL Support
@@ -44,7 +44,7 @@ The following operations are supported:
   costs)
 - Cross joins (currently, with high performance costs)
 - Subqueries
-- Common table expressions 
+- Common table expressions
 - Numeric expressions
 
 The following limitations do exist:
@@ -64,9 +64,8 @@ supported queries.
 `framequery` executes SQL statements via a multi-step process:
 
 1. The query is parsed and an SQL AST assembled.
-2. The AST is compiled into a DAG reprsenting transformation of dataframes.
-3. The generated DAG is finally interpreted and the transformations are applied
-   to the supplied dataframes.
+2. The AST is compiled into a DAG of dataframe transformations.
+3. The generated DAG is interpreted on the supplied dataframes.
 
 The AST classes can be found inside `framequery._parser`, whereas the DAG
 classes are found inside `framequery._dag`.
