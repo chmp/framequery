@@ -1,6 +1,5 @@
 from __future__ import print_function, division, absolute_import
 
-import enum
 import random
 import unittest
 
@@ -167,8 +166,13 @@ class ColumnWithValues(ColumDescription):
         return [random.choice(self.values) for _ in range(rows)]
 
 
-class Type(str, enum.Enum):
-    integer = 'INTEGER'
+class _Value(object):
+    def __init__(self, value):
+        self.value = value
+
+
+class Type(str):
+    integer = _Value('INTEGER')
 
 
 def get_dataframe_from_cursor(cursor):
