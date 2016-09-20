@@ -10,10 +10,11 @@ class ExampleEnvironment(object):
             Table('my_table', [
                 ColumnWithValues('a', Type.integer, [1, 2, 3, None]),
                 ColumnWithValues('b', Type.integer, [1, 2, 3, None]),
+                ColumnWithValues('c', Type.integer, [1, 2, 3, None]),
             ]),
             Table('my_other_table', [
-                ColumnWithValues('c', Type.integer, [-1, 2, 3, None]),
                 ColumnWithValues('d', Type.integer, [-1, 2, 3, None]),
+                ColumnWithValues('e', Type.integer, [-1, 2, 3, None]),
             ]),
         )
         return env
@@ -88,7 +89,7 @@ class TestUngroupedtAggregatesNoAs(ExampleEnvironment, ConformanceTest):
 class TestUngroupedAggregates(ExampleEnvironment, ConformanceTest):
     query = '''
         SELECT
-            b,
+            b, c,
             sum(a) as sum_a,
             avg(a) as avg_a,
             count(a) as count_a,
@@ -96,18 +97,18 @@ class TestUngroupedAggregates(ExampleEnvironment, ConformanceTest):
             max(a) as max_a
 
         FROM my_table
-        GROUP BY b
+        GROUP BY b, c
     '''
 
     # pandas removes NULLs in groupby, SQL keeps them
     def postprocess(self, df):
-        return df[~df['b'].isnull()]
+        return df[~df['b'].isnull() & ~df['c'].isnull()]
 
 
 class TestUngroupedAggregatesWhere(ExampleEnvironment, ConformanceTest):
     query = '''
         SELECT
-            b,
+            b, c,
             sum(a) as sum_a,
             avg(a) as avg_a,
             count(a) as count_a,
@@ -116,12 +117,12 @@ class TestUngroupedAggregatesWhere(ExampleEnvironment, ConformanceTest):
 
         FROM my_table
         WHERE a > 2 AND b > 2
-        GROUP BY b
+        GROUP BY b, c
     '''
 
     # pandas removes NULLs in groupby, SQL keeps them
     def postprocess(self, df):
-        return df[~df['b'].isnull()]
+        return df[~df['b'].isnull() & ~df['c'].isnull()]
 
 
 class TestJoin(ExampleEnvironment, ConformanceTest):
@@ -131,7 +132,7 @@ class TestJoin(ExampleEnvironment, ConformanceTest):
         FROM my_table
 
         JOIN my_other_table
-        ON a = c
+        ON a = e
     '''
 
     # Pandas keeps NULLs in the joined columns, SQL removes NULLs
