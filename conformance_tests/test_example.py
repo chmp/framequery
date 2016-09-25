@@ -99,8 +99,11 @@ class TestUngroupedAggregates(ExampleEnvironment, ConformanceTest):
     '''
 
     # pandas removes NULLs in groupby, SQL keeps them
-    def postprocess(self, df):
-        return df[~df['b'].isnull() & ~df['c'].isnull()]
+    def postprocess_expected(self, env, df):
+        if not env.strict:
+            df = df[~df['b'].isnull() & ~df['c'].isnull()]
+
+        return df
 
 
 class TestUngroupedAggregatesWhere(ExampleEnvironment, ConformanceTest):
@@ -119,8 +122,11 @@ class TestUngroupedAggregatesWhere(ExampleEnvironment, ConformanceTest):
     '''
 
     # pandas removes NULLs in groupby, SQL keeps them
-    def postprocess(self, df):
-        return df[~df['b'].isnull() & ~df['c'].isnull()]
+    def postprocess_expected(self, env, df):
+        if not env.strict:
+            df = df[~df['b'].isnull() & ~df['c'].isnull()]
+
+        return df
 
 
 class TestJoin(ExampleEnvironment, ConformanceTest):

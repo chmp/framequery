@@ -171,19 +171,63 @@ class PandasExecutor(ExpressionEvaluator):
         return table
 
     def _evaluate_aggregation_grouped(self, node, table):
-        grouped = self._group(table, node.group_by)
+        group_cols = self._get_group_columns(table, node.group_by)
+        table, groupby = self._add_null_markers(table, group_cols)
+
+        grouped = table.groupby(groupby)
         result = self._evaluate_aggregation_base(node, grouped, table.columns)
 
         df = pd.DataFrame(result)
         df = df.reset_index()
+        df = self._strip_null_markers(df, group_cols)
         return df
 
-    def _group(self, table, group_by):
+    def _get_group_columns(self, table, group_by):
         if not all(isinstance(obj, ColumnReference) for obj in group_by):
             raise ValueError("indirect group-bys not supported")
 
-        group_by = [self._normalize_col_ref(ref.value, table.columns) for ref in group_by]
-        return table.groupby(group_by)
+        return [self._normalize_col_ref(ref.value, table.columns) for ref in group_by]
+
+    def _add_null_markers(self, df, group_cols):
+        """Add null markers to use SQL null semantics in groupby.
+
+        .. note::
+
+            If null markers are added, a copied is made of the original
+            dataframe. Leaving the input argument unchanged.
+        """
+        if not self.strict:
+            return df, list(group_cols)
+
+        # TODO: minimize memory overhead for non groupby columns
+        df = df.copy()
+        groupby = []
+
+        for col in group_cols:
+            null_marker = _get_null_marker_name(col)
+            df[null_marker] = df[col].isnull()
+            df[col].fillna(0, inplace=True)
+            groupby.extend((col, null_marker))
+
+        return df, groupby
+
+    def _strip_null_markers(self, df, group_cols):
+        """Remove any null markers added to use SQL null semantics in groupby.
+
+        .. note::
+
+            The dataframe is modified in-place.
+        """
+        if not self.strict:
+            return df
+
+        for col in group_cols:
+            null_marker = _get_null_marker_name(col)
+            sel = df[null_marker]
+            df.loc[sel, col] = None
+            del df[null_marker]
+
+        return df
 
     def _evaluate_aggregation_non_grouped(self, node, table):
         return pd.DataFrame(
@@ -263,3 +307,7 @@ def _first(s):
         return s.iloc[0]
 
     return s.first()
+
+
+def _get_null_marker_name(col):
+    return '$$.{}'.format(col)
