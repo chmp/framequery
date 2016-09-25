@@ -102,14 +102,16 @@ pip install tox
 tox
 ```
 
-framequery also ships with a number of conformance tests that compare the
+framequery also ships with a number of confromance tests that compare the
 behavior of a regular SQL database (sqlite per default) with framequery. They
 can be run with
 
 ```bash
 pip install tox
-tox -c tox.conformance.ini
+tox -c tox.confromance.ini
 ```
+
+To run all tests, use `tox -c tox.all.ini`.
 
 ## License
 
