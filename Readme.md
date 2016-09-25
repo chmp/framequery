@@ -34,6 +34,11 @@ By passing the `scope` parameters, the dataframes to use can be specified
 explicitly. The example would read
 `fq.select(..., scope={'stores': stores, 'sales': sales})`.
 
+Note, that per default framequery uses pandas semantics in groupby and joins.
+This will result in behavior diffrent from SQL. To enable strict mode, pass
+`strict=True` as an argument to select. Then, additional steps will be performed
+to replicate the SQL behavior as close as possible.
+
 ## SQL Support
 
 The following operations are supported:

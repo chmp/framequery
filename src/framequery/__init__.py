@@ -15,7 +15,7 @@ def make_context(scope, strict=False):
     return Context(scope=scope, strict=strict)
 
 
-def select(query, scope=None):
+def select(query, scope=None, strict=False):
     """Execute a SELECT query on the given scope.
 
     :param str query: the select statement as a string.
@@ -23,6 +23,9 @@ def select(query, scope=None):
     :param Optional[Mapping[str,pandas.DataFrame]] scope: the scope as a mapping
         of table name to DataFrame. If not given the locals and globals of the
         calling scope are used to build the dictionary.
+
+    :param bool strict: if True, create the underlying context in strict mode.
+        Then, the context will perform additional steps to mimic SQL behavior.
 
     :returns pandas.DataFrame: the result of the query.
     """
