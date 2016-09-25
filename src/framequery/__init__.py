@@ -11,8 +11,8 @@ __all__ = [
 ]
 
 
-def make_context(scope):
-    return Context(scope=scope)
+def make_context(scope, strict=False):
+    return Context(scope=scope, strict=strict)
 
 
 def select(query, scope=None):

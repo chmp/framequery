@@ -27,13 +27,15 @@ _logger = logging.getLogger(__name__)
 
 
 class PandasExecutor(ExpressionEvaluator):
-    def __init__(self, id_generator=None):
+    def __init__(self, id_generator=None, strict=False):
         super(PandasExecutor, self).__init__()
 
         if id_generator is None:
             id_generator = default_id_generator()
 
         self.id_generator = id_generator
+
+        self.strict = bool(strict)
 
         self.functions['ABS'] = abs
         self.functions['POW'] = operator.pow

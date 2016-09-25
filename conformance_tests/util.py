@@ -1,14 +1,21 @@
 from __future__ import print_function, division, absolute_import
 
+import json
+import logging
+import os
 import random
 import unittest
 
 import pandas as pd
 import numpy
 import pandas.util.testing as pdt
+import sqlalchemy
 
 from framequery import make_context
 from framequery._pandas_util import strip_table_name_from_columns
+
+_logger = logging.getLogger(__name__)
+default_env_file = os.path.join(os.path.dirname(__file__), 'config', 'sqlite.json')
 
 
 # TODO: hide this class from pytest
@@ -16,7 +23,28 @@ class ConformanceTest(unittest.TestCase):
     number_of_rows = 100
 
     def create_env(self):
-        raise NotImplementedError()
+        env_file = os.environ.get('FRAMEQUERY_ENV', default_env_file)
+        _logger.info("using environment %s", env_file)
+
+        with open(env_file, 'r') as fobj:
+            config = json.load(fobj)
+
+        connection_string = config['connection']
+        strict = config.get('context', {}).get('strict', False)
+
+        return Environment(
+            connection_factory=lambda: sqlalchemy.create_engine(connection_string),
+            strict=strict,
+        )
+
+    def configure_env(self, env):
+        pass
+
+    def postprocess_actual(self, env, df):
+        return self.postprocess(df)
+
+    def postprocess_expected(self, env, df):
+        return self.postprocess(df)
 
     def postprocess(self, df):
         return df
@@ -29,11 +57,13 @@ class ConformanceTest(unittest.TestCase):
 
     def test_conformance(self):
         env = self.create_env()
+        self.configure_env(env)
+
         realization = env.create_realization(self.number_of_rows)
         actual, expected = realization.execute(self.query)
 
-        actual = self.postprocess(actual)
-        expected = self.postprocess(expected)
+        actual = self.postprocess_actual(env, actual)
+        expected = self.postprocess_expected(env, expected)
 
         print("actual:")
         print(actual)
@@ -47,8 +77,9 @@ class ConformanceTest(unittest.TestCase):
 
 
 class Environment(object):
-    def __init__(self, connection_factory):
+    def __init__(self, connection_factory, strict=False):
         self.connection_factory = connection_factory
+        self.strict = strict
         self.tables = []
 
     def add_tables(self, *tables):
@@ -75,7 +106,7 @@ class EnvironmentRealization(object):
             name: realization.get_dataframe()
             for name, realization in self.realizations.items()
         }
-        return make_context(scope)
+        return make_context(scope, strict=self.env.strict)
 
     def execute(self, q):
         fq_result = self._fq_execute(q)
@@ -137,7 +168,7 @@ class TableRealization(object):
         values = self.get_values()
 
         conn.execute(self.table.get_ddl())
-        conn.executemany(self.table.get_insert_statement(), values)
+        conn.execute(self.table.get_insert_statement(), values)
 
     def get_dataframe(self):
         columns = ['{}.{}'.format(self.table.name, col.name) for col in self.table.columns]
@@ -176,7 +207,7 @@ class Type(str):
 
 
 def get_dataframe_from_cursor(cursor):
-    columns = [d[0] for d in cursor.description]
     rows = cursor.fetchall()
-    data = [dict(zip(columns, row)) for row in rows]
+    columns = cursor.keys()
+    data = [dict(row) for row in rows]
     return pd.DataFrame(data, columns=columns)
