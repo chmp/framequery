@@ -76,6 +76,37 @@ def test_join_simple():
     pdt.assert_frame_equal(perform("left.a = right.b"), expected)
 
 
+def test_inner_join_missing_values_simple():
+    """In standard pandas joins, NANs are retained. With strict mode they are skipped.
+    """
+    left = pd.DataFrame({
+        'left.a': [0, 0, None, 1],
+        'left.c': [1, 2, 3, 4]
+    })
+
+    right = pd.DataFrame({
+        'right.b': [0, 1, None],
+        'right.d': [10, 20, 30]
+    })
+
+    expected = pd.DataFrame({
+        'left.a': [0.0, 0.0, 1.0],
+        'left.c': [1, 2, 4],
+        'right.b': [0.0, 0.0, 1.0],
+        'right.d': [10, 10, 20],
+    })
+
+    def perform(expr):
+        ex = PandasExecutor(strict=True)
+        condition = ValueExpression.parse(expr)
+        return ex.evaluate(Join(Literal(left), Literal(right), how="inner", on=condition), None)
+
+    pdt.assert_frame_equal(perform("a = b"), expected)
+    pdt.assert_frame_equal(perform("left.a = b"), expected)
+    pdt.assert_frame_equal(perform("a = right.b"), expected)
+    pdt.assert_frame_equal(perform("left.a = right.b"), expected)
+
+
 def test_transform():
     df = pd.DataFrame({
         'df.a': [0, 1, 2, 3],

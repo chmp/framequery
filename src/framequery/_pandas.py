@@ -74,7 +74,13 @@ class PandasExecutor(ExpressionEvaluator):
         assert node.how in {'inner', 'outer', 'left', 'right'}
         left_on, right_on = as_pandas_join_condition(left.columns, right.columns, node.on)
 
-        return pd.merge(left, right, how=node.how, left_on=left_on, right_on=right_on)
+        result = pd.merge(left, right, how=node.how, left_on=left_on, right_on=right_on)
+
+        if self.strict:
+            subdag = _dag.Filter(_dag.Literal(result), node.on)
+            return self.evaluate(subdag, scope)
+
+        return result
 
     def _evaluate_non_equality_join(self, node, scope):
         """Replace inner joins with a non-equality condition by a cross join with filter.

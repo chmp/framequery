@@ -4,8 +4,7 @@ from util import ConformanceTest, Environment, Table, Type, ColumnWithValues
 
 
 class ExampleEnvironment(object):
-    def create_env(self):
-        env = Environment(lambda: sqlite3.connect(':memory:'))
+    def configure_env(self, env):
         env.add_tables(
             Table('my_table', [
                 ColumnWithValues('a', Type.integer, [1, 2, 3, None]),
@@ -17,7 +16,6 @@ class ExampleEnvironment(object):
                 ColumnWithValues('e', Type.integer, [-1, 2, 3, None]),
             ]),
         )
-        return env
 
 
 class TestExample(ExampleEnvironment, ConformanceTest):
@@ -136,5 +134,11 @@ class TestJoin(ExampleEnvironment, ConformanceTest):
     '''
 
     # Pandas keeps NULLs in the joined columns, SQL removes NULLs
+    def postprocess_actual(self, env, df):
+        if not env.strict:
+            df = df[~df['a'].isnull()]
+
+        return self.postprocess(df)
+
     def postprocess(self, df):
-        return df[~df['a'].isnull()].sort_values(['a', 'b', 'c', 'd'])
+        return df.sort_values(['a', 'b', 'c', 'd'])
