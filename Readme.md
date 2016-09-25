@@ -1,5 +1,12 @@
 # framequery - SQL on dataframes
 
+- [Usage](#usage)
+- [SQL support](#sql-support)
+- [Changelog](#changelog)
+- [Internals](#internal)
+- [Running tests](#running-tests)
+- [License](#license)
+
 ## Usage
 
 Install framequery via:
@@ -64,6 +71,16 @@ The following limitations do exist:
 See the tests, in particular `tests/test_framequery.py`, for examples of
 supported queries.
 
+## Changelog
+
+### Development
+
+- add strict mode, mirror SQL behavior for GROUP-BYs and JOINs.
+
+### 0.1.0
+
+- initial release
+
 ## Internals
 
 `framequery` executes SQL statements via a multi-step process:
@@ -79,9 +96,18 @@ classes are found inside `framequery._dag`.
 
 Inside the project root, execute
 
+```bash
+pip install tox
+tox
 ```
-    pip install tox
-    tox
+
+framequery also ships with a number of confromance tests that compare the
+behavior of a regular SQL database (sqlite per default) with framequery. They
+can be run with
+
+```bash
+pip install tox
+tox -c tox.confromance.ini
 ```
 
 ## License
