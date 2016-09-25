@@ -125,6 +125,46 @@ def test_select_column():
     )
 
 
+def test_select_column_analytics_function_sum():
+    pdt.assert_frame_equal(
+        _context().select('SELECT a as a, sum(a) OVER() as b FROM my_table'),
+        pd.DataFrame({
+            '$1.a': [1, 2, 3],
+            '$1.b': [6, 6, 6],
+        }),
+    )
+
+
+def test_select_column_analytics_function_sum_partition_by():
+    pdt.assert_frame_equal(
+        _context().select('SELECT a as a, sum(a) OVER(PARTITION BY g) as b FROM my_table'),
+        pd.DataFrame({
+            '$1.a': [1, 2, 3],
+            '$1.b': [3, 3, 3],
+        }),
+    )
+
+
+def test_select_column_analytics_function_avg():
+    pdt.assert_frame_equal(
+        _context().select('SELECT a as a, avg(a) OVER() as b FROM my_table'),
+        pd.DataFrame({
+            '$1.a': [1, 2, 3],
+            '$1.b': [2.0, 2.0, 2.0],
+        }),
+    )
+
+
+def test_select_column_analytics_function_avg_partition_by():
+    pdt.assert_frame_equal(
+        _context().select('SELECT a as a, avg(a) OVER(PARTITION BY g) as b FROM my_table'),
+        pd.DataFrame({
+            '$1.a': [1, 2, 3],
+            '$1.b': [1.5, 1.5, 3],
+        }),
+    )
+
+
 def test_select_column_without_rename():
     pdt.assert_frame_equal(
         _context().select('SELECT a FROM my_table'),

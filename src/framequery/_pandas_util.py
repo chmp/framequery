@@ -97,6 +97,32 @@ def _general_merge_outer(merged, left, right):
     return merged
 
 
+def apply_analytics_function(df, col, func, sort_by=None, ascending=None, partition_by=None):
+    df = df.copy(deep=False)
+    df['$$value'] = df[col]
+
+    if partition_by is None:
+        df = transform_value(df, func, sort_by=sort_by, ascending=ascending)
+
+    else:
+        df['$$index'] = df.index
+        df = df.groupby(partition_by).apply(transform_value, func, sort_by=sort_by, ascending=ascending)
+        df = df.set_index('$$index')
+
+    return df['$$value']
+
+
+def transform_value(df, func, sort_by=None, ascending=None):
+    if ascending is None:
+        ascending = True
+    
+    if sort_by is not None:
+        df = df.sort_values(sort_by, ascending=ascending)
+
+    df['$$value'] = func(df['$$value'])
+    return df
+
+
 def strip_table_name_from_columns(df):
     old_columns = list(df.columns)
     new_columns = list(column_get_column(col) for col in old_columns)
@@ -236,7 +262,7 @@ def column_from_parts(table, column):
 
         >>> column_from_parts('foo', 'bar')
         'foo.bar'
-    
+
     """
     return '{}.{}'.format(table, column)
 

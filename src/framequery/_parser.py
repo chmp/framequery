@@ -250,7 +250,6 @@ class AnalyticsFunction(RecordNode):
     )
 
 
-
 def _make_binary_ops(op_class, instances, arg):
     op = one_of(op_class, instances) >> get_value
     return (arg + many(op + arg)) >> flatten >> BinaryExpression.from_list

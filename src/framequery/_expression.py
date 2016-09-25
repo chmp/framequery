@@ -6,7 +6,8 @@ import operator
 import logging
 
 from ._util.introspect import call_handler
-from ._pandas_util import column_from_parts, column_match
+from ._pandas_util import column_from_parts, column_match, apply_analytics_function
+from ._parser import ColumnReference
 
 _logger = logging.getLogger(__name__)
 
@@ -22,6 +23,45 @@ class ExpressionEvaluator(object):
         args = [self.evaluate_value(arg, scope) for arg in node.arguments]
         func = self.functions[node.function.upper()]
         return func(*args)
+
+    def evaluate_value_analytics_function(self, node, table):
+        if node.partition_by is not None:
+            partition_by = [
+                self._normalize_col_ref(n.value, table.columns)
+                for n in node.partition_by
+            ]
+
+        else:
+            partition_by = None
+
+        if node.order_by is not None:
+            sort_by, ascending = self._split_order_by_items(node.order_by, table)
+
+        else:
+            sort_by = None
+            ascending = None
+
+        func = node.function
+        func_name = func.function.upper()
+
+        if func_name == 'SUM':
+            impl = lambda s: s.sum()
+
+        elif func_name == 'AVG':
+            impl = lambda s: s.mean()
+
+        else:
+            raise ValueError("unknown analytics function {}".format(func_name))
+
+        assert len(func.arguments) == 1
+        arg0 = self._normalize_col_ref(func.arguments[0].value, table.columns)
+
+        return apply_analytics_function(
+            table, arg0, impl,
+            partition_by=partition_by,
+            sort_by=sort_by,
+            ascending=ascending,
+        )
 
     def evaluate_value_unary_expression(self, col, table):
         op = col.operator.upper()
@@ -102,3 +142,22 @@ class ExpressionEvaluator(object):
             raise ValueError("column {} is ambigious".format(ref))
 
         return candidates[0]
+
+    def _split_order_by_items(self, items, table):
+        values = []
+        ascending = []
+
+        for col in items:
+            val, asc = self._split_order_by_item(col, table)
+            values.append(val)
+            ascending.append(asc)
+
+        return values, ascending
+
+    def _split_order_by_item(self, item, table):
+        assert isinstance(item.value, ColumnReference)
+
+        return (
+            self._normalize_col_ref(item.value.value, table.columns),
+            item.order == 'ASC'
+        )

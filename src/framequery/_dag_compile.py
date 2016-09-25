@@ -16,18 +16,36 @@ def compile_dag(node, id_generator=None):
     return DagCompiler(id_generator).compile(node)
 
 
-def split_aggregate(expr, id_generator=None):
-    """Split expr into pre-aggregation, aggregation, and post-aggregation.
-
-    :return Tuple[Node,List[DerivedColumn],List[DerivedColumn]]:
-    """
+def split_analytics_functions(exprs, id_generator=None):
     if id_generator is None:
         id_generator = default_generator()
 
-    return SplitAggregateTransformer(id_generator).split(expr)
+    is_synthetic = []
+    cols = []
+    aggs = []
+    pre_aggs = []
+
+    splitter = SplitAnalyticsFunctionTransformer(id_generator)
+
+    for col in exprs:
+        s, c, a, p = splitter.do_split(col)
+        is_synthetic.append(s)
+        cols.append(c)
+        aggs.extend(a)
+        pre_aggs.extend(p)
+
+    # shortcut to speed up non analytic functions queries
+    if all(is_synthetic):
+        return exprs, [], []
+
+    return cols, aggs, pre_aggs
 
 
 def split_aggregates(exprs, id_generator=None):
+    """Split exprs into pre-aggregation, aggregation, and post-aggregation.
+
+    :return Tuple[List[Node],List[DerivedColumn],List[DerivedColumn]]:
+    """
     if id_generator is None:
         id_generator = default_generator()
 
@@ -35,8 +53,10 @@ def split_aggregates(exprs, id_generator=None):
     aggs = []
     pre_aggs = []
 
+    splitter = SplitAggregateTransformer(id_generator)
+
     for col in exprs:
-        c, a, p = split_aggregate(col, id_generator=id_generator)
+        c, a, p = splitter.do_split(col)
         cols.append(c)
         aggs.extend(a)
         pre_aggs.extend(p)
@@ -83,6 +103,11 @@ class DagCompiler(object):
             id_generator=self.id_generator
         )
 
+        post_analytics, analytics, pre_analytics = split_analytics_functions(
+            columns,
+            id_generator=self.id_generator,
+        )
+
         group_by, group_by_cols = self._normalize_group_by(node.group_by_clause)
 
         pre_aggregates.extend(group_by_cols)
@@ -92,8 +117,16 @@ class DagCompiler(object):
         if aggregates:
             table = _dag.Aggregate(table, aggregates, group_by=group_by)
 
-        table = self._order(node, table)
-        return _dag.Transform(table, columns)
+        if analytics:
+            # to avoid unnecessary copies, pre-analytics are not used
+            assert not pre_analytics
+            table = _dag.Transform(table, analytics)
+            table = self._order(node, table)
+            return _dag.Transform(table, post_analytics)
+
+        else:
+            table = self._order(node, table)
+            return _dag.Transform(table, columns)
 
     def _normalize_group_by(self, group_by):
         if group_by is None:
@@ -192,9 +225,12 @@ class DagCompiler(object):
         return '${}'.format(next(self.id_generator))
 
 
-class SplitAggregateTransformer(object):
+class SplitBaseTransformer(object):
     def __init__(self, id_generator):
         self.id_generator = id_generator
+
+    def do_split(self, node):
+        return self.split(node)
 
     def split(self, node):
         return call_handler(self, "split", node)
@@ -205,26 +241,6 @@ class SplitAggregateTransformer(object):
 
     def split_column_reference(self, node):
         return node, [], []
-
-    def split_general_set_function(self, node):
-        # TODO: add shortcut for direct column references in aggregates
-
-        value_node, aggs, pre_aggs = self.split(node.value)
-
-        if aggs or pre_aggs:
-            raise ValueError("multiple aggregation levels not allowed")
-
-        pre_agg_col = self._tmp_column()
-        agg_col = self._tmp_column()
-
-        pre_agg = DerivedColumn(value_node, alias=pre_agg_col)
-        agg = DerivedColumn(
-            node.with_values(value=_ref(pre_agg_col)),
-            alias=agg_col,
-        )
-        result = _ref(agg_col)
-
-        return result, [agg], [pre_agg]
 
     def split_binary_expression(self, node):
         left_node, left_aggs, left_pre_aggs = self.split(node.left)
@@ -246,10 +262,7 @@ class SplitAggregateTransformer(object):
         pre_aggs = []
 
         for arg in node.arguments:
-            t = self.split(arg)
-            args.append(t[0])
-            aggs.extend(t[1])
-            pre_aggs.extend(t[2])
+            self._split_append(arg, args, aggs, pre_aggs)
 
         return node.with_values(arguments=args), aggs, pre_aggs
 
@@ -261,6 +274,81 @@ class SplitAggregateTransformer(object):
 
     def _tmp_column(self):
         return '${}'.format(next(self.id_generator))
+
+    def _split_append(self, node, values, aggs, pre_aggs):
+        t = self.split(node)
+        values.append(t[0])
+        aggs.extend(t[1])
+        pre_aggs.extend(t[2])
+
+
+class SplitAnalyticsFunctionTransformer(SplitBaseTransformer):
+    def do_split(self, node):
+        node, analytics, pre_analytics = self.split(node)
+
+        assert isinstance(node, DerivedColumn)
+
+        if not analytics:
+            output = node.alias
+
+            # chain the column along
+            pre_analytics = []
+            analytics = [node.with_values(alias=output)]
+            node = DerivedColumn(value=_ref(output), alias=output)
+
+            is_synthetic = True
+
+        else:
+            is_synthetic = False
+
+        return is_synthetic, node, analytics, pre_analytics
+
+    def split_general_set_function(self, node):
+        value_node, aggs, pre_aggs = self.split(node.value)
+        return node.with_values(value=value_node), aggs, pre_aggs
+
+    def split_analytics_function(self, node):
+        arguments = []
+        aggs = []
+        pre_aggs = []
+
+        for child in node.function.arguments:
+            self._split_append(child, arguments, aggs, pre_aggs)
+
+        if aggs or pre_aggs:
+            raise ValueError("multiple levels of analytics functions not allowed")
+
+        agg_id = self._tmp_column()
+        aggs = [DerivedColumn(node, alias=agg_id)]
+
+        return _ref(agg_id), aggs, []
+
+
+class SplitAggregateTransformer(SplitBaseTransformer):
+    def split_general_set_function(self, node):
+        # TODO: add shortcut for direct column references in aggregates
+
+        value_node, aggs, pre_aggs = self.split(node.value)
+
+        if aggs or pre_aggs:
+            raise ValueError("multiple aggregation levels not allowed")
+
+        pre_agg_col = self._tmp_column()
+        agg_col = self._tmp_column()
+
+        pre_agg = DerivedColumn(value_node, alias=pre_agg_col)
+        agg = DerivedColumn(
+            node.with_values(value=_ref(pre_agg_col)),
+            alias=agg_col,
+        )
+        result = _ref(agg_col)
+
+        return result, [agg], [pre_agg]
+
+    def split_analytics_function(self, node):
+        func, aggs, pre_aggs = self.split(node.function)
+        return node.with_values(function=func), aggs, pre_aggs
+
 
 def default_generator():
     for i in it.count():

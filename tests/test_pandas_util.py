@@ -166,3 +166,80 @@ def test_as_pandas_join_condition():
             ['A.a'],
             ['B.b']
         )
+
+
+def test_pandas_lag_sort():
+    df = pd.DataFrame({
+        'i': [0, 1, 2, 3, 4, 5],
+        's': [3, 4, 5, 0, 1, 2],
+        'v': [1, 2, 3, 4, 5, 6],
+    })
+
+    expected = pd.DataFrame({
+        'i': [0, 1, 2, 3, 4, 5],
+        's': [3, 4, 5, 0, 1, 2],
+        'v': [1, 2, 3, 4, 5, 6],
+        'r': [6, 1, 2, None, 4, 5]
+    }, columns=['i', 's', 'v', 'r'])
+
+    actual = df.copy()
+    actual['r'] = apply_analytics_function(
+        actual, 'v',
+        lambda s: s.shift(),
+        sort_by='s'
+    )
+
+    pdt.assert_frame_equal(actual, expected)
+
+
+
+def test_pandas_sum():
+    df = pd.DataFrame({
+        'i': [0, 1, 2, 3, 4, 5],
+        's': [3, 4, 5, 0, 1, 2],
+        'v': [1, 2, 3, 4, 5, 6],
+    })
+
+    expected = pd.DataFrame({
+        'i': [0, 1, 2, 3, 4, 5],
+        's': [3, 4, 5, 0, 1, 2],
+        'v': [1, 2, 3, 4, 5, 6],
+        'r': [21, 21, 21, 21, 21, 21],
+    }, columns=['i', 's', 'v', 'r'])
+
+    actual = df.copy()
+    actual['r'] = apply_analytics_function(
+        actual, 'v',
+        lambda s: s.sum(),
+    )
+
+    pdt.assert_frame_equal(actual, expected)
+
+
+def test_pandas_grouped_lag_sort():
+    df = pd.DataFrame({
+        'g': [0, 1, 0, 1, 0, 1],
+        'i': [0, 1, 2, 3, 4, 5],
+        's': [3, 4, 5, 0, 1, 2],
+        'v': [1, 2, 3, 4, 5, 6],
+    })
+
+    expected = pd.DataFrame({
+        'g': [0, 1, 0, 1, 0, 1],
+        'i': [0, 1, 2, 3, 4, 5],
+        's': [3, 4, 5, 0, 1, 2],
+        'v': [1, 2, 3, 4, 5, 6],
+        'r': [5, 6, 1, None, None, 4],
+    }, columns=['g', 'i', 's', 'v', 'r'])
+
+
+    actual = df.copy()
+    actual['r'] = apply_analytics_function(
+        actual, 'v',
+        lambda s: s.shift(),
+        sort_by='s',
+        partition_by='g',
+    )
+    actual = actual.sort_values('i').reset_index(drop=True)
+
+    pdt.assert_frame_equal(actual, expected)

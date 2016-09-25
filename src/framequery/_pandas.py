@@ -139,25 +139,9 @@ class PandasExecutor(ExpressionEvaluator):
 
     def evaluate_sort(self, node, scope):
         table = self.evaluate(node.table, scope)
-
-        values = []
-        ascending = []
-
-        for col in node.values:
-            val, asc = self._split_order_by_item(col, table)
-            values.append(val)
-            ascending.append(asc)
-
+        values, ascending = self._split_order_by_items(node.values, table)
         table = table.sort_values(values, ascending=ascending)
         return table.reset_index(drop=True)
-
-    def _split_order_by_item(self, item, table):
-        assert isinstance(item.value, ColumnReference)
-
-        return (
-            self._normalize_col_ref(item.value.value, table.columns),
-            item.order == 'ASC'
-        )
 
     def evaluate_limit(self, node, scope):
         table = self.evaluate(node.table, scope)

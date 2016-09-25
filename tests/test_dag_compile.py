@@ -1,11 +1,12 @@
 from framequery import compile
 from framequery._parser import *
 from framequery import _dag, _parser
-from framequery._dag_compile import split_aggregate
+from framequery._dag_compile import split_aggregates
 
 
 def _split(q):
-    return split_aggregate(ValueExpression.parse(q))
+    t = split_aggregates([ValueExpression.parse(q)])
+    return t[0][0], t[1], t[2]
 
 
 def _ref(*parts):
