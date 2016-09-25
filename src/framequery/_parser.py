@@ -199,6 +199,58 @@ class FunctionCall(RecordNode):
     )
 
 
+class OrderByItem(RecordNode):
+    __fields__ = ["value", "order"]
+
+    parser = (
+        (
+            (ColumnReference.get_parser() >> named('value')) +
+            (token(Tokens.Order, 'ASC') >> get_value >> named('order'))
+        ) |
+        (
+            (ColumnReference.get_parser() >> named('value')) +
+            (token(Tokens.Order, 'DESC') >> get_value >> named('order'))
+        ) |
+        (
+            (ColumnReference.get_parser() >> named('value')) +
+            (pure('DESC') >> named('order'))
+        )
+    )
+
+
+class OrderByClause(ListNode):
+    prefix_parser = (
+        token(Tokens.Keyword, 'ORDER') +
+        token(Tokens.Keyword, 'BY')
+    )
+
+    item_parser = OrderByItem.get_parser()
+    separator_parser = comma
+
+
+class PartitionByClause(ListNode):
+    prefix_parser = token(Tokens.Name, 'PARTITION') + token(Tokens.Keyword, 'BY')
+    item_parser = ColumnReference.get_parser()
+    separator_parser = comma
+
+
+class AnalyticsFunction(RecordNode):
+    __fields__ = ['function', 'partition_by', 'order_by']
+
+    function_names = [
+        'AVG', 'SUM', 'LAG'
+    ]
+
+    parser = (
+        (FunctionCall.get_parser() >> named('function')) +
+        skip(token(Tokens.Name, 'OVER') + paren_open) +
+        (optional(PartitionByClause.get_parser()) >> named('partition_by')) +
+        (optional(OrderByClause.get_parser()) >> named('order_by')) +
+        skip(paren_close)
+    )
+
+
+
 def _make_binary_ops(op_class, instances, arg):
     op = one_of(op_class, instances) >> get_value
     return (arg + many(op + arg)) >> flatten >> BinaryExpression.from_list
@@ -232,6 +284,7 @@ def define_value_expression(cls):
         (skip(paren_open) + ValueExpression.get_parser() + skip(paren_close)) |
 
         # row value expressions
+        AnalyticsFunction.get_parser() |
         CountAll.get_parser() |
         GeneralSetFunction.get_parser() |
         FunctionCall.get_parser() |
@@ -392,35 +445,6 @@ class HavingClause(TransparentNode):
         skip(token(Tokens.Keyword, 'HAVING')) +
         ValueExpression.get_parser()
     )
-
-
-class OrderByItem(RecordNode):
-    __fields__ = ["value", "order"]
-
-    parser = (
-        (
-            (ColumnReference.get_parser() >> named('value')) +
-            (token(Tokens.Order, 'ASC') >> get_value >> named('order'))
-        ) |
-        (
-            (ColumnReference.get_parser() >> named('value')) +
-            (token(Tokens.Order, 'DESC') >> get_value >> named('order'))
-        ) |
-        (
-            (ColumnReference.get_parser() >> named('value')) +
-            (pure('DESC') >> named('order'))
-        )
-    )
-
-
-class OrderByClause(ListNode):
-    prefix_parser = (
-        token(Tokens.Keyword, 'ORDER') +
-        token(Tokens.Keyword, 'BY')
-    )
-
-    item_parser = OrderByItem.get_parser()
-    separator_parser = comma
 
 
 def as_int(val):

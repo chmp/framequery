@@ -47,6 +47,60 @@ def test_select_column_alias():
     )
 
 
+def test_select_analytics_function_alias():
+    assert parse('SELECT sum(a) OVER() as b FROM foo') == Select(
+        select_list=[
+            DerivedColumn(
+                value=AnalyticsFunction(
+                    FunctionCall('sum', [ColumnReference(['a'])]),
+                ),
+                alias='b',
+            )
+        ],
+        from_clause=[TableName('foo')],
+        set_quantifier='ALL',
+    )
+
+
+def test_select_analytics_function_order_by_alias():
+    assert parse('SELECT sum(a) OVER(ORDER BY b ASC) as b FROM foo') == Select(
+        select_list=[
+            DerivedColumn(
+                value=AnalyticsFunction(
+                    FunctionCall('sum', [ColumnReference(['a'])]),
+                    order_by=[
+                        OrderByItem(ColumnReference(['b']), 'ASC'),
+                    ]
+                ),
+                alias='b',
+            )
+        ],
+        from_clause=[TableName('foo')],
+        set_quantifier='ALL',
+    )
+
+
+def test_select_analytics_function_partition_by_order_by_alias():
+    assert parse('SELECT sum(a) OVER(PARTITION BY g ORDER BY b ASC) as b FROM foo') == Select(
+        select_list=[
+            DerivedColumn(
+                value=AnalyticsFunction(
+                    FunctionCall('sum', [ColumnReference(['a'])]),
+                    order_by=[
+                        OrderByItem(ColumnReference(['b']), 'ASC'),
+                    ],
+                    partition_by=[
+                        ColumnReference(['g'])
+                    ],
+                ),
+                alias='b',
+            )
+        ],
+        from_clause=[TableName('foo')],
+        set_quantifier='ALL',
+    )
+
+
 def test_select_column_addition():
     assert parse('SELECT a + b FROM foo') == Select(
         select_list=[
