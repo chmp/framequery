@@ -176,13 +176,14 @@ def test_select_column_without_rename():
 
 def test_simple_select_distinct():
     pdt.assert_frame_equal(
-        _context().select('SELECT DISTINCT g, one FROM my_table'),
+        _context()
+        .select('SELECT DISTINCT g, one FROM my_table')
+        .reset_index(drop=True),
         pd.DataFrame({
             '$0.g': [0, 1],
             '$0.one': [1, 1],
         }),
     )
-
 
 
 def test_select_column_without_rename_limit():

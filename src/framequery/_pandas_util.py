@@ -13,15 +13,10 @@ def ensure_table_columns(name, df):
     """
     if len(df.columns) == 0:
         return df
-
-    old_columns = list(df.columns)
-    new_columns = list(column_set_table(col, name) for col in old_columns)
-
-    return pd.DataFrame(
-        _get_data(new_columns, old_columns, df),
-        columns=new_columns,
-        index=df.index,
-    )
+    renames = {
+        col: column_set_table(col, name) for col in df.columns
+    }
+    return df.rename(columns=renames)
 
 
 def cross_join(df1, df2):
@@ -115,7 +110,7 @@ def apply_analytics_function(df, col, func, sort_by=None, ascending=None, partit
 def transform_value(df, func, sort_by=None, ascending=None):
     if ascending is None:
         ascending = True
-    
+
     if sort_by is not None:
         df = df.sort_values(sort_by, ascending=ascending)
 

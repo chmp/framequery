@@ -11,6 +11,7 @@ import pandas as pd
 import six
 
 from . import _dag
+from ._base_executor import BaseExecutor
 from ._expression import ExpressionEvaluator
 from ._pandas_util import (
     as_pandas_join_condition,
@@ -20,28 +21,28 @@ from ._pandas_util import (
     is_equality_join,
     is_scalar,
 )
-from ._parser import GeneralSetFunction, ColumnReference, get_selected_column_name
-from ._util.introspect import call_handler
+from ._parser import GeneralSetFunction, ColumnReference
+from ._util.executor import default_id_generator
 
 _logger = logging.getLogger(__name__)
 
 
-class PandasExecutor(ExpressionEvaluator):
+class PandasExecutor(BaseExecutor, ExpressionEvaluator):
     def __init__(self, id_generator=None, strict=False):
         super(PandasExecutor, self).__init__()
 
-        if id_generator is None:
-            id_generator = default_id_generator()
-
-        self.id_generator = id_generator
-
-        self.strict = bool(strict)
+        self._set_id_generator(id_generator)
+        self._set_strict(strict)
 
         self.functions['ABS'] = abs
         self.functions['POW'] = operator.pow
 
-    def evaluate(self, node, arg):
-        return call_handler(self, 'evaluate', node, arg)
+    def _get_dual(self):
+        return pd.DataFrame()
+
+    def _combine_series(self, result):
+        all_scalar = all(is_scalar(val) for val in result.values())
+        return pd.DataFrame(result) if not all_scalar else pd.DataFrame(result, index=[0])
 
     def evaluate_define_tables(self, node, scope):
         scope = scope.copy()
@@ -50,16 +51,6 @@ class PandasExecutor(ExpressionEvaluator):
             scope[name] = self.evaluate(sub_node, scope)
 
         return self.evaluate(node.node, scope)
-
-    def evaluate_get_table(self, node, scope):
-        if node.table == 'DUAL':
-            table = pd.DataFrame()
-
-        else:
-            table = scope[node.table]
-
-        alias = node.alias if node.alias is not None else node.table
-        return ensure_table_columns(alias, table)
 
     def evaluate_literal(self, node, _):
         return node.value
@@ -99,29 +90,6 @@ class PandasExecutor(ExpressionEvaluator):
 
         return cross_join(left, right)
 
-    def evaluate_transform(self, node, scope):
-        table = self.evaluate(node.table, scope)
-
-        result = collections.OrderedDict()
-
-        table_id = next(self.id_generator)
-        for col in node.columns:
-            col_id = self._get_selected_column_name(col)
-            value = self.evaluate_value(col.value, table)
-
-            result[column_from_parts(table_id, col_id)] = value
-
-        all_scalar = all(is_scalar(val) for val in result.values())
-
-        return pd.DataFrame(result) if not all_scalar else pd.DataFrame(result, index=[0])
-
-    def _get_selected_column_name(self, col):
-        col_id = get_selected_column_name(col)
-        if col_id is not None:
-            return col_id
-
-        return next(self.id_generator)
-
     def evaluate_aggregate(self, node, scope):
         table = self.evaluate(node.table, scope)
 
@@ -147,12 +115,6 @@ class PandasExecutor(ExpressionEvaluator):
         table = self.evaluate(node.table, scope)
         table = table.iloc[node.offset:node.offset + node.limit]
         return table.reset_index(drop=True)
-
-    def evaluate_drop_duplicates(self, node, scope):
-        table = self.evaluate(node.table, scope)
-        table = table.drop_duplicates()
-        table = table.reset_index(drop=True)
-        return table
 
     def _evaluate_aggregation_grouped(self, node, table):
         group_cols = self._get_group_columns(table, node.group_by)
@@ -272,11 +234,6 @@ class PandasExecutor(ExpressionEvaluator):
 def _string_pair(t):
     a, b = t
     return six.text_type(a), six.text_type(b)
-
-
-def default_id_generator():
-    for i in it.count():
-        yield '${}'.format(i)
 
 
 def _get(obj, tuple_key):
