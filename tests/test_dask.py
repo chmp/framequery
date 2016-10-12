@@ -70,7 +70,24 @@ def test_simple_arithmetic_function_calls():
     )
 
 
-def test_simple():
+def test_evaluate_aggregation():
+    # TODO: add first_value to test
+    assert eq(
+        _context().select('''
+            SELECT
+                SUM(a) as s, AVG(a) as a, MIN(a) as mi, MAX(a) as ma
+            FROM my_table
+        '''),
+        pd.DataFrame({
+            '$2.a': [2.0],
+            '$2.s': [6],
+            '$2.mi': [1],
+            '$2.ma': [3],
+        })[['$2.s', '$2.a', '$2.mi', '$2.ma']],
+    )
+
+
+def test_combine_series__simple():
     df = pd.DataFrame({
         'a': [1, 2, 3],
         'b': [4, 5, 6],
@@ -95,7 +112,7 @@ def test_simple():
     assert eq(dask_impl(df), pandas_impl(df))
 
 
-def test_grouped():
+def test_combine_series__grouped():
     df = pd.DataFrame({
         'a': [1, 2, 3],
         'b': [4, 5, 6],
