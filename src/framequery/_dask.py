@@ -28,6 +28,15 @@ class DaskExecutor(BaseExecutor, ExpressionEvaluator):
         self.functions['ABS'] = abs
         self.functions['POW'] = operator.pow
 
+    def evaluate_sort(self, node, scope):
+        # TODO: implement sorting of dataframes
+        raise NotImplementedError("sort of dask dataframes not supported")
+
+    def evaluate_limit(self, node, scope):
+        # TODO: implement limiting
+        # NOTE: dask head() **does not** return the global head
+        raise NotImplementedError("limit of dask dataframes not supported")
+
     def _combine_series(self, result):
         return combine_series(result.items())
 

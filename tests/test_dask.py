@@ -1,9 +1,13 @@
+from __future__ import print_function, division, absolute_import
+
 import dask.dataframe as dd
 from dask.dataframe.utils import eq
 import pandas as pd
 
 from framequery._dask import combine_series, DaskExecutor
 from framequery._context import Context
+
+import pytest
 
 
 def test_select_column():
@@ -134,6 +138,14 @@ def test_simple_sum_cte():
             '$4.d': [1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 1],
         }),
     )
+
+
+def test_unsuported():
+    with pytest.raises(NotImplementedError):
+        _context().select('SELECT * FROM my_table ORDER BY a')
+
+    with pytest.raises(NotImplementedError):
+        _context().select('SELECT * FROM my_table LIMIT 1, 2')
 
 
 def test_combine_series__simple():
