@@ -1,5 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
+import dask
 import dask.dataframe as dd
 from dask.dataframe.utils import eq
 import pandas as pd
@@ -148,6 +149,33 @@ def test_unsuported():
         _context().select('SELECT * FROM my_table LIMIT 1, 2')
 
 
+def test_no_compute():
+    # test that no operation triggers a compute
+    with dask.set_options(get=get_raises):
+        _context().select('SELECT * FROM my_table WHERE g = 0')
+        _context().select('SELECT SUM(a) as s, AVG(a) as a, MIN(a) as mi, MAX(a) as ma FROM my_table')
+        _context().select('''
+            WITH
+                foo AS (
+                    SELECT
+                        a + b as a,
+                        c + g as b
+                    FROM my_table
+                ),
+                bar AS (
+                    SELECT a + b as c
+                    FROM foo
+                )
+
+            SELECT sum(c) as d FROM bar
+        ''')
+        _context().select('''
+            SELECT
+                2 * a as a, a + b as b, (a < b) AND (b > a) as c
+            FROM my_table
+        ''')
+
+
 def test_combine_series__simple():
     df = pd.DataFrame({
         'a': [1, 2, 3],
@@ -221,3 +249,7 @@ def _context():
             'd': [10, 11],
         }), npartitions=2),
     }, executor_factory=DaskExecutor)
+
+
+def get_raises(*args, **kwargs):
+    raise ValueError()
