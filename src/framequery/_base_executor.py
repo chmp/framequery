@@ -2,13 +2,15 @@ from __future__ import print_function, division, absolute_import
 
 import collections
 
+import pandas as pd
+
 from ._pandas_util import (
     as_pandas_join_condition,
     column_from_parts,
     cross_join,
     ensure_table_columns,
 )
-from ._parser import get_selected_column_name
+from ._parser import get_selected_column_name, GeneralSetFunction, ColumnReference
 from ._util.executor import default_id_generator
 from ._util.introspect import call_handler
 
@@ -82,3 +84,77 @@ class BaseExecutor(object):
         table = self.evaluate(node.table, scope)
         table = table.drop_duplicates()
         return table
+
+    def evaluate_aggregate(self, node, scope):
+        table = self.evaluate(node.table, scope)
+
+        if node.group_by is None:
+            return self._evaluate_aggregation_non_grouped(node, table)
+
+        else:
+            return self._evaluate_aggregation_grouped(node, table)
+
+    def _evaluate_aggregation_non_grouped(self, node, table):
+        values = self._evaluate_aggregation_base(node, table, table.columns)
+        return self._dataframe_from_scalars(values)
+
+    def _evaluate_aggregation_grouped(self, node, table):
+        raise NotImplementedError()
+
+    def _evaluate_aggregation_base(self, node, table, columns):
+        """Helper function to simplify implementation of groups
+        """
+        table_id = next(self.id_generator)
+        result = collections.OrderedDict()
+
+        for col in node.columns:
+            col_id = col.alias if col.alias is not None else next(self.id_generator)
+            result[column_from_parts(table_id, col_id)] = self._agg(col.value, table, columns)
+
+        return result
+
+    def _agg(self, node, table, columns):
+        if not isinstance(node, GeneralSetFunction):
+            raise ValueError("indirect aggregations not supported")
+
+        function = node.function.upper()
+        value = node.value
+
+        if not isinstance(value, ColumnReference):
+            raise ValueError("indirect aggregations not supported")
+
+        col_ref = self._normalize_col_ref(value.value, columns)
+        col = table[col_ref]
+
+        # TODO: handle set quantifiers
+        assert node.quantifier is None
+
+        impls = {
+            'SUM': lambda col: col.sum(),
+            'AVG': lambda col: col.mean(),
+            'MIN': lambda col: col.min(),
+            'MAX': lambda col: col.max(),
+            'COUNT': lambda col: col.count(),
+            'FIRST_VALUE': self._first,
+        }
+
+        try:
+            impl = impls[function]
+
+        except KeyError:
+            raise ValueError("unknown aggregation function {}".format(function))
+
+        else:
+            result = impl(col)
+
+        return result
+
+    def _dataframe_from_scalars(self, values):
+        raise NotImplementedError()
+
+
+    def _first(self, s):
+        if isinstance(s, pd.Series):
+            return s.iloc[0]
+
+        return s.first()

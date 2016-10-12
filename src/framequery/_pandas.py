@@ -21,7 +21,7 @@ from ._pandas_util import (
     is_equality_join,
     is_scalar,
 )
-from ._parser import GeneralSetFunction, ColumnReference
+from ._parser import ColumnReference
 from ._util.executor import default_id_generator
 
 _logger = logging.getLogger(__name__)
@@ -78,15 +78,6 @@ class PandasExecutor(BaseExecutor, ExpressionEvaluator):
         right = self.evaluate(node.right, scope)
 
         return cross_join(left, right)
-
-    def evaluate_aggregate(self, node, scope):
-        table = self.evaluate(node.table, scope)
-
-        if node.group_by is None:
-            return self._evaluate_aggregation_non_grouped(node, table)
-
-        else:
-            return self._evaluate_aggregation_grouped(node, table)
 
     def evaluate_filter(self, node, scope):
         table = self.evaluate(node.table, scope)
@@ -164,60 +155,8 @@ class PandasExecutor(BaseExecutor, ExpressionEvaluator):
 
         return df
 
-    def _evaluate_aggregation_non_grouped(self, node, table):
-        return pd.DataFrame(
-            self._evaluate_aggregation_base(node, table, table.columns),
-            index=[0],
-        )
-
-    def _evaluate_aggregation_base(self, node, table, columns):
-        table_id = next(self.id_generator)
-        result = collections.OrderedDict()
-
-        for col in node.columns:
-            col_id = col.alias if col.alias is not None else next(self.id_generator)
-            result[column_from_parts(table_id, col_id)] = self._agg(col.value, table, columns)
-
-        return result
-
-    def _agg(self, node, table, columns):
-        if not isinstance(node, GeneralSetFunction):
-            raise ValueError("indirect aggregations not supported")
-
-        function = node.function.upper()
-        value = node.value
-
-        if not isinstance(value, ColumnReference):
-            raise ValueError("indirect aggregations not supported")
-
-        col_ref = self._normalize_col_ref(value.value, columns)
-        col = _get(table, col_ref)
-
-        # TODO: handle set quantifiers
-        assert node.quantifier is None
-
-        impls = {
-            'SUM': lambda col: col.sum(),
-            'AVG': lambda col: col.mean(),
-            'MIN': lambda col: col.min(),
-            'MAX': lambda col: col.max(),
-            'COUNT': lambda col: col.count(),
-            'FIRST_VALUE': _first,
-        }
-
-        try:
-            impl = impls[function]
-
-        except KeyError:
-            raise ValueError("unknown aggregation function {}".format(function))
-
-        else:
-            result = impl(col)
-
-        if isinstance(result, pd.DataFrame):
-            return result[col_ref]
-
-        return result
+    def _dataframe_from_scalars(self, values):
+        return pd.DataFrame(values, index=[0])
 
 
 def _string_pair(t):
@@ -230,13 +169,6 @@ def _get(obj, tuple_key):
         return obj[tuple_key]
 
     return obj[tuple_key,]
-
-
-def _first(s):
-    if isinstance(s, pd.Series):
-        return s.iloc[0]
-
-    return s.first()
 
 
 def _get_null_marker_name(col):

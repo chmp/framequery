@@ -13,7 +13,6 @@ from ._pandas_util import (
     cross_join,
     ensure_table_columns,
 )
-from ._parser import GeneralSetFunction, ColumnReference
 
 
 # TODO: implement transforms via map_partitions to avoid join overhead
@@ -32,53 +31,11 @@ class DaskExecutor(BaseExecutor, ExpressionEvaluator):
     def _combine_series(self, result):
         return combine_series(result.items())
 
-    def evaluate_aggregate(self, node, scope):
-        table = self.evaluate(node.table, scope)
-        columns = table.columns
-        table_id = next(self.id_generator)
-        result = collections.OrderedDict()
+    def _dataframe_from_scalars(self, values):
+        return dataframe_from_scalars(values)
 
-        for col in node.columns:
-            col_id = col.alias if col.alias is not None else next(self.id_generator)
-            result[column_from_parts(table_id, col_id)] = self._agg(col.value, table, columns)
-
-        return dataframe_from_scalars(result)
-
-    def _agg(self, node, table, columns):
-        if not isinstance(node, GeneralSetFunction):
-            raise ValueError("indirect aggregations not supported")
-
-        function = node.function.upper()
-        value = node.value
-
-        if not isinstance(value, ColumnReference):
-            raise ValueError("indirect aggregations not supported")
-
-        col_ref = self._normalize_col_ref(value.value, columns)
-        col = table[col_ref]
-
-        # TODO: handle set quantifiers
-        assert node.quantifier is None
-
-        impls = {
-            'SUM': lambda col: col.sum(),
-            'AVG': lambda col: col.mean(),
-            'MIN': lambda col: col.min(),
-            'MAX': lambda col: col.max(),
-            'COUNT': lambda col: col.count(),
-        }
-
-        try:
-            impl = impls[function]
-
-        except KeyError:
-            raise ValueError("unknown aggregation function {}".format(function))
-
-        else:
-            result = impl(col)
-
-        print(result)
-        return result
+    def _frist(self, s):
+        raise NotImplementedError()
 
 
 def combine_series(items, how='inner'):
