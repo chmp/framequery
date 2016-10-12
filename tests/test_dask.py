@@ -146,6 +146,29 @@ def test_combine_series__grouped():
     assert eq(dask_impl(df), pandas_impl(df))
 
 
+def test_simple_sum_cte():
+    assert eq(
+        _context().select('''
+            WITH
+                foo AS (
+                    SELECT
+                        a + b as a,
+                        c + g as b
+                    FROM my_table
+                ),
+                bar AS (
+                    SELECT a + b as c
+                    FROM foo
+                )
+
+            SELECT sum(c) as d FROM bar
+        '''),
+        pd.DataFrame({
+            '$4.d': [1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 1],
+        }),
+    )
+
+
 def _context():
     return Context({
         'my_table': dd.from_pandas(pd.DataFrame({

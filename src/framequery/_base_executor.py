@@ -43,6 +43,9 @@ class BaseExecutor(object):
     def evaluate(self, node, arg):
         return call_handler(self, 'evaluate', node, arg)
 
+    def evaluate_literal(self, node, _):
+        return node.value
+
     def evaluate_get_table(self, node, scope):
         if node.table == 'DUAL':
             table = self._get_dual()
@@ -53,6 +56,14 @@ class BaseExecutor(object):
         alias = node.alias if node.alias is not None else node.table
         return ensure_table_columns(alias, table)
 
+    def evaluate_define_tables(self, node, scope):
+        scope = scope.copy()
+
+        for name, sub_node in node.tables:
+            scope[name] = self.evaluate(sub_node, scope)
+
+        return self.evaluate(node.node, scope)
+    
     def evaluate_transform(self, node, scope):
         table = self.evaluate(node.table, scope)
 

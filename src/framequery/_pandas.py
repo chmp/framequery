@@ -44,17 +44,6 @@ class PandasExecutor(BaseExecutor, ExpressionEvaluator):
         all_scalar = all(is_scalar(val) for val in result.values())
         return pd.DataFrame(result) if not all_scalar else pd.DataFrame(result, index=[0])
 
-    def evaluate_define_tables(self, node, scope):
-        scope = scope.copy()
-
-        for name, sub_node in node.tables:
-            scope[name] = self.evaluate(sub_node, scope)
-
-        return self.evaluate(node.node, scope)
-
-    def evaluate_literal(self, node, _):
-        return node.value
-
     def evaluate_join(self, node, scope):
         if not is_equality_join(node.on):
             return self._evaluate_non_equality_join(node, scope)
