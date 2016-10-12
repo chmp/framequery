@@ -87,6 +87,19 @@ def test_evaluate_aggregation():
     )
 
 
+def test_simple_subquery():
+    assert eq(
+        _context().select('SELECT * FROM (SELECT * FROM my_table)'),
+        pd.DataFrame({
+            'my_table.a': [1, 2, 3],
+            'my_table.b': [4, 5, 6],
+            'my_table.c': [7, 8, 9],
+            'my_table.g': [0, 0, 1],
+            'my_table.one': [1, 1, 1],
+        }),
+    )
+
+
 def test_simple_filter():
     assert eq(
         _context().select('SELECT * FROM my_table WHERE g = 0'),
@@ -96,6 +109,29 @@ def test_simple_filter():
             'my_table.c': [7, 8],
             'my_table.g': [0, 0],
             'my_table.one': [1, 1],
+        }),
+    )
+
+
+def test_simple_sum_cte():
+    assert eq(
+        _context().select('''
+            WITH
+                foo AS (
+                    SELECT
+                        a + b as a,
+                        c + g as b
+                    FROM my_table
+                ),
+                bar AS (
+                    SELECT a + b as c
+                    FROM foo
+                )
+
+            SELECT sum(c) as d FROM bar
+        '''),
+        pd.DataFrame({
+            '$4.d': [1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 1],
         }),
     )
 
@@ -157,29 +193,6 @@ def test_combine_series__grouped():
         )
 
     assert eq(dask_impl(df), pandas_impl(df))
-
-
-def test_simple_sum_cte():
-    assert eq(
-        _context().select('''
-            WITH
-                foo AS (
-                    SELECT
-                        a + b as a,
-                        c + g as b
-                    FROM my_table
-                ),
-                bar AS (
-                    SELECT a + b as c
-                    FROM foo
-                )
-
-            SELECT sum(c) as d FROM bar
-        '''),
-        pd.DataFrame({
-            '$4.d': [1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 1],
-        }),
-    )
 
 
 def _context():
