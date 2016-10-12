@@ -37,6 +37,11 @@ class DaskExecutor(BaseExecutor, ExpressionEvaluator):
     def _frist(self, s):
         raise NotImplementedError()
 
+    def _reset_index(self, df):
+        # DASK does not support dropping the index, return unchanged
+        columns = list(df.columns)
+        df = df.reset_index()
+        return df[columns]
 
 def combine_series(items, how='inner'):
     """Helper function to combine mutliple series into a single dataframe.

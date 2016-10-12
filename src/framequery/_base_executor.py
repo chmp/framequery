@@ -65,7 +65,7 @@ class BaseExecutor(object):
             scope[name] = self.evaluate(sub_node, scope)
 
         return self.evaluate(node.node, scope)
-    
+
     def evaluate_transform(self, node, scope):
         table = self.evaluate(node.table, scope)
 
@@ -79,6 +79,12 @@ class BaseExecutor(object):
             result[column_from_parts(table_id, col_id)] = value
 
         return self._combine_series(result)
+
+    def evaluate_filter(self, node, scope):
+        table = self.evaluate(node.table, scope)
+        condition = self.evaluate_value(node.filter, table)
+        table = table[condition]
+        return self._reset_index(table)
 
     def evaluate_drop_duplicates(self, node, scope):
         table = self.evaluate(node.table, scope)
@@ -152,6 +158,8 @@ class BaseExecutor(object):
     def _dataframe_from_scalars(self, values):
         raise NotImplementedError()
 
+    def _reset_index(self, df):
+        return df.reset_index(drop=True)
 
     def _first(self, s):
         if isinstance(s, pd.Series):

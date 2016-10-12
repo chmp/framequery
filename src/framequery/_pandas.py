@@ -79,12 +79,6 @@ class PandasExecutor(BaseExecutor, ExpressionEvaluator):
 
         return cross_join(left, right)
 
-    def evaluate_filter(self, node, scope):
-        table = self.evaluate(node.table, scope)
-        condition = self.evaluate_value(node.filter, table)
-        table = table[condition]
-        return table.reset_index(drop=True)
-
     def evaluate_sort(self, node, scope):
         table = self.evaluate(node.table, scope)
         values, ascending = self._split_order_by_items(node.values, table)

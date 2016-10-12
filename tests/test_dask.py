@@ -87,6 +87,19 @@ def test_evaluate_aggregation():
     )
 
 
+def test_simple_filter():
+    assert eq(
+        _context().select('SELECT * FROM my_table WHERE g = 0'),
+        pd.DataFrame({
+            'my_table.a': [1, 2],
+            'my_table.b': [4, 5],
+            'my_table.c': [7, 8],
+            'my_table.g': [0, 0],
+            'my_table.one': [1, 1],
+        }),
+    )
+
+
 def test_combine_series__simple():
     df = pd.DataFrame({
         'a': [1, 2, 3],
