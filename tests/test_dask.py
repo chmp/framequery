@@ -141,6 +141,26 @@ def test_simple_sum_cte():
     )
 
 
+def test_evaluate_join():
+    expected = pd.DataFrame({
+        '$0.a': [1, 2, 3],
+        '$0.d': [10, 10, 11],
+    })
+
+    def _compare(q):
+        assert eq(_context().select(q), expected)
+
+    _compare('SELECT a, d FROM my_table JOIN my_other_table ON g = h')
+    _compare('SELECT a, d FROM my_table INNER JOIN my_other_table ON g = h')
+
+    # TODO: add proper tests for outer joins
+    _compare('SELECT a, d FROM my_table LEFT JOIN my_other_table ON g = h')
+    _compare('SELECT a, d FROM my_table LEFT OUTER JOIN my_other_table ON g = h')
+
+    _compare('SELECT a, d FROM my_table RIGHT JOIN my_other_table ON g = h')
+    _compare('SELECT a, d FROM my_table RIGHT OUTER JOIN my_other_table ON g = h')
+
+
 def test_unsuported():
     with pytest.raises(NotImplementedError):
         _context().select('SELECT * FROM my_table ORDER BY a')

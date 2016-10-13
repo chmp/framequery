@@ -44,24 +44,6 @@ class PandasExecutor(BaseExecutor, ExpressionEvaluator):
         all_scalar = all(is_scalar(val) for val in result.values())
         return pd.DataFrame(result) if not all_scalar else pd.DataFrame(result, index=[0])
 
-    def evaluate_join(self, node, scope):
-        if not is_equality_join(node.on):
-            return self._evaluate_non_equality_join(node, scope)
-
-        left = self.evaluate(node.left, scope)
-        right = self.evaluate(node.right, scope)
-
-        assert node.how in {'inner', 'outer', 'left', 'right'}
-        left_on, right_on = as_pandas_join_condition(left.columns, right.columns, node.on)
-
-        result = pd.merge(left, right, how=node.how, left_on=left_on, right_on=right_on)
-
-        if self.strict:
-            subdag = _dag.Filter(_dag.Literal(result), node.on)
-            return self.evaluate(subdag, scope)
-
-        return result
-
     def _evaluate_non_equality_join(self, node, scope):
         """Replace inner joins with a non-equality condition by a cross join with filter.
         """
@@ -151,6 +133,9 @@ class PandasExecutor(BaseExecutor, ExpressionEvaluator):
 
     def _dataframe_from_scalars(self, values):
         return pd.DataFrame(values, index=[0])
+
+    def _merge(self, left, right, how, left_on, right_on):
+        return pd.merge(left, right, how=how, left_on=left_on, right_on=right_on)
 
 
 def _string_pair(t):

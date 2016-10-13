@@ -4,11 +4,13 @@ import collections
 
 import pandas as pd
 
+from . import _dag
 from ._pandas_util import (
     as_pandas_join_condition,
     column_from_parts,
     cross_join,
     ensure_table_columns,
+    is_equality_join,
 )
 from ._parser import get_selected_column_name, GeneralSetFunction, ColumnReference
 from ._util.executor import default_id_generator
@@ -18,6 +20,8 @@ from ._util.introspect import call_handler
 class BaseExecutor(object):
     """Common helper functions for executor classes.
     """
+    strict = False
+
     def _set_id_generator(self, id_generator=None):
         if id_generator is None:
             id_generator = default_id_generator()
@@ -99,6 +103,30 @@ class BaseExecutor(object):
 
         else:
             return self._evaluate_aggregation_grouped(node, table)
+
+    def evaluate_join(self, node, scope):
+        if not is_equality_join(node.on):
+            return self._evaluate_non_equality_join(node, scope)
+
+        left = self.evaluate(node.left, scope)
+        right = self.evaluate(node.right, scope)
+
+        assert node.how in {'inner', 'outer', 'left', 'right'}
+        left_on, right_on = as_pandas_join_condition(left.columns, right.columns, node.on)
+
+        result = self._merge(left, right, how=node.how, left_on=left_on, right_on=right_on)
+
+        if self.strict:
+            subdag = _dag.Filter(_dag.Literal(result), node.on)
+            return self.evaluate(subdag, scope)
+
+        return result
+
+    def _merge(self, left, right, how, left_on, right_on):
+        raise NotImplementedError()
+
+    def _evaluate_non_equality_join(self, node, scope):
+        raise NotImplementedError()
 
     def _evaluate_aggregation_non_grouped(self, node, table):
         values = self._evaluate_aggregation_base(node, table, table.columns)

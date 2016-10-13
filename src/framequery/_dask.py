@@ -74,6 +74,12 @@ class DaskExecutor(BaseExecutor, ExpressionEvaluator):
         df = df.reset_index()
         return df[columns]
 
+    def _merge(self, left, right, how, left_on, right_on):
+        result = left.merge(right, how=how, left_on=left_on, right_on=right_on)
+
+        # work around dask bug in single-parition merge
+        result.divisions = [None for _ in result.divisions]
+        return result
 
 def transform_partitions(df, col_id_expr_pairs):
     ex = ExpressionEvaluator()
