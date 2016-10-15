@@ -135,10 +135,11 @@ class BaseExecutor(object):
     def _evaluate_aggregation_grouped(self, node, table):
         raise NotImplementedError()
 
-    def _evaluate_aggregation_base(self, node, table, columns):
+    def _evaluate_aggregation_base(self, node, table, columns, table_id=None):
         """Helper function to simplify implementation of groups
         """
-        table_id = next(self.id_generator)
+        if table_id is None:
+            table_id = next(self.id_generator)
         result = collections.OrderedDict()
 
         for col in node.columns:
@@ -182,6 +183,12 @@ class BaseExecutor(object):
             result = impl(col)
 
         return result
+
+    def _get_group_columns(self, table, group_by):
+        if not all(isinstance(obj, ColumnReference) for obj in group_by):
+            raise ValueError("indirect group-bys not supported")
+
+        return [self._normalize_col_ref(ref.value, table.columns) for ref in group_by]
 
     def _dataframe_from_scalars(self, values):
         raise NotImplementedError()

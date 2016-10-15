@@ -84,12 +84,6 @@ class PandasExecutor(BaseExecutor, ExpressionEvaluator):
         df = self._strip_null_markers(df, group_cols)
         return df
 
-    def _get_group_columns(self, table, group_by):
-        if not all(isinstance(obj, ColumnReference) for obj in group_by):
-            raise ValueError("indirect group-bys not supported")
-
-        return [self._normalize_col_ref(ref.value, table.columns) for ref in group_by]
-
     def _add_null_markers(self, df, group_cols):
         """Add null markers to use SQL null semantics in groupby.
 

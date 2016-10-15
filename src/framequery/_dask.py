@@ -14,6 +14,7 @@ from ._expression import ExpressionEvaluator
 from ._pandas_util import (
     as_pandas_join_condition,
     column_from_parts,
+    column_set_table,
     cross_join,
     ensure_table_columns,
 )
@@ -81,6 +82,25 @@ class DaskExecutor(BaseExecutor, ExpressionEvaluator):
         result.divisions = [None for _ in result.divisions]
         return result
 
+    def _evaluate_aggregation_grouped(self, node, table):
+        table_id = next(self.id_generator)
+
+        meta = self._evaluate_aggregation_base(node, table, table.columns, table_id=table_id)
+        meta = [(k, v.dtype) for (k, v) in meta.items()]
+        meta = [('{}.g'.format(table_id), table.dtypes['$0.g'])] + meta
+        meta = dd.utils.make_meta(meta)
+
+        group_cols = self._get_group_columns(table, node.group_by)
+
+        res = (
+            table.groupby(group_cols)
+            .apply(ft.partial(aggregate_partitions, self, node, table_id, group_cols), meta)
+            #.reset_index()
+        )
+        return res
+
+
+
 def transform_partitions(df, col_id_expr_pairs):
     ex = ExpressionEvaluator()
     ex.functions['ABS'] = abs
@@ -92,6 +112,16 @@ def transform_partitions(df, col_id_expr_pairs):
         result[col_id] = ex.evaluate_value(expr, df)
 
     return pd.DataFrame(result, index=df.index)
+
+
+def aggregate_partitions(ex, node, table_id, group_cols, df):
+    columns = df.columns
+    df = df.groupby(group_cols)
+    res = ex._evaluate_aggregation_base(node, df, columns, table_id=table_id)
+    df = pd.DataFrame(res)
+    df = df.reset_index()
+    df.columns = [column_set_table(col, table_id) for col in df.columns]
+    return df
 
 
 def combine_series(items, how='inner'):

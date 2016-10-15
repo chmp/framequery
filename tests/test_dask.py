@@ -161,6 +161,27 @@ def test_evaluate_join():
     _compare('SELECT a, d FROM my_table RIGHT OUTER JOIN my_other_table ON g = h')
 
 
+def test_evaluate_aggregation_grouped():
+    actual = _context().select('SELECT g, SUM(b) as a FROM my_table GROUP BY g')
+    expected = pd.DataFrame({
+        '$2.g': [0, 1],
+        '$2.a': [9, 6],
+    }, columns=['$2.g', '$2.a'])
+
+    assert eq(drop_index(actual), drop_index(expected))
+
+
+def test_evaluate_aggregation_grouped_no_as():
+    actual = _context().select('SELECT g, SUM(b) a FROM my_table GROUP BY g')
+
+    expected = pd.DataFrame({
+        '$2.g': [0, 1],
+        '$2.a': [9, 6],
+    }, columns=['$2.g', '$2.a'])
+
+    assert eq(drop_index(actual), drop_index(expected))
+
+
 def test_unsuported():
     with pytest.raises(NotImplementedError):
         _context().select('SELECT * FROM my_table ORDER BY a')
@@ -273,3 +294,10 @@ def _context():
 
 def get_raises(*args, **kwargs):
     raise ValueError()
+
+
+def drop_index(df):
+    if hasattr(df, 'dask'):
+        df = df.compute()
+
+    return df.sort_values(list(df.columns)).reset_index(drop=True)
