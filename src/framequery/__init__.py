@@ -11,8 +11,9 @@ __all__ = [
 ]
 
 
-def make_context(scope, strict=False):
-    return Context(scope=scope, strict=strict)
+# TODO: allow to use strings for executor factory to not expose interals
+def make_context(scope, strict=False, executor_factory=None):
+    return Context(scope=scope, strict=strict, executor_factory=executor_factory)
 
 
 def select(query, scope=None, strict=False):

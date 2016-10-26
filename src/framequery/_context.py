@@ -11,9 +11,12 @@ _logger = logging.getLogger(__name__)
 
 
 class Context(object):
-    def __init__(self, scope=None, strict=False, executor_factory=PandasExecutor):
+    def __init__(self, scope=None, strict=False, executor_factory=None):
         if scope is None:
             scope = {}
+
+        if executor_factory is None:
+            executor_factory = PandasExecutor
 
         self._scope = build_scope(scope)
         self._ex = executor_factory(strict=strict)
