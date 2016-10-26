@@ -1,4 +1,5 @@
 import sqlite3
+import unittest
 
 from util import ConformanceTest, Environment, Table, Type, ColumnWithValues
 
@@ -87,6 +88,16 @@ class TestUngroupedtAggregatesNoAs(ExampleEnvironment, ConformanceTest):
 class TestGroupedAggregates_SimpleExample(ExampleEnvironment, ConformanceTest):
     query = 'SELECT b, SUM(b) as a FROM my_table GROUP BY b'
 
+    def postprocess_actual(self, env, df):
+        return df.sort_values(list(df.columns))
+
+    # pandas removes NULLs in groupby, SQL keeps them
+    def postprocess_expected(self, env, df):
+        if not env.strict:
+            df = df[~df['b'].isnull()]
+
+        return df.sort_values(list(df.columns))
+
 
 class TestGroupedAggregates(ExampleEnvironment, ConformanceTest):
     query = '''
@@ -101,6 +112,10 @@ class TestGroupedAggregates(ExampleEnvironment, ConformanceTest):
         FROM my_table
         GROUP BY b, c
     '''
+
+    def configure_env(self, env):
+        if env.executor_factory.__name__ == "DaskExecutor":
+            raise unittest.SkipTest('dask exec. does support multiple groupers')
 
     # pandas removes NULLs in groupby, SQL keeps them
     def postprocess_expected(self, env, df):
@@ -124,6 +139,10 @@ class TestGroupedAggregatesWhere(ExampleEnvironment, ConformanceTest):
         WHERE a > 2 AND b > 2
         GROUP BY b, c
     '''
+
+    def configure_env(self, env):
+        if env.executor_factory.__name__ == "DaskExecutor":
+            raise unittest.SkipTest('dask exec. does support multiple groupers')
 
     # pandas removes NULLs in groupby, SQL keeps them
     def postprocess_expected(self, env, df):

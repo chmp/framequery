@@ -17,15 +17,12 @@ def assert_eq(a, b):
     if hasattr(a, 'dask'):
         a = a.compute()
 
-    # TODO: figure out why the index is mangled by dask
-    a = a.reset_index(drop=True)
     a = a.sort_values(list(a.columns))
     a = a.reset_index(drop=True)
 
     if hasattr(b, 'dask'):
         b = a.compute()
 
-    b = b.reset_index(drop=True)
     b = b.sort_values(list(b.columns))
     b = b.reset_index(drop=True)
 

@@ -153,7 +153,6 @@ class EnvironmentRealization(object):
         return get_dataframe_from_cursor(result)
 
 
-
 class Table(object):
     def __init__(self, name, columns):
         self.name = name
