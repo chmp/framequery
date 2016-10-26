@@ -121,12 +121,7 @@ def transform_value(df, func, sort_by=None, ascending=None):
 def strip_table_name_from_columns(df):
     old_columns = list(df.columns)
     new_columns = list(column_get_column(col) for col in old_columns)
-
-    return pd.DataFrame(
-        _get_data(new_columns, old_columns, df),
-        columns=new_columns,
-        index=df.index,
-    )
+    return df.rename(columns=dict(zip(old_columns, new_columns)))
 
 
 def as_pandas_join_condition(left_columns, right_columns, condition):

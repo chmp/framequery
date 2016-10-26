@@ -77,7 +77,7 @@ class ExpressionEvaluator(object):
             return ~operand
 
     def evaluate_value_binary_expression(self, col, table):
-        _logger.info("evaluate binary expression %s", col.operator)
+        _logger.debug("evaluate binary expression %s", col.operator)
         op = col.operator.upper()
         left = self.evaluate_value(col.left, table)
         right = self.evaluate_value(col.right, table)
@@ -116,7 +116,7 @@ class ExpressionEvaluator(object):
         return float(col.value)
 
     def evaluate_value_column_reference(self, col, table):
-        _logger.info("eval column reference %s", col.value)
+        _logger.debug("eval column reference %s", col.value)
         ref = self._normalize_col_ref(col.value, table.columns)
         return table[ref]
 
@@ -136,10 +136,12 @@ class ExpressionEvaluator(object):
         ]
 
         if len(candidates) == 0:
-            raise ValueError("column {} not found".format(ref))
+            raise ValueError("column {} not found in {}".format(ref, columns))
 
         if len(candidates) > 1:
-            raise ValueError("column {} is ambigious".format(ref))
+            raise ValueError(
+                "column {} is ambigious among {}".format(ref, columns)
+            )
 
         return candidates[0]
 

@@ -2,6 +2,7 @@ from __future__ import print_function, division, absolute_import
 
 import collections
 import functools as ft
+import logging
 import operator
 
 import pandas as pd
@@ -17,7 +18,10 @@ from ._pandas_util import (
     column_set_table,
     cross_join,
     ensure_table_columns,
+    get_col_ref,
 )
+
+_logger = logging.getLogger(__name__)
 
 
 class DaskExecutor(BaseExecutor, ExpressionEvaluator):
@@ -33,6 +37,7 @@ class DaskExecutor(BaseExecutor, ExpressionEvaluator):
         self.functions['POW'] = operator.pow
 
     def evaluate_transform(self, node, scope):
+        _logger.debug("evaluate transform %s", node)
         table = self.evaluate(node.table, scope)
 
         table_id = next(self.id_generator)
@@ -45,7 +50,7 @@ class DaskExecutor(BaseExecutor, ExpressionEvaluator):
             for (col_id, expr) in col_id_expr_pairs
         ])
 
-        return table.map_partitions(transform_partitions, col_id_expr_pairs, meta=meta)
+        return table.map_partitions(ft.partial(transform_partitions, meta=meta), col_id_expr_pairs, meta=meta)
 
     def _determine_dtype(self, expr, table):
         # NOTE: since no compute is triggered, this operation is cheap
@@ -83,25 +88,37 @@ class DaskExecutor(BaseExecutor, ExpressionEvaluator):
         return result
 
     def _evaluate_aggregation_grouped(self, node, table):
+        # TODO: use .aggregate if available
         table_id = next(self.id_generator)
 
         meta = self._evaluate_aggregation_base(node, table, table.columns, table_id=table_id)
         meta = [(k, v.dtype) for (k, v) in meta.items()]
-        meta = [('{}.g'.format(table_id), table.dtypes['$0.g'])] + meta
-        meta = dd.utils.make_meta(meta)
 
+        # TODO: clean this up
+        groupby_meta = [
+            (column_set_table('.'.join(col.value), table_id),
+             table.dtypes[get_col_ref(table.columns, col.value[-1])])
+            for col in node.group_by
+        ]
+
+        meta = groupby_meta + meta
+        meta = dd.utils.make_meta(meta)
         group_cols = self._get_group_columns(table, node.group_by)
 
+        assert len(group_cols) == 1
+
         res = (
-            table.groupby(group_cols)
+            table.groupby(group_cols[0])
             .apply(ft.partial(aggregate_partitions, self, node, table_id, group_cols), meta)
             #.reset_index()
         )
         return res
 
 
+def transform_partitions(df, col_id_expr_pairs, meta):
+    if not len(df):
+        return meta
 
-def transform_partitions(df, col_id_expr_pairs):
     ex = ExpressionEvaluator()
     ex.functions['ABS'] = abs
     ex.functions['POW'] = operator.pow

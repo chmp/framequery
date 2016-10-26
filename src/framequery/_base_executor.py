@@ -1,6 +1,7 @@
 from __future__ import print_function, division, absolute_import
 
 import collections
+import logging
 
 import pandas as pd
 
@@ -15,6 +16,8 @@ from ._pandas_util import (
 from ._parser import get_selected_column_name, GeneralSetFunction, ColumnReference
 from ._util.executor import default_id_generator
 from ._util.introspect import call_handler
+
+_logger = logging.getLogger(__name__)
 
 
 class BaseExecutor(object):
@@ -53,6 +56,7 @@ class BaseExecutor(object):
         return node.value
 
     def evaluate_get_table(self, node, scope):
+        _logger.debug("eval get table %s", node)
         if node.table == 'DUAL':
             table = self._get_dual()
 
@@ -71,6 +75,7 @@ class BaseExecutor(object):
         return self.evaluate(node.node, scope)
 
     def evaluate_transform(self, node, scope):
+        _logger.info("evaluation transform %s", node)
         table = self.evaluate(node.table, scope)
 
         result = collections.OrderedDict()
@@ -96,6 +101,7 @@ class BaseExecutor(object):
         return table
 
     def evaluate_aggregate(self, node, scope):
+        _logger.info("evaluation aggregate %s", node)
         table = self.evaluate(node.table, scope)
 
         if node.group_by is None:
