@@ -5,6 +5,7 @@ from ._pandas import PandasExecutor
 from ._parser import Select
 
 import collections
+import inspect
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ class Context(object):
 
 def build_scope(obj=None):
     if obj is None:
-        obj = insepct.getcurrentframe()
+        obj = inspect.getcurrentframe()
 
     if isinstance(obj, collections.Mapping):
         return obj

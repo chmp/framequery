@@ -7,17 +7,13 @@ import operator
 
 import pandas as pd
 import dask.dataframe as dd
-import dask.dataframe.utils
 
 from ._base_executor import BaseExecutor
 from ._dask_util import dataframe_from_scalars
 from ._expression import ExpressionEvaluator
 from ._pandas_util import (
-    as_pandas_join_condition,
     column_from_parts,
     column_set_table,
-    cross_join,
-    ensure_table_columns,
     get_col_ref,
 )
 
@@ -110,7 +106,6 @@ class DaskExecutor(BaseExecutor, ExpressionEvaluator):
         res = (
             table.groupby(group_cols[0])
             .apply(ft.partial(aggregate_partitions, self, node, table_id, group_cols), meta)
-            #.reset_index()
         )
         return res
 
@@ -144,6 +139,10 @@ def aggregate_partitions(ex, node, table_id, group_cols, df):
 def combine_series(items, how='inner'):
     """Helper function to combine mutliple series into a single dataframe.
     """
-    item_to_frame = lambda item: item[1].to_frame(name=item[0])
-    join_two_frames = lambda a, b: a.join(b, how=how)
+    def item_to_frame(item):
+        return item[1].to_frame(name=item[0])
+
+    def join_two_frames(a, b):
+        return a.join(b, how=how)
+
     return ft.reduce(join_two_frames, map(item_to_frame, items))

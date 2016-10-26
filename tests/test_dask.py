@@ -2,8 +2,6 @@ from __future__ import print_function, division, absolute_import
 
 import dask
 import dask.dataframe as dd
-#from dask.dataframe.utils import eq
-import numpy as np
 import pandas as pd
 import pandas.util.testing as pdt
 

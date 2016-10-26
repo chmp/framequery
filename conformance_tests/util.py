@@ -9,7 +9,6 @@ import unittest
 import pandas as pd
 import dask.dataframe as dd
 import numpy
-import pandas.util.testing as pdt
 import sqlalchemy
 
 from framequery import make_context
@@ -35,7 +34,7 @@ class ConformanceTest(unittest.TestCase):
         connection_string = config['connection']
         strict = config.get('context', {}).get('strict', False)
 
-        executor_factory =  config.get('context', {}).get('executor', 'pandas')
+        executor_factory = config.get('context', {}).get('executor', 'pandas')
 
         if executor_factory == 'pandas':
             executor_factory = PandasExecutor
@@ -81,7 +80,6 @@ class ConformanceTest(unittest.TestCase):
         print(actual)
         print("expected:")
         print(expected)
-        #pdt.assert_frame_equal(actual, expected)
 
         # NOTE: use all_close to tollerate type changes caused by pandas
         self.assertEqual(list(actual.columns), list(expected.columns))

@@ -9,7 +9,6 @@ from . import _dag
 from ._pandas_util import (
     as_pandas_join_condition,
     column_from_parts,
-    cross_join,
     ensure_table_columns,
     is_equality_join,
 )

@@ -5,8 +5,6 @@ import pandas as pd
 import pandas.util.testing as pdt
 
 
-# TODO: add integration tests using real databases
-
 def test_dual():
     pdt.assert_frame_equal(
         _context().select('SELECT * FROM DUAL'),
@@ -14,7 +12,7 @@ def test_dual():
     )
 
 
-def test_dual():
+def test_dual_two():
     pdt.assert_frame_equal(
         _context().select('SELECT 42 as a FROM DUAL'),
         pd.DataFrame({
@@ -113,7 +111,6 @@ def test_evaluate_aggregation_grouped_no_as():
             '$2.a': [9, 6],
         })[['$2.g', '$2.a']],
     )
-
 
 
 def test_select_column():
@@ -225,6 +222,7 @@ def test_simple_arithmetic():
             '$0.a': [2, 4, 6],
         }),
     )
+
 
 def test_simple_arithmetic_v2():
     pdt.assert_frame_equal(
@@ -366,7 +364,7 @@ def test_where():
     )
 
 
-def test_where():
+def test_where_two():
     pdt.assert_frame_equal(
         _context().select('''
             SELECT a
@@ -382,7 +380,6 @@ def test_where():
     )
 
 
-
 def test_introspection_support():
     my_table = pd.DataFrame({
         'a': [1, 2, 3],
@@ -391,6 +388,9 @@ def test_introspection_support():
         'g': [0, 0, 1],
         'one': [1, 1, 1],
     })
+
+    # usage to prevent flake8 message
+    print("shape: ", my_table.shape)
 
     pdt.assert_frame_equal(
         fq.select('''
@@ -414,6 +414,9 @@ def test_readme_example():
         'store_id': [1, 2, 3, 4],
         'sales': [5, 6, 7, 8]
     })
+
+    # usage to prevent flake8 message
+    print("shapes: ", stores.shape, sales.shape)
 
     import framequery as fq
 

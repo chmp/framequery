@@ -3,7 +3,7 @@ from __future__ import print_function, division, absolute_import
 import collections
 
 import pandas as pd
-import pandas.util.testing  as pdt
+import pandas.util.testing as pdt
 
 from framequery._dask_util import scalar_from_python, dataframe_from_scalars
 

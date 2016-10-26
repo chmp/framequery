@@ -6,9 +6,9 @@ def optional(parser):
 
 
 def token(ttype, value=None):
-    return some(lambda t:
+    return some(lambda t: (
         t.ttype is ttype and (value is None or t.value.lower() == value.lower())
-    )
+    ))
 
 
 def failing():

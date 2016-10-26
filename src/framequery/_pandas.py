@@ -2,8 +2,6 @@
 """
 from __future__ import print_function, division, absolute_import
 
-import collections
-import itertools as it
 import logging
 import operator
 
@@ -13,16 +11,7 @@ import six
 from . import _dag
 from ._base_executor import BaseExecutor
 from ._expression import ExpressionEvaluator
-from ._pandas_util import (
-    as_pandas_join_condition,
-    column_from_parts,
-    cross_join,
-    ensure_table_columns,
-    is_equality_join,
-    is_scalar,
-)
-from ._parser import ColumnReference
-from ._util.executor import default_id_generator
+from ._pandas_util import cross_join, is_scalar
 
 _logger = logging.getLogger(__name__)
 
@@ -141,7 +130,7 @@ def _get(obj, tuple_key):
     if isinstance(obj, pd.DataFrame):
         return obj[tuple_key]
 
-    return obj[tuple_key,]
+    return obj[tuple_key, ]
 
 
 def _get_null_marker_name(col):

@@ -45,10 +45,10 @@ class ExpressionEvaluator(object):
         func_name = func.function.upper()
 
         if func_name == 'SUM':
-            impl = lambda s: s.sum()
+            impl = operator.methodcaller('sum')
 
         elif func_name == 'AVG':
-            impl = lambda s: s.mean()
+            impl = operator.methodcaller('mean')
 
         else:
             raise ValueError("unknown analytics function {}".format(func_name))

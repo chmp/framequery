@@ -1,7 +1,6 @@
-import sqlite3
 import unittest
 
-from util import ConformanceTest, Environment, Table, Type, ColumnWithValues
+from util import ConformanceTest, Table, Type, ColumnWithValues
 
 
 class ExampleEnvironment(object):
@@ -34,6 +33,7 @@ class TestUngroupedtAggregates(ExampleEnvironment, ConformanceTest):
 
         FROM my_table
     '''
+
 
 class TestUngroupedtAggregatesCTE(ExampleEnvironment, ConformanceTest):
     query = '''
