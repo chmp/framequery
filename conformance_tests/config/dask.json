@@ -1,0 +1,7 @@
+{
+  "connection": "sqlite://",
+  "context": {
+    "executor": "dask",
+    "strict": false
+  }
+}

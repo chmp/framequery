@@ -84,7 +84,11 @@ class TestUngroupedtAggregatesNoAs(ExampleEnvironment, ConformanceTest):
     '''
 
 
-class TestUngroupedAggregates(ExampleEnvironment, ConformanceTest):
+class TestGroupedAggregates_SimpleExample(ExampleEnvironment, ConformanceTest):
+    query = 'SELECT b, SUM(b) as a FROM my_table GROUP BY b'
+
+
+class TestGroupedAggregates(ExampleEnvironment, ConformanceTest):
     query = '''
         SELECT
             b, c,
@@ -106,7 +110,7 @@ class TestUngroupedAggregates(ExampleEnvironment, ConformanceTest):
         return df
 
 
-class TestUngroupedAggregatesWhere(ExampleEnvironment, ConformanceTest):
+class TestGroupedAggregatesWhere(ExampleEnvironment, ConformanceTest):
     query = '''
         SELECT
             b, c,

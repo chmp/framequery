@@ -7,11 +7,14 @@ import random
 import unittest
 
 import pandas as pd
+import dask.dataframe as dd
 import numpy
 import pandas.util.testing as pdt
 import sqlalchemy
 
 from framequery import make_context
+from framequery._dask import DaskExecutor
+from framequery._pandas import PandasExecutor
 from framequery._pandas_util import strip_table_name_from_columns
 
 _logger = logging.getLogger(__name__)
@@ -32,8 +35,17 @@ class ConformanceTest(unittest.TestCase):
         connection_string = config['connection']
         strict = config.get('context', {}).get('strict', False)
 
+        executor_factory =  config.get('context', {}).get('executor', 'pandas')
+
+        if executor_factory == 'pandas':
+            executor_factory = PandasExecutor
+
+        elif executor_factory == 'dask':
+            executor_factory = DaskExecutor
+
         return Environment(
             connection_factory=lambda: sqlalchemy.create_engine(connection_string),
+            executor_factory=executor_factory,
             strict=strict,
         )
 
@@ -77,8 +89,9 @@ class ConformanceTest(unittest.TestCase):
 
 
 class Environment(object):
-    def __init__(self, connection_factory, strict=False):
+    def __init__(self, connection_factory, executor_factory, strict=False):
         self.connection_factory = connection_factory
+        self.executor_factory = executor_factory
         self.strict = strict
         self.tables = []
 
@@ -91,7 +104,7 @@ class Environment(object):
 
     def create_realization(self, rows):
         realizations = {
-            table.name: table.create_realization(rows) for table in self.tables
+            table.name: table.create_realization(rows, self) for table in self.tables
         }
         return EnvironmentRealization(self, realizations)
 
@@ -106,7 +119,11 @@ class EnvironmentRealization(object):
             name: realization.get_dataframe()
             for name, realization in self.realizations.items()
         }
-        return make_context(scope, strict=self.env.strict)
+        return make_context(
+            scope,
+            strict=self.env.strict,
+            executor_factory=self.env.executor_factory,
+        )
 
     def execute(self, q):
         fq_result = self._fq_execute(q)
@@ -117,6 +134,13 @@ class EnvironmentRealization(object):
     def _fq_execute(self, q):
         ctx = self.get_context()
         result = ctx.select(q)
+
+        if issubclass(self.env.executor_factory, DaskExecutor):
+            # TODO: make sync / async configurable
+            import dask
+            with dask.set_options(get=dask.async.get_sync):
+                result = result.compute()
+
         return strip_table_name_from_columns(result)
 
     def _sql_execute(self, q):
@@ -148,18 +172,19 @@ class Table(object):
             self.name, cols, placeholders
         )
 
-    def create_realization(self, rows):
+    def create_realization(self, rows, env):
         values = {
             col.name: col.generate(rows) for col in self.columns
         }
 
-        return TableRealization(self, values)
+        return TableRealization(self, values, env)
 
 
 class TableRealization(object):
-    def __init__(self, table, values):
+    def __init__(self, table, values, env):
         self.table = table
         self.values = values
+        self.env = env
 
     def __repr__(self):
         return 'TableRealization({}, {})'.format(self.table, self.values)
@@ -176,7 +201,12 @@ class TableRealization(object):
             '{}.{}'.format(self.table.name, col): values
             for col, values in self.values.items()
         }
-        return pd.DataFrame(data, columns=columns)
+        df = pd.DataFrame(data, columns=columns)
+
+        if issubclass(self.env.executor_factory, DaskExecutor):
+            df = dd.from_pandas(df, npartitions=10)
+
+        return df
 
     def get_values(self):
         cols = [self.values[col.name] for col in self.table.columns]
