@@ -272,6 +272,9 @@ class SplitBaseTransformer(object):
     def split_float(self, node):
         return node, [], []
 
+    def split_string(self, node):
+        return node, [], []
+
     def _tmp_column(self):
         return '${}'.format(next(self.id_generator))
 

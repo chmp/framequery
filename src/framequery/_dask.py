@@ -34,9 +34,6 @@ class DaskExecutor(BaseExecutor, ExpressionEvaluator):
 
         self._set_id_generator(id_generator)
 
-        self.functions['ABS'] = abs
-        self.functions['POW'] = operator.pow
-
     def evaluate_transform(self, node, scope):
         _logger.debug("evaluate transform %s", node)
         table = self.evaluate(node.table, scope)

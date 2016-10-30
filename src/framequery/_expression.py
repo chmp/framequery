@@ -2,8 +2,12 @@
 """
 from __future__ import print_function
 
-import operator
+import functools as ft
 import logging
+import operator
+import re
+
+import pandas as pd
 
 from ._util.introspect import call_handler
 from ._pandas_util import (
@@ -18,6 +22,13 @@ _logger = logging.getLogger(__name__)
 class ExpressionEvaluator(object):
     def __init__(self):
         self.functions = {}
+
+        self.functions['ABS'] = abs
+        self.functions['POW'] = operator.pow
+        self.functions['UPPER'] = lambda s: pd.Series(s).str.upper()
+        self.functions['LOWER'] = lambda s: pd.Series(s).str.lower()
+        self.functions['CONCAT'] = lambda *s: ft.reduce(operator.add, s)
+        self.functions['MID'] = _func_mid
 
     def evaluate_value(self, node, scope):
         return call_handler(self, 'evaluate_value', node, scope)
@@ -90,6 +101,7 @@ class ExpressionEvaluator(object):
             '/': operator.truediv,
             '+': operator.add,
             '-': operator.sub,
+            '||': operator.add,  # TODO: add type test for string?
             'AND': operator.and_,
             'OR': operator.or_,
             '<': operator.lt,
@@ -98,17 +110,18 @@ class ExpressionEvaluator(object):
             '>=': operator.ge,
             '=': operator.eq,
             '!=': operator.ne,
+            'LIKE': _func_like,
+            'NOT LIKE': lambda s, p: ~_func_like(s, p),
+            'IN': lambda a, b: a.isin(b),
+            'NOT IN': lambda a, b: ~(a.isin(b)),
         }
 
         if op in operator_map:
             op = operator_map[op]
             return op(left, right)
 
-        elif op == 'IN':
-            return left.isin(right)
-
         else:
-            raise ValueError("unknown operator {}".format(operator))
+            raise ValueError("unknown operator {}".format(op))
 
     def evaluate_value_integer(self, col, table):
         _logger.debug("eval integer")
@@ -117,6 +130,10 @@ class ExpressionEvaluator(object):
     def evaluate_value_float(self, col, table):
         _logger.debug("eval float")
         return float(col.value)
+
+    def evaluate_value_string(self, col, table):
+        assert col.value[0] == "'" and col.value[-1] == "'"
+        return col.value[1:-1]
 
     def evaluate_value_column_reference(self, col, table):
         _logger.debug("eval column reference %s", col.value)
@@ -141,3 +158,22 @@ class ExpressionEvaluator(object):
             normalize_col_ref(item.value.value, table.columns),
             item.order == 'ASC'
         )
+
+
+def _func_mid(s, start, length=None):
+    start = start - 1
+    if length is not None:
+        stop = start + length
+    else:
+        stop = None
+
+    return pd.Series(s).str.slice(start, stop)
+
+
+def _func_like(s, pattern):
+    pattern = re.escape(pattern)
+    pattern = pattern.replace(r'\%', '.*')
+    pattern = pattern.replace(r'\_', '.')
+    pattern = '^' + pattern + '$'
+
+    return pd.Series(s).str.contains(pattern)

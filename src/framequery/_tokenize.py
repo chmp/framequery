@@ -32,6 +32,7 @@ class Tokens(object):
 
     Integer = Token.Literal.Number.Integer
     Float = Token.Literal.Number.Float
+    String = Token.Literal.String.Single
 
     Name = Token.Name
     Operator = Token.Operator

@@ -2,6 +2,8 @@
 """
 from __future__ import print_function, division, absolute_import
 
+import collections
+
 from funcparserlib.parser import some, maybe, skip, many, pure
 import six
 
@@ -70,6 +72,9 @@ def flatten(head_tail):
     ]
 
 
+ValueHolder = collections.namedtuple('ValueHolder', ['value'])
+
+
 class Asterisk(Unvalued):
     parser = wildcard
 
@@ -80,6 +85,10 @@ class Integer(Node):
 
 class Float(Node):
     parser = token(Tokens.Float) >> get_value
+
+
+class String(Node):
+    parser = token(Tokens.String) >> get_value
 
 
 class ValueExpression(TransparentNode, ForwardDecl):
@@ -114,6 +123,8 @@ class BinaryExpression(RecordNode):
     sub = _make_binary_op('-')
     mul = _make_binary_op('*')
     div = _make_binary_op('/')
+
+    concat = _make_binary_op('||')
 
     eq = _make_binary_op('=')
     ne = _make_binary_op('!=')
@@ -293,9 +304,25 @@ def define_value_expression(cls):
         ColumnReference.get_parser() |
 
         Float.get_parser() |
-        Integer.get_parser()
+        Integer.get_parser() |
+        String.get_parser()
 
         # TODO: add support for non numbers
+    )
+
+    # TODO: support ALL, ANY, SOME, BETWEEN
+    special_predicates = (
+        (
+            (token(Tokens.Keyword, 'NOT') + token(Tokens.Keyword, 'LIKE')) >>
+            (lambda s: ValueHolder('NOT LIKE'))
+        ) |
+        (
+            (token(Tokens.Keyword, 'NOT') + token(Tokens.Keyword, 'IN')) >>
+            (lambda s: ValueHolder('NOT IN'))
+        ) |
+        token(Tokens.Keyword, 'IN') |
+        token(Tokens.Keyword, 'OR') |
+        token(Tokens.Keyword, 'LIKE')
     )
 
     cls.define(
@@ -304,13 +331,12 @@ def define_value_expression(cls):
             # TODO: support bitwise not
             (2, one_of(Tokens.Operator, '*/%')),
             (1, one_of(Tokens.Operator, '+-')),
+            (2, one_of(Tokens.Operator, ['||'])),
             (2, one_of(Tokens.Operator, '+-&|^')),
             (2, one_of(Tokens.Comparison, ['=', '!=', '>', '<', '>=', '<=', '<>', '!>', '!<'])),
             (1, one_of(Tokens.Keyword, ['NOT'])),
             (2, one_of(Tokens.Keyword, ['AND'])),
-
-            # TODO: support ALL, ANY, SOME, BETWEEN
-            (2, one_of(Tokens.Keyword, ['IN', 'OR', 'LIKE'])),
+            (2, special_predicates),
         )
     )
 

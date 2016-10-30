@@ -23,9 +23,6 @@ class PandasExecutor(BaseExecutor, ExpressionEvaluator):
         self._set_id_generator(id_generator)
         self._set_strict(strict)
 
-        self.functions['ABS'] = abs
-        self.functions['POW'] = operator.pow
-
     def _get_dual(self):
         return pd.DataFrame()
 

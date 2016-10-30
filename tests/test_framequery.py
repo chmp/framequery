@@ -23,6 +23,26 @@ def test_dual_two():
     )
 
 
+@pytest.mark.parametrize('expr,expected', [
+    ("'foo'", 'foo'),
+    ("UPPER('foo')", 'FOO'),
+    ("LOWER('FOO')", 'foo'),
+    ("CONCAT('foo', 'BAR', 'baz')", 'fooBARbaz'),
+    ("MID('abcdef', 2, 3)", 'bcd'),
+    ("MID('abcdef', 2)", 'bcdef'),
+    ("'foo' || 'bar'", 'foobar'),
+    ("'foo' LIKE '%oo'", True),
+    ("'foo' NOT LIKE '%oo'", False),
+])
+def test_string(expr, expected):
+    pdt.assert_frame_equal(
+        _context().select('''SELECT {} as a FROM DUAL'''.format(expr)),
+        pd.DataFrame({
+            '$0.a': [expected],
+        }),
+    )
+
+
 def test_dual_no_as():
     pdt.assert_frame_equal(
         _context().select('SELECT 42 a FROM DUAL'),
