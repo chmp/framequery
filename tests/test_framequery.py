@@ -4,6 +4,8 @@ from framequery import make_context
 import pandas as pd
 import pandas.util.testing as pdt
 
+import pytest
+
 
 def test_dual():
     pdt.assert_frame_equal(
@@ -110,6 +112,51 @@ def test_evaluate_aggregation_grouped_no_as():
             '$2.g': [0, 1],
             '$2.a': [9, 6],
         })[['$2.g', '$2.a']],
+    )
+
+
+@pytest.mark.xfail(reason="not yet supported")
+def test_evaluate_aggregation_grouped_no_as__transform():
+    pdt.assert_frame_equal(
+        _context().select('SELECT SUM(b) a FROM my_table GROUP BY g + g'),
+        pd.DataFrame({
+            '$2.a': [9, 6],
+        })[['$2.a']],
+    )
+
+
+@pytest.mark.xfail(reason="not yet supported")
+def test_evaluate_aggregation_grouped_no_as__transform_alias():
+    pdt.assert_frame_equal(
+        _context().select('SELECT 2 * g as h, SUM(b) a FROM my_table GROUP BY h'),
+        pd.DataFrame({
+            '$2.h': [0, 2],
+            '$2.a': [9, 6],
+        })[['$2.h', '$2.a']],
+    )
+
+
+@pytest.mark.xfail(reason="not yet supported")
+def test_evaluate_aggregation_grouped__numeric():
+    pdt.assert_frame_equal(
+        _context().select('SELECT g, SUM(b) as a, FIRST_VALUE(a) as fa FROM my_table GROUP BY 1'),
+        pd.DataFrame({
+            '$2.g': [0, 1],
+            '$2.a': [9, 6],
+            '$2.fa': [1, 3],
+        })[['$2.g', '$2.a', '$2.fa']],
+    )
+
+
+@pytest.mark.xfail(reason="not yet supported")
+def test_evaluate_aggregation_grouped__numeric_no_alias():
+    pdt.assert_frame_equal(
+        _context().select('SELECT 2 * g, SUM(b) as a, FIRST_VALUE(a) as fa FROM my_table GROUP BY 1'),
+        pd.DataFrame({
+            '$2.g': [0, 1],
+            '$2.a': [9, 6],
+            '$2.fa': [1, 3],
+        })[['$2.g', '$2.a', '$2.fa']],
     )
 
 

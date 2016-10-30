@@ -2,6 +2,9 @@ import sqlite3
 import unittest
 
 from util import ConformanceTest, Table, Type, ColumnWithValues, version
+import util
+
+import pytest
 
 
 class ExampleEnvironment(object):
@@ -19,11 +22,11 @@ class ExampleEnvironment(object):
         )
 
 
-class TestExample(ExampleEnvironment, ConformanceTest):
+class TestExample(ExampleEnvironment, util.ConformanceTest):
     query = 'SELECT * FROM my_table'
 
 
-class TestUngroupedtAggregates(ExampleEnvironment, ConformanceTest):
+class TestUngroupedtAggregates(ExampleEnvironment, util.ConformanceTest):
     query = '''
         SELECT
             sum(a) as sum_a,
@@ -36,7 +39,7 @@ class TestUngroupedtAggregates(ExampleEnvironment, ConformanceTest):
     '''
 
 
-class TestUngroupedtAggregatesCTE(ExampleEnvironment, ConformanceTest):
+class TestUngroupedtAggregatesCTE(ExampleEnvironment, util.ConformanceTest):
     query = '''
         WITH
             foo AS (
@@ -63,7 +66,7 @@ class TestUngroupedtAggregatesCTE(ExampleEnvironment, ConformanceTest):
             )
 
 
-class TestUngroupedtAggregatesSubQuery(ExampleEnvironment, ConformanceTest):
+class TestUngroupedtAggregatesSubQuery(ExampleEnvironment, util.ConformanceTest):
     query = '''
         SELECT
             sum(a) as sum_a,
@@ -80,7 +83,7 @@ class TestUngroupedtAggregatesSubQuery(ExampleEnvironment, ConformanceTest):
     '''
 
 
-class TestUngroupedtAggregatesNoAs(ExampleEnvironment, ConformanceTest):
+class TestUngroupedtAggregatesNoAs(ExampleEnvironment, util.ConformanceTest):
     query = '''
         SELECT
             sum(a) sum_a,
@@ -93,7 +96,7 @@ class TestUngroupedtAggregatesNoAs(ExampleEnvironment, ConformanceTest):
     '''
 
 
-class TestGroupedAggregates_SimpleExample(ExampleEnvironment, ConformanceTest):
+class TestGroupedAggregates_SimpleExample(ExampleEnvironment, util.ConformanceTest):
     query = 'SELECT b, SUM(b) as a FROM my_table GROUP BY b'
 
     def postprocess_actual(self, env, df):
@@ -107,7 +110,7 @@ class TestGroupedAggregates_SimpleExample(ExampleEnvironment, ConformanceTest):
         return df.sort_values(list(df.columns))
 
 
-class TestGroupedAggregates(ExampleEnvironment, ConformanceTest):
+class TestGroupedAggregates(ExampleEnvironment, util.ConformanceTest):
     query = '''
         SELECT
             b, c,
@@ -129,7 +132,7 @@ class TestGroupedAggregates(ExampleEnvironment, ConformanceTest):
         return df
 
 
-class TestGroupedAggregatesWhere(ExampleEnvironment, ConformanceTest):
+class TestGroupedAggregatesWhere(ExampleEnvironment, util.ConformanceTest):
     query = '''
         SELECT
             b, c,
@@ -152,7 +155,34 @@ class TestGroupedAggregatesWhere(ExampleEnvironment, ConformanceTest):
         return df
 
 
-class TestJoin(ExampleEnvironment, ConformanceTest):
+
+class TestGroupedAggregatesWhereExtended(ExampleEnvironment, util.ConformanceTest):
+    query = '''
+        SELECT
+            b, c, 3 * b as d
+            sum(a) as sum_a,
+            avg(a) as avg_a,
+            count(a) as count_a,
+            min(a) as min_a,
+            max(a) as max_a
+
+        FROM my_table
+        WHERE a > 2 AND b > 2
+        GROUP BY b, 2, 2 * c, d
+    '''
+
+    def configure_env(self, env):
+        raise pytest.xfail(reason="not yet supported")
+
+    # pandas removes NULLs in groupby, SQL keeps them
+    def postprocess_expected(self, env, df):
+        if not env.strict:
+            df = df[~df['b'].isnull() & ~df['c'].isnull()]
+
+        return df
+
+
+class TestJoin(ExampleEnvironment, util.ConformanceTest):
     query = '''
         SELECT *
 

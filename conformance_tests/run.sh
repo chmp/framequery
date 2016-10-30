@@ -2,4 +2,7 @@
 set -eu
 
 SELFDIR=$(dirname "$0")
-FRAMEQUERY_ENV=$1 python3 -m pytest "${SELFDIR}"
+CONFIG="$1"
+shift
+
+FRAMEQUERY_ENV="$CONFIG" python3 -m pytest "${SELFDIR}" "$@"
