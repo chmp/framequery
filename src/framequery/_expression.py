@@ -7,8 +7,6 @@ import logging
 
 from ._util.introspect import call_handler
 from ._pandas_util import (
-    column_from_parts,
-    column_match,
     apply_analytics_function,
     normalize_col_ref,
 )
@@ -32,7 +30,7 @@ class ExpressionEvaluator(object):
     def evaluate_value_analytics_function(self, node, table):
         if node.partition_by is not None:
             partition_by = [
-                self._normalize_col_ref(n.value, table.columns)
+                normalize_col_ref(n.value, table.columns)
                 for n in node.partition_by
             ]
 
@@ -59,7 +57,7 @@ class ExpressionEvaluator(object):
             raise ValueError("unknown analytics function {}".format(func_name))
 
         assert len(func.arguments) == 1
-        arg0 = self._normalize_col_ref(func.arguments[0].value, table.columns)
+        arg0 = normalize_col_ref(func.arguments[0].value, table.columns)
 
         return apply_analytics_function(
             table, arg0, impl,
@@ -122,12 +120,8 @@ class ExpressionEvaluator(object):
 
     def evaluate_value_column_reference(self, col, table):
         _logger.debug("eval column reference %s", col.value)
-        ref = self._normalize_col_ref(col.value, table.columns)
+        ref = normalize_col_ref(col.value, table.columns)
         return table[ref]
-
-    def _normalize_col_ref(self, ref, columns):
-        # TODO: remove all references
-        return normalize_col_ref(ref, columns)
 
     def _split_order_by_items(self, items, table):
         values = []
@@ -144,6 +138,6 @@ class ExpressionEvaluator(object):
         assert isinstance(item.value, ColumnReference)
 
         return (
-            self._normalize_col_ref(item.value.value, table.columns),
+            normalize_col_ref(item.value.value, table.columns),
             item.order == 'ASC'
         )

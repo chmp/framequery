@@ -11,6 +11,7 @@ from ._pandas_util import (
     column_from_parts,
     ensure_table_columns,
     is_equality_join,
+    normalize_col_ref,
 )
 from ._parser import get_selected_column_name, GeneralSetFunction, ColumnReference
 from ._util.executor import default_id_generator
@@ -163,7 +164,7 @@ class BaseExecutor(object):
         if not isinstance(value, ColumnReference):
             raise ValueError("indirect aggregations not supported")
 
-        col_ref = self._normalize_col_ref(value.value, columns)
+        col_ref = normalize_col_ref(value.value, columns)
         col = table[col_ref]
 
         # TODO: handle set quantifiers
@@ -193,7 +194,7 @@ class BaseExecutor(object):
         if not all(isinstance(obj, ColumnReference) for obj in group_by):
             raise ValueError("indirect group-bys not supported")
 
-        return [self._normalize_col_ref(ref.value, table.columns) for ref in group_by]
+        return [normalize_col_ref(ref.value, table.columns) for ref in group_by]
 
     def _dataframe_from_scalars(self, values):
         raise NotImplementedError()

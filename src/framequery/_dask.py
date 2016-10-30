@@ -18,9 +18,8 @@ from ._dask_util import dataframe_from_scalars
 from ._expression import ExpressionEvaluator
 from ._pandas_util import (
     column_from_parts,
-    column_set_table,
-    get_col_ref,
     normalize_col_ref,
+    column_set_table,
 )
 
 _logger = logging.getLogger(__name__)
@@ -191,9 +190,7 @@ def aggregate_agg(df, node, table_id):
             raise ValueError("indirect aggregations not supported")
 
         col_id = db.tokenize(function, value.value)
-
-        res_id = col.alias if col.alias is not None else next(self.id_generator)
-        res_id = column_from_parts(table_id, res_id)
+        res_id = column_from_parts(table_id, col.alias)
 
         if function == 'SUM':
             result[res_id] = grouped[col_id].sum()
@@ -220,7 +217,7 @@ def aggregate_agg(df, node, table_id):
 
     result = pd.DataFrame(result)
     result = result.reset_index()
-    # TODO: fix column names
+    result.columns = [column_set_table(col, table_id) for col in result.columns]
     return result
 
 
