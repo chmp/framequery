@@ -113,10 +113,6 @@ class TestGroupedAggregates(ExampleEnvironment, ConformanceTest):
         GROUP BY b, c
     '''
 
-    def configure_env(self, env):
-        if env.executor_factory.__name__ == "DaskExecutor":
-            raise unittest.SkipTest('dask exec. does support multiple groupers')
-
     # pandas removes NULLs in groupby, SQL keeps them
     def postprocess_expected(self, env, df):
         if not env.strict:
@@ -139,10 +135,6 @@ class TestGroupedAggregatesWhere(ExampleEnvironment, ConformanceTest):
         WHERE a > 2 AND b > 2
         GROUP BY b, c
     '''
-
-    def configure_env(self, env):
-        if env.executor_factory.__name__ == "DaskExecutor":
-            raise unittest.SkipTest('dask exec. does support multiple groupers')
 
     # pandas removes NULLs in groupby, SQL keeps them
     def postprocess_expected(self, env, df):

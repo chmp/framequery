@@ -177,23 +177,42 @@ def test_evaluate_join():
     _compare('SELECT a, d FROM my_table RIGHT OUTER JOIN my_other_table ON g = h')
 
 
-def test_evaluate_aggregation_grouped_with_as():
-    actual = _context().select('SELECT g, SUM(b) as a FROM my_table GROUP BY g')
+
+@pytest.mark.parametrize('agg_func,expected', [
+    ('SUM', [90, 60]),
+    ('MIN', [4, 6]),
+    ('MAX', [5, 6]),
+    ('FIRST_VALUE', [4, 6]),
+    ('COUNT', [20, 10]),
+    ('AVG', [4.5, 6]),
+])
+def test_evaluate_aggregation_grouped_with_as(agg_func, expected):
+    q = 'SELECT g, {}(b) as a FROM my_table GROUP BY g'.format(agg_func)
+    actual = _context().select(q)
     expected = pd.DataFrame({
         '$2.g': [0, 1],
-        '$2.a': [90, 60],
+        '$2.a': expected,
     }, columns=['$2.g', '$2.a'])
 
     with dask.set_options(get=dask.async.get_sync):
         assert_eq(actual, expected)
 
 
-def test_evaluate_aggregation_grouped_no_as():
-    actual = _context().select('SELECT g, SUM(b) a FROM my_table GROUP BY g')
+@pytest.mark.parametrize('agg_func,expected', [
+    ('SUM', [90, 60]),
+    ('MIN', [4, 6]),
+    ('MAX', [5, 6]),
+    ('FIRST_VALUE', [4, 6]),
+    ('COUNT', [20, 10]),
+    ('AVG', [4.5, 6]),
+])
+def test_evaluate_aggregation_grouped_no_as(agg_func, expected):
+    q = 'SELECT g, {}(b) a FROM my_table GROUP BY g'.format(agg_func)
+    actual = _context().select(q)
 
     expected = pd.DataFrame({
         '$2.g': [0, 1],
-        '$2.a': [90, 60],
+        '$2.a': expected,
     }, columns=['$2.g', '$2.a'])
 
     with dask.set_options(get=dask.async.get_sync):
@@ -233,6 +252,7 @@ def test_no_compute():
                 2 * a as a, a + b as b, (a < b) AND (b > a) as c
             FROM my_table
         ''')
+        _context().select('SELECT g, SUM(b) a FROM my_table GROUP BY g')
 
 
 def test_combine_series__simple():

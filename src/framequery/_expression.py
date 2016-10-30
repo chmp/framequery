@@ -6,7 +6,12 @@ import operator
 import logging
 
 from ._util.introspect import call_handler
-from ._pandas_util import column_from_parts, column_match, apply_analytics_function
+from ._pandas_util import (
+    column_from_parts,
+    column_match,
+    apply_analytics_function,
+    normalize_col_ref,
+)
 from ._parser import ColumnReference
 
 _logger = logging.getLogger(__name__)
@@ -121,29 +126,8 @@ class ExpressionEvaluator(object):
         return table[ref]
 
     def _normalize_col_ref(self, ref, columns):
-        ref = ref[-2:]
-
-        if len(ref) == 2:
-            table, column = ref
-            return column_from_parts(table=table, column=column)
-
-        column = ref[0]
-
-        candidates = [
-            candidate
-            for candidate in columns
-            if column_match(candidate, column)
-        ]
-
-        if len(candidates) == 0:
-            raise ValueError("column {} not found in {}".format(ref, columns))
-
-        if len(candidates) > 1:
-            raise ValueError(
-                "column {} is ambigious among {}".format(ref, columns)
-            )
-
-        return candidates[0]
+        # TODO: remove all references
+        return normalize_col_ref(ref, columns)
 
     def _split_order_by_items(self, items, table):
         values = []

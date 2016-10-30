@@ -162,6 +162,32 @@ def _is_left(left_columns, right_columns, ref):
     return (left_ref is not None), left_ref if left_ref is not None else right_ref
 
 
+def normalize_col_ref(ref, columns):
+    ref = ref[-2:]
+
+    if len(ref) == 2:
+        table, column = ref
+        return column_from_parts(table=table, column=column)
+
+    column = ref[0]
+
+    candidates = [
+        candidate
+        for candidate in columns
+        if column_match(candidate, column)
+    ]
+
+    if len(candidates) == 0:
+        raise ValueError("column {} not found in {}".format(ref, columns))
+
+    if len(candidates) > 1:
+        raise ValueError(
+            "column {} is ambigious among {}".format(ref, columns)
+        )
+
+    return candidates[0]
+
+
 def get_col_ref(columns, ref):
     # TODO: cleanup: current version does not work with . in column names
     for col in columns:

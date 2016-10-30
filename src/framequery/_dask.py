@@ -6,8 +6,13 @@ import logging
 import operator
 
 import pandas as pd
-import dask.dataframe as dd
 
+import dask.base as db
+import dask.dataframe as dd
+import dask.dataframe.core as ddc
+import dask.dataframe.utils as ddu
+
+from ._parser import ColumnReference
 from ._base_executor import BaseExecutor
 from ._dask_util import dataframe_from_scalars
 from ._expression import ExpressionEvaluator
@@ -15,6 +20,7 @@ from ._pandas_util import (
     column_from_parts,
     column_set_table,
     get_col_ref,
+    normalize_col_ref,
 )
 
 _logger = logging.getLogger(__name__)
@@ -84,30 +90,30 @@ class DaskExecutor(BaseExecutor, ExpressionEvaluator):
         return result
 
     def _evaluate_aggregation_grouped(self, node, table):
-        # TODO: use .aggregate if available
         table_id = next(self.id_generator)
+        columns = table.columns
 
-        meta = self._evaluate_aggregation_base(node, table, table.columns, table_id=table_id)
-        meta = [(k, v.dtype) for (k, v) in meta.items()]
-
-        # TODO: clean this up
-        groupby_meta = [
-            (column_set_table('.'.join(col.value), table_id),
-             table.dtypes[get_col_ref(table.columns, col.value[-1])])
-            for col in node.group_by
-        ]
-
-        meta = groupby_meta + meta
-        meta = dd.utils.make_meta(meta)
-        group_cols = self._get_group_columns(table, node.group_by)
-
-        assert len(group_cols) == 1
-
-        res = (
-            table.groupby(group_cols[0])
-            .apply(ft.partial(aggregate_partitions, self, node, table_id, group_cols), meta)
+        group_by = [normalize_col_ref(ref.value, columns) for ref in node.group_by]
+        meta = self._evaluate_aggregation_base(
+            node, table._meta.groupby(group_by), columns, table_id=table_id
         )
-        return res
+        meta = pd.DataFrame(meta).reset_index()
+        meta = ddu.make_meta(meta)
+
+        kwargs = dict(
+            node=node,
+            table_id=table_id,
+        )
+        result = ddc.apply_concat_apply(
+            table,
+            chunk=aggregate_chunk,
+            aggregate=aggregate_agg,
+            meta=meta,
+            token='framequery-aggregate',
+            chunk_kwargs=kwargs,
+            aggregate_kwargs=kwargs,
+        )
+        return result
 
 
 def transform_partitions(df, col_id_expr_pairs, meta):
@@ -126,14 +132,96 @@ def transform_partitions(df, col_id_expr_pairs, meta):
     return pd.DataFrame(result, index=df.index)
 
 
-def aggregate_partitions(ex, node, table_id, group_cols, df):
-    columns = df.columns
-    df = df.groupby(group_cols)
-    res = ex._evaluate_aggregation_base(node, df, columns, table_id=table_id)
-    df = pd.DataFrame(res)
-    df = df.reset_index()
-    df.columns = [column_set_table(col, table_id) for col in df.columns]
-    return df
+def aggregate_chunk(df, node, table_id):
+    group_by = [normalize_col_ref(ref.value, df.columns) for ref in node.group_by]
+    grouped = df.groupby(group_by)
+
+    result = collections.OrderedDict()
+
+    for col in node.columns:
+        agg_node = col.value
+
+        function = agg_node.function.upper()
+        value = agg_node.value
+
+        if not isinstance(value, ColumnReference):
+            raise ValueError("indirect aggregations not supported")
+
+        col_ref = normalize_col_ref(value.value, df.columns)
+        col_id = db.tokenize(function, value.value)
+
+        if function == 'SUM':
+            result[col_id] = grouped[col_ref].sum()
+
+        elif function == 'MIN':
+            result[col_id] = grouped[col_ref].min()
+
+        elif function == 'MAX':
+            result[col_id] = grouped[col_ref].max()
+
+        elif function == 'FIRST_VALUE':
+            result[col_id] = grouped[col_ref].apply(lambda s: s.iloc[0])
+
+        elif function == 'COUNT':
+            result[col_id] = grouped[col_ref].count()
+
+        elif function == 'AVG':
+            result['sum-' + col_id] = grouped[col_ref].sum()
+            result['count-' + col_id] = grouped[col_ref].count()
+
+        else:
+            raise NotImplementedError()
+
+    return pd.DataFrame(result)
+
+
+def aggregate_agg(df, node, table_id):
+    levels = 0 if len(node.group_by) == 1 else list(range(len(node.group_by)))
+    grouped = df.groupby(level=levels)
+
+    result = collections.OrderedDict()
+
+    for col in node.columns:
+        agg_node = col.value
+
+        function = agg_node.function.upper()
+        value = agg_node.value
+
+        if not isinstance(value, ColumnReference):
+            raise ValueError("indirect aggregations not supported")
+
+        col_id = db.tokenize(function, value.value)
+
+        res_id = col.alias if col.alias is not None else next(self.id_generator)
+        res_id = column_from_parts(table_id, res_id)
+
+        if function == 'SUM':
+            result[res_id] = grouped[col_id].sum()
+
+        elif function == 'MIN':
+            result[res_id] = grouped[col_id].min()
+
+        elif function == 'MAX':
+            result[res_id] = grouped[col_id].max()
+
+        elif function == 'FIRST_VALUE':
+            result[res_id] = grouped[col_id].apply(lambda s: s.iloc[0])
+
+        elif function == 'COUNT':
+            result[res_id] = grouped[col_id].sum()
+
+        elif function == 'AVG':
+            # TODO: handle tree aggregations correctly
+            result[res_id] = (grouped['sum-' + col_id].sum() /
+                              grouped['count-' + col_id].sum())
+
+        else:
+            raise NotImplementedError()
+
+    result = pd.DataFrame(result)
+    result = result.reset_index()
+    # TODO: fix column names
+    return result
 
 
 def combine_series(items, how='inner'):
