@@ -6,7 +6,10 @@ import operator
 import logging
 
 from ._util.introspect import call_handler
-from ._pandas_util import column_from_parts, column_match, apply_analytics_function
+from ._pandas_util import (
+    apply_analytics_function,
+    normalize_col_ref,
+)
 from ._parser import ColumnReference
 
 _logger = logging.getLogger(__name__)
@@ -27,7 +30,7 @@ class ExpressionEvaluator(object):
     def evaluate_value_analytics_function(self, node, table):
         if node.partition_by is not None:
             partition_by = [
-                self._normalize_col_ref(n.value, table.columns)
+                normalize_col_ref(n.value, table.columns)
                 for n in node.partition_by
             ]
 
@@ -45,16 +48,16 @@ class ExpressionEvaluator(object):
         func_name = func.function.upper()
 
         if func_name == 'SUM':
-            impl = lambda s: s.sum()
+            impl = operator.methodcaller('sum')
 
         elif func_name == 'AVG':
-            impl = lambda s: s.mean()
+            impl = operator.methodcaller('mean')
 
         else:
             raise ValueError("unknown analytics function {}".format(func_name))
 
         assert len(func.arguments) == 1
-        arg0 = self._normalize_col_ref(func.arguments[0].value, table.columns)
+        arg0 = normalize_col_ref(func.arguments[0].value, table.columns)
 
         return apply_analytics_function(
             table, arg0, impl,
@@ -77,7 +80,7 @@ class ExpressionEvaluator(object):
             return ~operand
 
     def evaluate_value_binary_expression(self, col, table):
-        _logger.info("evaluate binary expression %s", col.operator)
+        _logger.debug("evaluate binary expression %s", col.operator)
         op = col.operator.upper()
         left = self.evaluate_value(col.left, table)
         right = self.evaluate_value(col.right, table)
@@ -116,32 +119,9 @@ class ExpressionEvaluator(object):
         return float(col.value)
 
     def evaluate_value_column_reference(self, col, table):
-        _logger.info("eval column reference %s", col.value)
-        ref = self._normalize_col_ref(col.value, table.columns)
+        _logger.debug("eval column reference %s", col.value)
+        ref = normalize_col_ref(col.value, table.columns)
         return table[ref]
-
-    def _normalize_col_ref(self, ref, columns):
-        ref = ref[-2:]
-
-        if len(ref) == 2:
-            table, column = ref
-            return column_from_parts(table=table, column=column)
-
-        column = ref[0]
-
-        candidates = [
-            candidate
-            for candidate in columns
-            if column_match(candidate, column)
-        ]
-
-        if len(candidates) == 0:
-            raise ValueError("column {} not found".format(ref))
-
-        if len(candidates) > 1:
-            raise ValueError("column {} is ambigious".format(ref))
-
-        return candidates[0]
 
     def _split_order_by_items(self, items, table):
         values = []
@@ -158,6 +138,6 @@ class ExpressionEvaluator(object):
         assert isinstance(item.value, ColumnReference)
 
         return (
-            self._normalize_col_ref(item.value.value, table.columns),
+            normalize_col_ref(item.value.value, table.columns),
             item.order == 'ASC'
         )

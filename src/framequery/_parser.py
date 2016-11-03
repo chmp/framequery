@@ -2,9 +2,7 @@
 """
 from __future__ import print_function, division, absolute_import
 
-import operator
-
-from funcparserlib.parser import some, maybe, skip, finished, forward_decl, many, pure
+from funcparserlib.parser import some, maybe, skip, many, pure
 import six
 
 from ._tokenize import Tokens
@@ -45,9 +43,9 @@ def specific_name(name):
 
 
 def one_of(ttype, names):
-    return some(lambda t:
+    return some(lambda t: (
         t.ttype is ttype and any(t.value.upper() == name for name in names)
-    )
+    ))
 
 
 def one_name_of(names):
@@ -93,8 +91,12 @@ class IdentifierChain(ListNode):
     separator_parser = period
 
 
-_make_unary_op = lambda op: classmethod(lambda cls, operand: UnaryExpression(op, operand))
-_make_binary_op = lambda op: classmethod(lambda cls, left, right: BinaryExpression(op, left, right))
+def _make_unary_op(op):
+    return classmethod(lambda cls, operand: UnaryExpression(op, operand))
+
+
+def _make_binary_op(op):
+    return classmethod(lambda cls, left, right: BinaryExpression(op, left, right))
 
 
 class UnaryExpression(RecordNode):
@@ -143,7 +145,8 @@ class ColumnReference(Node):
     parser = IdentifierChain.get_parser()
 
 
-_make_set_func = lambda op: classmethod(lambda cls, value, quantifier=None: cls(op, value, quantifier))
+def _make_set_func(op):
+    return classmethod(lambda cls, value, quantifier=None: cls(op, value, quantifier))
 
 
 class GeneralSetFunction(RecordNode):

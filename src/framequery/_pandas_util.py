@@ -13,15 +13,10 @@ def ensure_table_columns(name, df):
     """
     if len(df.columns) == 0:
         return df
-
-    old_columns = list(df.columns)
-    new_columns = list(column_set_table(col, name) for col in old_columns)
-
-    return pd.DataFrame(
-        _get_data(new_columns, old_columns, df),
-        columns=new_columns,
-        index=df.index,
-    )
+    renames = {
+        col: column_set_table(col, name) for col in df.columns
+    }
+    return df.rename(columns=renames)
 
 
 def cross_join(df1, df2):
@@ -115,7 +110,7 @@ def apply_analytics_function(df, col, func, sort_by=None, ascending=None, partit
 def transform_value(df, func, sort_by=None, ascending=None):
     if ascending is None:
         ascending = True
-    
+
     if sort_by is not None:
         df = df.sort_values(sort_by, ascending=ascending)
 
@@ -126,12 +121,7 @@ def transform_value(df, func, sort_by=None, ascending=None):
 def strip_table_name_from_columns(df):
     old_columns = list(df.columns)
     new_columns = list(column_get_column(col) for col in old_columns)
-
-    return pd.DataFrame(
-        _get_data(new_columns, old_columns, df),
-        columns=new_columns,
-        index=df.index,
-    )
+    return df.rename(columns=dict(zip(old_columns, new_columns)))
 
 
 def as_pandas_join_condition(left_columns, right_columns, condition):
@@ -170,6 +160,32 @@ def _is_left(left_columns, right_columns, ref):
         raise ValueError('col ref {} is ambigious'.format(ref))
 
     return (left_ref is not None), left_ref if left_ref is not None else right_ref
+
+
+def normalize_col_ref(ref, columns):
+    ref = ref[-2:]
+
+    if len(ref) == 2:
+        table, column = ref
+        return column_from_parts(table=table, column=column)
+
+    column = ref[0]
+
+    candidates = [
+        candidate
+        for candidate in columns
+        if column_match(candidate, column)
+    ]
+
+    if len(candidates) == 0:
+        raise ValueError("column {} not found in {}".format(ref, columns))
+
+    if len(candidates) > 1:
+        raise ValueError(
+            "column {} is ambigious among {}".format(ref, columns)
+        )
+
+    return candidates[0]
 
 
 def get_col_ref(columns, ref):

@@ -1,5 +1,12 @@
 from framequery import compile
-from framequery._parser import *
+from framequery._parser import (
+    BinaryExpression,
+    ColumnReference,
+    DerivedColumn,
+    GeneralSetFunction,
+    Integer,
+    ValueExpression,
+)
 from framequery import _dag, _parser
 from framequery._dag_compile import split_aggregates
 
@@ -113,6 +120,7 @@ def test_compile_simple_with_filter():
         _dag.GetTable('my_table'),
         _parser.ValueExpression.parse('a = 1'),
     )
+
 
 def test_compile_transform():
     assert compile('SELECT a as b, 2 * a FROM my_table') == _dag.Transform(

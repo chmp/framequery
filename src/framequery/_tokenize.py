@@ -13,7 +13,7 @@ def tokenize(s):
     stmt = single(sqlparse.parse(s))
     return list(
         token for token in stmt.flatten()
-        if not token.ttype is Tokens.Whitespace
+        if token.ttype is not Tokens.Whitespace
     )
 
 
@@ -43,6 +43,7 @@ class Tokens(object):
     CTE = Token.Keyword.CTE
 
     Wildcard = Token.Wildcard
+
 
 def main():
     import sys

@@ -1,4 +1,17 @@
-from framequery._pandas_util import *
+from framequery._pandas_util import (
+    apply_analytics_function,
+    as_pandas_join_condition,
+    ensure_table_columns,
+    cross_join,
+    flatten_join_condition,
+    get_col_ref,
+    general_merge,
+    strip_table_name_from_columns,
+)
+from framequery._parser import (
+    ColumnReference,
+    BinaryExpression,
+)
 
 import pandas as pd
 import pandas.util.testing as pdt
@@ -95,7 +108,8 @@ def df_sorted(df):
 def test_flatten_join_condition():
     from framequery._parser import BinaryExpression, ColumnReference
 
-    _col = lambda *parts: ColumnReference(list(parts))
+    def _col(*parts):
+        return ColumnReference(list(parts))
 
     assert flatten_join_condition(
         BinaryExpression.eq(_col('a'), _col('b'))
@@ -130,13 +144,15 @@ def test_get_col_ref():
 
 
 def test_as_pandas_join_condition():
-    _col = lambda parts: ColumnReference(list(parts))
+    def _col(parts):
+        return ColumnReference(list(parts))
 
-    _bin_expr = lambda head, *tail: (
-        BinaryExpression.and_(_bin_expr(head), _bin_expr(*tail))
-        if tail
-        else BinaryExpression.eq(_col(head[0]), _col(head[1]))
-    )
+    def _bin_expr(head, *tail):
+        return (
+            BinaryExpression.and_(_bin_expr(head), _bin_expr(*tail))
+            if tail
+            else BinaryExpression.eq(_col(head[0]), _col(head[1]))
+        )
 
     left_cols = ['A.a', 'A.b', 'A.c']
     right_cols = ['B.d', 'B.e']
@@ -192,7 +208,6 @@ def test_pandas_lag_sort():
     pdt.assert_frame_equal(actual, expected)
 
 
-
 def test_pandas_sum():
     df = pd.DataFrame({
         'i': [0, 1, 2, 3, 4, 5],
@@ -231,7 +246,6 @@ def test_pandas_grouped_lag_sort():
         'v': [1, 2, 3, 4, 5, 6],
         'r': [5, 6, 1, None, None, 4],
     }, columns=['g', 'i', 's', 'v', 'r'])
-
 
     actual = df.copy()
     actual['r'] = apply_analytics_function(

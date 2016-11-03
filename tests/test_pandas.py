@@ -1,5 +1,11 @@
 from framequery._pandas import PandasExecutor
-from framequery._dag import *
+from framequery._dag import (
+    Aggregate,
+    GetTable,
+    Join,
+    Literal,
+    Transform,
+)
 from framequery._parser import ColumnReference, DerivedColumn, ValueExpression
 
 import pandas as pd

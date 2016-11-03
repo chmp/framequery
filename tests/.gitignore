@@ -1,0 +1,2 @@
+# ignore test file used for TDD
+/test_playground.py

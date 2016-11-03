@@ -11,3 +11,7 @@ __pycache__/
 /dist/
 
 *.ignore
+
+
+# dask runtime files
+/log

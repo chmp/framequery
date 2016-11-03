@@ -5,18 +5,22 @@ from ._pandas import PandasExecutor
 from ._parser import Select
 
 import collections
+import inspect
 import logging
 
 _logger = logging.getLogger(__name__)
 
 
 class Context(object):
-    def __init__(self, scope=None, strict=False):
+    def __init__(self, scope=None, strict=False, executor_factory=None):
         if scope is None:
             scope = {}
 
+        if executor_factory is None:
+            executor_factory = PandasExecutor
+
         self._scope = build_scope(scope)
-        self._ex = PandasExecutor(strict=strict)
+        self._ex = executor_factory(strict=strict)
 
     def select(self, query):
         ast = self.compile(query)
@@ -31,7 +35,7 @@ class Context(object):
 
 def build_scope(obj=None):
     if obj is None:
-        obj = insepct.getcurrentframe()
+        obj = inspect.getcurrentframe()
 
     if isinstance(obj, collections.Mapping):
         return obj

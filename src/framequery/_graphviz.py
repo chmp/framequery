@@ -105,7 +105,7 @@ class GraphvizGenerator(object):
 
     def compile_node_filter(self, node, label):
         child_source, child_id = self._compile_child(node.table)
-        return child_source  +[
+        return child_source + [
             u'{} -> {}'.format(label, child_id),
             u'{} [label="Filter"]'.format(label),
         ]
