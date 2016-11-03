@@ -77,8 +77,9 @@ supported queries.
 
 ### Development
 
-- initial support for analytic functions (`SUM`, `AVG`)
+- initial support for analytic functions (`SUM`, `AVG`).
 - add strict mode, mirror SQL behavior for GROUP-BYs and JOINs.
+- initial dask support.
 
 ### 0.1.0
 

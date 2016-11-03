@@ -11,4 +11,4 @@ env:
 install:
  - pip install tox
 script:
- - tox -c tox.all.ini -e py${TRAVIS_PYTHON_VERSION//.}-$TOX_TEST
+ - tox -v -c tox.all.ini -e py${TRAVIS_PYTHON_VERSION//.}-$TOX_TEST
