@@ -1,9 +1,10 @@
 language: python
+cache: pip
 python:
   - "2.7"
   - "3.5"
 env:
-- TOX_TEST=sstrict
+- TOX_TEST=strict
 - TOX_TEST=non-strict
 - TOX_TEST=unit
 - TOX_TEST=dask
