@@ -1,3 +1,5 @@
+[![Build Status](https://api.travis-ci.org/chmp/framequery.svg?branch=master)](https://api.travis-ci.org/chmp/framequery)
+
 # framequery - SQL on dataframes
 
 - [Usage](#usage)
