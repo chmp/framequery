@@ -1,0 +1,15 @@
+language: python
+python: 2.7
+env:
+- TOX_ENV=py27-strict
+- TOX_ENV=py27-non-strict
+- TOX_ENV=py27-unit
+- TOX_ENV=py27-dask
+- TOX_ENV=py35-strict
+- TOX_ENV=py35-non-strict
+- TOX_ENV=py35-unit
+- TOX_ENV=py35-dask
+install:
+ - pip install tox
+script:
+ - tox -c tox.all.ini -e $TOX_ENV
