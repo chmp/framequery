@@ -1,7 +1,8 @@
 import sqlite3
 import unittest
 
-from util import ConformanceTest, Table, Type, ColumnWithValues, version
+from framequery._util import version
+from util import ConformanceTest, Table, Type, ColumnWithValues
 import util
 
 import pytest
@@ -64,6 +65,8 @@ class TestUngroupedtAggregatesCTE(ExampleEnvironment, util.ConformanceTest):
                 "sqlite version ({}) does not support CTEs"
                 .format(sqlite3.sqlite_version)
             )
+
+        super(TestUngroupedtAggregatesCTE, self).configure_env(env)
 
 
 class TestUngroupedtAggregatesSubQuery(ExampleEnvironment, util.ConformanceTest):

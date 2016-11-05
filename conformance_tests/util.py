@@ -238,7 +238,3 @@ def get_dataframe_from_cursor(cursor):
     columns = cursor.keys()
     data = [dict(row) for row in rows]
     return pd.DataFrame(data, columns=columns)
-
-
-def version(s):
-    return tuple(s.split('.'))
