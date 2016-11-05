@@ -7,6 +7,7 @@ import operator
 
 import pandas as pd
 
+import dask
 import dask.base as db
 import dask.dataframe as dd
 import dask.dataframe.core as ddc
@@ -21,6 +22,7 @@ from ._pandas_util import (
     normalize_col_ref,
     column_set_table,
 )
+from ._util import version
 
 _logger = logging.getLogger(__name__)
 
@@ -96,20 +98,20 @@ class DaskExecutor(BaseExecutor, ExpressionEvaluator):
         meta = pd.DataFrame(meta).reset_index()
         meta = ddu.make_meta(meta)
 
-        kwargs = dict(
-            node=node,
-            table_id=table_id,
-        )
-        result = ddc.apply_concat_apply(
-            table,
+        aca_kwargs = dict(
             chunk=aggregate_chunk,
             aggregate=aggregate_agg,
             meta=meta,
             token='framequery-aggregate',
-            chunk_kwargs=kwargs,
-            aggregate_kwargs=kwargs,
+            chunk_kwargs=dict(node=node, table_id=table_id),
+            aggregate_kwargs=dict(node=node, table_id=table_id),
         )
-        return result
+
+        # disable tree reductions if available
+        if version(dask.__version__) >= version('0.12.0'):
+            aca_kwargs.update(split_every=False)
+
+        return ddc.apply_concat_apply(table, **aca_kwargs)
 
 
 def transform_partitions(df, col_id_expr_pairs, meta):
