@@ -1,4 +1,4 @@
-[![Build Status](https://api.travis-ci.org/chmp/framequery.svg?branch=master)](https://api.travis-ci.org/chmp/framequery)
+[![Build Status](https://api.travis-ci.org/chmp/framequery.svg?branch=master)](https://travis-ci.org/chmp/framequery)
 
 # framequery - SQL on dataframes
 
