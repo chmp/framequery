@@ -391,10 +391,7 @@ def test_simple_arithmetic_function_calls(executor):
     )
 
 
-@pytest.mark.parametrize('executor', [
-    'pandas',
-    pytest.mark.xfail(reason='first-value yet not supported')('dask')
-])
+@pytest.mark.parametrize('executor', ['pandas', 'dask'])
 def test_evaluate_aggregation(executor):
     assert_eq(
         _context(executor=executor).select('''
@@ -421,9 +418,6 @@ def test_evaluate_aggregation(executor):
     ('FIRST_VALUE', [1]),
 ])
 def test_evaluate_aggregation__separate(executor, agg_func, expected):
-    if executor == 'dask' and agg_func == 'FIRST_VALUE':
-        pytest.xfail("first value in dask not yet supported")
-
     q = 'SELECT {}(a) as value FROM my_table'.format(agg_func)
     assert_eq(
         _context(executor=executor).select(q),

@@ -91,15 +91,28 @@ class DaskExecutor(BaseExecutor, ExpressionEvaluator):
         result.divisions = [None for _ in result.divisions]
         return result
 
-    def _evaluate_aggregation_grouped(self, node, table):
+    def evaluate_aggregate(self, node, scope):
+        _logger.info("evaluation aggregate %s", node)
+        table = self.evaluate(node.table, scope)
+
         table_id = next(self.id_generator)
         columns = table.columns
 
-        group_by = [normalize_col_ref(ref.value, columns) for ref in node.group_by]
-        meta = self._evaluate_aggregation_base(
-            node, table._meta.groupby(group_by), columns, table_id=table_id
-        )
-        meta = pd.DataFrame(meta).reset_index()
+        # TODO: simplify meta logic
+        if node.group_by is None:
+            grouped_meta = table._meta_nonempty
+
+        else:
+            group_by = [normalize_col_ref(ref.value, columns) for ref in node.group_by]
+            grouped_meta = table._meta.groupby(group_by)
+
+        meta = self._evaluate_aggregation_base(node, grouped_meta, columns, table_id=table_id)
+
+        if node.group_by is None:
+            meta = pd.DataFrame(meta, index=[0])
+
+        else:
+            meta = pd.DataFrame(meta).reset_index()
         meta = ddu.make_meta(meta)
 
         aca_kwargs = dict(
@@ -132,8 +145,12 @@ def transform_partitions(df, col_id_expr_pairs, meta):
 
 
 def aggregate_chunk(df, node, table_id):
-    group_by = [normalize_col_ref(ref.value, df.columns) for ref in node.group_by]
-    grouped = df.groupby(group_by)
+    if node.group_by:
+        group_by = [normalize_col_ref(ref.value, df.columns) for ref in node.group_by]
+        grouped = df.groupby(group_by)
+
+    else:
+        grouped = df.groupby(pd.Series(0, index=df.index))
 
     result = collections.OrderedDict()
 
@@ -175,7 +192,11 @@ def aggregate_chunk(df, node, table_id):
 
 
 def aggregate_agg(df, node, table_id):
-    levels = 0 if len(node.group_by) == 1 else list(range(len(node.group_by)))
+    if node.group_by is None or len(node.group_by) == 1:
+        levels = 0
+    else:
+        levels = list(range(len(node.group_by)))
+
     grouped = df.groupby(level=levels)
 
     result = collections.OrderedDict()
