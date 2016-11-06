@@ -5,6 +5,7 @@ import functools as ft
 import logging
 import operator
 
+import numpy as np
 import pandas as pd
 
 import dask
@@ -54,7 +55,13 @@ class DaskExecutor(BaseExecutor, ExpressionEvaluator):
 
     def _determine_dtype(self, expr, table):
         # NOTE: since no compute is triggered, this operation is cheap
-        return self.evaluate_value(expr, table).dtype
+        res = self.evaluate_value(expr, table)
+
+        try:
+            return res.dtype
+
+        except AttributeError:
+            return np.asarray(res).dtype
 
     def evaluate_sort(self, node, scope):
         # TODO: implement sorting of dataframes
@@ -65,17 +72,14 @@ class DaskExecutor(BaseExecutor, ExpressionEvaluator):
         # NOTE: dask head() **does not** return the global head
         raise NotImplementedError("limit of dask dataframes not supported")
 
-    def _combine_series(self, result):
-        return combine_series(result.items())
+    def _get_dual(self):
+        return dd.from_pandas(pd.DataFrame(index=[0]), npartitions=1)
 
     def _dataframe_from_scalars(self, values):
         return dataframe_from_scalars(values)
 
-    def _frist(self, s):
-        raise NotImplementedError()
-
     def _reset_index(self, df):
-        # DASK does not support dropping the index, return unchanged
+        # TODO: check is drop=True by now supported in dask?
         columns = list(df.columns)
         df = df.reset_index()
         return df[columns]
@@ -119,9 +123,6 @@ def transform_partitions(df, col_id_expr_pairs, meta):
         return meta
 
     ex = ExpressionEvaluator()
-    ex.functions['ABS'] = abs
-    ex.functions['POW'] = operator.pow
-
     result = collections.OrderedDict()
 
     for col_id, expr in col_id_expr_pairs:

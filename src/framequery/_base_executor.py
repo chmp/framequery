@@ -44,11 +44,6 @@ class BaseExecutor(object):
     def _get_dual(self):
         raise NotImplementedError()
 
-    def _combine_series(self, series):
-        """Given a mapping object of series construct a dataframe.
-        """
-        raise NotImplementedError()
-
     def evaluate(self, node, arg):
         return call_handler(self, 'evaluate', node, arg)
 
@@ -87,7 +82,7 @@ class BaseExecutor(object):
 
             result[column_from_parts(table_id, col_id)] = value
 
-        return self._combine_series(result)
+        return pd.DataFrame(result, index=table.index)
 
     def evaluate_filter(self, node, scope):
         table = self.evaluate(node.table, scope)

@@ -24,11 +24,7 @@ class PandasExecutor(BaseExecutor, ExpressionEvaluator):
         self._set_strict(strict)
 
     def _get_dual(self):
-        return pd.DataFrame()
-
-    def _combine_series(self, result):
-        all_scalar = all(is_scalar(val) for val in result.values())
-        return pd.DataFrame(result) if not all_scalar else pd.DataFrame(result, index=[0])
+        return pd.DataFrame(index=[0])
 
     def _evaluate_non_equality_join(self, node, scope):
         """Replace inner joins with a non-equality condition by a cross join with filter.

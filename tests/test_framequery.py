@@ -10,21 +10,15 @@ import pandas.util.testing as pdt
 import pytest
 
 
-@pytest.mark.parametrize('executor', [
-    'pandas',
-    pytest.mark.xfail(reason="dask does not support the dual table")('dask'),
-])
+@pytest.mark.parametrize('executor', ['pandas', 'dask'])
 def test_dual(executor):
     assert_eq(
         _context(executor=executor).select('SELECT * FROM DUAL'),
-        pd.DataFrame(),
+        pd.DataFrame(index=[0]),
     )
 
 
-@pytest.mark.parametrize('executor', [
-    'pandas',
-    pytest.mark.xfail(reason="dask does not support the dual table")('dask'),
-])
+@pytest.mark.parametrize('executor', ['pandas', 'dask'])
 def test_dual_two(executor):
     assert_eq(
         _context(executor=executor).select('SELECT 42 as a FROM DUAL'),
@@ -34,10 +28,7 @@ def test_dual_two(executor):
     )
 
 
-@pytest.mark.parametrize('executor', [
-    'pandas',
-    pytest.mark.xfail(reason="dask does not support the dual table")('dask'),
-])
+@pytest.mark.parametrize('executor', ['pandas', 'dask'])
 @pytest.mark.parametrize('expr,expected', [
     ("'foo'", 'foo'),
     ("UPPER('foo')", 'FOO'),
@@ -58,10 +49,7 @@ def test_string(executor, expr, expected):
     )
 
 
-@pytest.mark.parametrize('executor', [
-    'pandas',
-    pytest.mark.xfail(reason="dask does not support the dual table")('dask'),
-])
+@pytest.mark.parametrize('executor', ['pandas', 'dask'])
 def test_dual_no_as(executor):
     assert_eq(
         _context(executor=executor).select('SELECT 42 a FROM DUAL'),
@@ -247,7 +235,7 @@ def test_select_column_analytics_function_sum(executor):
     assert_eq(
         _context(executor=executor).select('SELECT a as a, sum(a) OVER() as b FROM my_table'),
         pd.DataFrame({
-            '$1.a': [1, 2, 3] *5,
+            '$1.a': [1, 2, 3] * 5,
             '$1.b': [30, 30, 30] * 5,
         }),
     )
