@@ -1,14 +1,12 @@
 from __future__ import print_function, division, absolute_import
 
-import json
 import logging
 import os
 import random
-import unittest
 
 import pandas as pd
+import pandas.util.testing as pdt
 import dask.dataframe as dd
-import numpy
 import sqlalchemy
 
 from framequery import make_context
@@ -20,70 +18,81 @@ _logger = logging.getLogger(__name__)
 default_env_file = os.path.join(os.path.dirname(__file__), 'config', 'sqlite.json')
 
 
-# TODO: hide this class from pytest
-class ConformanceTest(unittest.TestCase):
-    number_of_rows = 100
+class ConformanceEnv(object):
+    def __init__(self, executor='pandas', strict=False, connection="sqlite://"):
+        self.tables = []
+        self.number_of_rows = 100
+        self.executor = executor
+        self.strict = strict
+        self.connection = connection
 
     def create_env(self):
-        env_file = os.environ.get('FRAMEQUERY_ENV', default_env_file)
-        _logger.info("using environment %s", env_file)
-
-        with open(env_file, 'r') as fobj:
-            config = json.load(fobj)
-
-        connection_string = config['connection']
-        strict = config.get('context', {}).get('strict', False)
-
-        executor_factory = config.get('context', {}).get('executor', 'pandas')
-
-        if executor_factory == 'pandas':
+        if self.executor == 'pandas':
             executor_factory = PandasExecutor
 
-        elif executor_factory == 'dask':
+        elif self.executor == 'dask':
             executor_factory = DaskExecutor
 
+        else:
+            raise ValueError("unknown executor {}".format(self.executor))
+
         return Environment(
-            connection_factory=lambda: sqlalchemy.create_engine(connection_string),
+            connection_factory=lambda: sqlalchemy.create_engine(self.connection),
             executor_factory=executor_factory,
-            strict=strict,
+            strict=self.strict,
         )
 
-    def configure_env(self, env):
-        pass
-
-    def postprocess_actual(self, env, df):
-        return self.postprocess(df)
-
-    def postprocess_expected(self, env, df):
-        return self.postprocess(df)
-
-    def postprocess(self, df):
-        return df
-
-    def run(self, result=None):
-        if type(self) is ConformanceTest:
-            return
-
-        super(ConformanceTest, self).run(result)
-
-    def test_conformance(self):
+    def test(self, query, postprocess_actual=None, postprocess_expected=None):
         env = self.create_env()
-        self.configure_env(env)
+        env.add_tables(*self.tables)
 
         realization = env.create_realization(self.number_of_rows)
-        actual, expected = realization.execute(self.query)
+        actual, expected = realization.execute(query)
 
-        actual = self.postprocess_actual(env, actual)
-        expected = self.postprocess_expected(env, expected)
+        if postprocess_actual is not None:
+            actual = postprocess_actual(env, actual)
+
+        if postprocess_expected is not None:
+            expected = postprocess_expected(env, expected)
 
         print("actual:")
         print(actual)
         print("expected:")
         print(expected)
 
-        # NOTE: use all_close to tollerate type changes caused by pandas
-        self.assertEqual(list(actual.columns), list(expected.columns))
-        numpy.testing.assert_allclose(actual.values, expected.values)
+        # cast numeric columns possible to float
+        cast_to_float = {
+            k
+            for k in (set(actual.columns) & set(expected.columns))
+            if (actual.dtypes[k] == float) or (expected.dtypes[k] == float)
+        }
+
+        cast_to_int = {
+            k
+            for k in (set(actual.columns) & set(expected.columns))
+            if (
+                (actual.dtypes[k] == int) and (expected.dtypes[k] == bool) or
+                (actual.dtypes[k] == bool) and (expected.dtypes[k] == int)
+            )
+        }
+
+        for k in cast_to_float:
+            actual[k] = actual[k].astype(float)
+            expected[k] = expected[k].astype(float)
+
+        for k in cast_to_int:
+            actual[k] = actual[k].astype(int)
+            expected[k] = expected[k].astype(int)
+
+        # drop indices
+        actual = actual.reset_index(drop=True)
+        expected = expected.reset_index(drop=True)
+
+        assert list(actual.columns) == list(expected.columns)
+        pdt.assert_frame_equal(actual, expected)
+
+    def add_tables(self, *tables):
+        self.tables.extend(tables)
 
 
 class Environment(object):
@@ -231,6 +240,7 @@ class _Value(object):
 
 class Type(str):
     integer = _Value('INTEGER')
+    string = _Value('TEXT')
 
 
 def get_dataframe_from_cursor(cursor):

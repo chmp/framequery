@@ -111,7 +111,7 @@ class ExpressionEvaluator(object):
             '=': operator.eq,
             '!=': operator.ne,
             'LIKE': _func_like,
-            'NOT LIKE': lambda s, p: ~_func_like(s, p),
+            'NOT LIKE': _func_not_like,
             'IN': lambda a, b: a.isin(b),
             'NOT IN': lambda a, b: ~(a.isin(b)),
         }
@@ -176,4 +176,12 @@ def _func_like(s, pattern):
     pattern = pattern.replace(r'\_', '.')
     pattern = '^' + pattern + '$'
 
-    return pd.Series(s).str.contains(pattern)
+    # sqlite is case insenstive, is this always the case?
+    return pd.Series(s).str.contains(pattern, flags=re.IGNORECASE)
+
+
+def _func_not_like(s, pattern):
+    res = _func_like(s, pattern)
+    # handle inversion with missing numbers
+    res = (1 - res).astype(res.dtype)
+    return res

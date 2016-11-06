@@ -3,7 +3,6 @@
 from __future__ import print_function, division, absolute_import
 
 import logging
-import operator
 
 import pandas as pd
 import six
@@ -11,7 +10,7 @@ import six
 from . import _dag
 from ._base_executor import BaseExecutor
 from ._expression import ExpressionEvaluator
-from ._pandas_util import cross_join, is_scalar
+from ._pandas_util import cross_join
 
 _logger = logging.getLogger(__name__)
 

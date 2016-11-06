@@ -1,11 +1,13 @@
-import framequery as fq
-from framequery import make_context
-from framequery._dask import DaskExecutor
-from framequery._pandas import PandasExecutor
+import functools as ft
 
 import dask.dataframe as dd
 import pandas as pd
 import pandas.util.testing as pdt
+
+import framequery as fq
+from framequery import make_context
+from framequery._dask import DaskExecutor
+from framequery._pandas import PandasExecutor
 
 import pytest
 
@@ -139,8 +141,8 @@ def test_evaluate_aggregation_grouped_no_as__separate(executor, agg_func, expect
     assert_eq(
         _context(executor=executor).select(q),
         pd.DataFrame({
-        '$2.g': [0, 1],
-        '$2.a': expected,
+            '$2.g': [0, 1],
+            '$2.a': expected,
         }, columns=['$2.g', '$2.a']),
     )
 
@@ -339,7 +341,7 @@ def test_order_by(executor):
     assert_eq(
         _context(executor=executor).select('SELECT a FROM my_table ORDER BY g, a ASC'),
         pd.DataFrame({
-            '$0.a': [3] * 5 +  [1] * 5 + [2] * 5,
+            '$0.a': [3] * 5 + [1] * 5 + [2] * 5,
         }),
         sort=False,
     )
@@ -627,11 +629,11 @@ def assert_eq(a, b, sort=True):
 
 def _context(executor='pandas'):
     if executor == 'dask':
-        as_df = lambda x: dd.from_pandas(x, npartitions=5)
+        as_df = ft.partial(dd.from_pandas, npartitions=5)
         executor_factory = DaskExecutor
 
     elif executor == 'pandas':
-        as_df = lambda x: x
+        as_df = identity
         executor_factory = PandasExecutor
 
     else:
@@ -654,3 +656,7 @@ def _context(executor='pandas'):
             })
         ),
     }, executor_factory=executor_factory)
+
+
+def identity(x):
+    return x

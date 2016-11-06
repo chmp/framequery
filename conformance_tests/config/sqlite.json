@@ -1,6 +1,0 @@
-{
-  "connection": "sqlite://",
-  "context": {
-    "strict": false
-  }
-}

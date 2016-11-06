@@ -3,7 +3,6 @@ from __future__ import print_function, division, absolute_import
 import collections
 import functools as ft
 import logging
-import operator
 
 import numpy as np
 import pandas as pd
@@ -54,8 +53,8 @@ class DaskExecutor(BaseExecutor, ExpressionEvaluator):
         return table.map_partitions(ft.partial(transform_partitions, meta=meta), col_id_expr_pairs, meta=meta)
 
     def _determine_dtype(self, expr, table):
-        # NOTE: since no compute is triggered, this operation is cheap
-        res = self.evaluate_value(expr, table)
+        # NOTE: not all functions stay on the dataframe level
+        res = self.evaluate_value(expr, table._meta_nonempty)
 
         try:
             return res.dtype
