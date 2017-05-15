@@ -77,24 +77,11 @@ supported queries.
 
 ### Development
 
-- initial support for analytic functions (`SUM`, `AVG`).
-- add strict mode, mirror SQL behavior for GROUP-BYs and JOINs.
-- initial dask support.
+- refactor code
 
 ### 0.1.0
 
 - initial release
-
-## Internals
-
-`framequery` executes SQL statements via a multi-step process:
-
-1. The query is parsed and an SQL AST assembled.
-2. The AST is compiled into a DAG of dataframe transformations.
-3. The generated DAG is interpreted on the supplied dataframes.
-
-The AST classes can be found inside `framequery._parser`, whereas the DAG
-classes are found inside `framequery._dag`.
 
 ## Running tests
 
@@ -105,16 +92,8 @@ pip install tox
 tox
 ```
 
-framequery also ships with a number of confromance tests that compare the
-behavior of a regular SQL database (sqlite per default) with framequery. They
-can be run with
-
-```bash
-pip install tox
-tox -c tox.confromance.ini
-```
-
-To run all tests, use `tox -c tox.all.ini`.
+To run conformance tests against a database, set the environment variable 
+`FQ_TEST_DB` to sqlalchemy connection string.
 
 ## License
 

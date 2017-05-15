@@ -13,7 +13,7 @@ def _read(fname):
 
 setup(
     name='framequery',
-    version='0.1.0',
+    version='0.2.0dev',
     description='SQL on dataframes',
     long_description=_read("Readme.md"),
     author='Christopher Prohm',
