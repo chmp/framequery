@@ -63,8 +63,12 @@ class PandasModel(object):
         result = collections.OrderedDict()
 
         for col in columns:
-            alias = name_generator.get(col.alias)
-            result[alias] = self.evaluate(table, col.value, name_generator)
+            if isinstance(col, a.InternalName):
+                result[col.name] = table[col.name]
+
+            else:
+                alias = name_generator.get(col.alias)
+                result[alias] = self.evaluate(table, col.value, name_generator)
 
         return pd.DataFrame(result, index=table.index)
 

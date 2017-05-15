@@ -26,6 +26,14 @@ class Name(Record):
     __fields__ = ['name']
 
 
+class InternalName(Record):
+    __fields__ = ['name']
+
+
+class WildCard(Record):
+    __fields__ = ['table']
+
+
 class Integer(Record):
     __fields__ = ['value']
 

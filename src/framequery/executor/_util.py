@@ -5,13 +5,13 @@ from ..util._misc import Matcher, UnpackResult
 
 
 def column_match(col, internal_col):
-    col_schema, col = _split_table_column(col, '.')
-    internal_col_schema, internal_col = _split_table_column(internal_col)
+    col_table, col = _split_table_column(col, '.')
+    internal_col_table, internal_col = _split_table_column(internal_col)
 
-    if col_schema is None:
+    if col_table is None:
         return col == internal_col
 
-    return internal_col_schema == col_schema and internal_col == col
+    return internal_col_table == col_table and internal_col == col
 
 
 def column_set_table(column, table):

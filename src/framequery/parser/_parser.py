@@ -36,7 +36,7 @@ def _format_debug(debug, indent=0):
     children = debug['children']
     where = debug.get('where', '<unknown>')
 
-    yield('{}{}: {} in {}'.format(' ' * indent,  status.value, message, where))
+    yield('{}{}: {} in {}'.format(' ' * indent,  status, message, where))
 
     for d in children:
         for msg in _format_debug(d, indent=indent + 1):
@@ -267,7 +267,14 @@ select = m.construct(
     a.Select,
     svtok('select'),
     m.optional(m.keyword(quantifier=verbatim_token('distinct', 'all'))),
-    m.keyword(columns= m.list_of(svtok(','), m.any(verbatim_token('*'), column))),
+    m.keyword(columns=m.list_of(svtok(','), m.any(
+        m.construct(
+            a.WildCard,
+            m.optional(m.flat_sequence(m.keyword(table=base_name), svtok('.'))),
+            m.skip(verbatim_token('*'))
+        ),
+        column
+    ))),
     m.optional(m.keyword(from_clause=from_clause)),
     m.optional(m.keyword(where_clause=m.flat_sequence(svtok('where'), value))),
     m.optional(m.keyword(group_by_clause=m.flat_sequence(

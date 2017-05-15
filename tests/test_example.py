@@ -41,21 +41,19 @@ def setup(database):
 
 
 examples = [
-    dict(
-        query='select c1, count(1) as cnt, sum(c2) from test group by c1',
-    ),
+    'select c1, count(1) as cnt, sum(c2) from test group by c1',
+    'select c1 as a, c2 as b, c1 + c2 from test',
+    'select test.* from test'
 ]
 
 
-@pytest.mark.parametrize('case', examples)
-def test_select(setup, case):
+@pytest.mark.parametrize('query', examples)
+def test_select(setup, query):
     db, scope = setup
 
-    q = case['query']
+    expected = sorted(list(row) for row in db.execute(query).fetchall())
 
-    expected = sorted(list(row) for row in db.execute(q).fetchall())
-
-    actual = fq.query(q, scope=scope)
+    actual = fq.query(query, scope=scope)
     actual = sorted(list(t) for _, t in actual.iterrows())
 
     np.testing.assert_allclose(actual, expected)

@@ -12,7 +12,9 @@ from __future__ import print_function, division, absolute_import
 import itertools as it
 
 from ._pandas import PandasModel
-from ._util import normalize_col_ref, Unique, UniqueNameGenerator, InternalColumnMatcher
+from ._util import (
+    normalize_col_ref, Unique, UniqueNameGenerator, InternalColumnMatcher, column_get_table,
+)
 from ..parser import ast as a, parse
 from ..util._misc import (
     match, Any, In, Sequence, InstanceOf, RuleSet, unpack, OneOf, Not, Transform, Literal, Eq,
@@ -52,10 +54,12 @@ def execute_select(execute, node, scope, model):
 
     table = execute(node.from_clause, scope, model)
 
-    if node.group_by_clause is not None:
-        group_by = normalize_group_by(table.columns, node.columns, node.group_by_clause)
+    columns = normalize_columns(table.columns, node.columns)
 
-        split = SplitResult.chain(aggregate_split(col, group_by) for col in node.columns)
+    if node.group_by_clause is not None:
+        group_by = normalize_group_by(table.columns, columns, node.group_by_clause)
+
+        split = SplitResult.chain(aggregate_split(col, group_by) for col in columns)
         post_aggregate, aggregate, pre_aggregate = split.by_levels(2)
 
         # chain group-by columns
@@ -75,13 +79,43 @@ def execute_select(execute, node, scope, model):
         model.debug('post-aggregate result: {}', table)
 
     else:
-        if node.columns != ['*']:
-            table = model.transform(table, node.columns, name_generator)
+        table = model.transform(table, columns, name_generator)
 
     if node.order_by_clause is not None:
         table = sort(table, node.order_by_clause, model)
 
     return table
+
+
+def normalize_columns(table_columns, columns):
+    result = []
+
+    for col in columns:
+        # TODO: expand `.*` style columns
+        if isinstance(col, a.WildCard):
+            if col.table is None:
+                result.extend(a.InternalName(c) for c in table_columns)
+
+            else:
+                result.extend(
+                    a.InternalName(c)
+                    for c in table_columns if column_get_table(c) == col.table
+                )
+
+        elif isinstance(col, a.Column):
+            alias, = unpack(col, OneOf(
+                a.Column.any(alias=Not(Eq(None), group=0)),
+                a.Column(value=a.Name(Any(group=0)), alias=None),
+                Literal(Unique(), group=0),
+            ))
+
+            # make sure a column always has a name
+            result.append(col.update(alias=alias))
+
+        else:
+            raise ValueError('cannot normalize {}'.format(col))
+
+    return result
 
 
 def normalize_group_by(table_columns, columns, group_by):

@@ -6,10 +6,10 @@ from framequery.parser.ast import *
 from framequery.parser import parse
 
 examples = [
-    ('select * from test', Select(['*'], FromClause([TableRef('test')]))),
+    ('select * from test', Select([WildCard()], FromClause([TableRef('test')]))),
     ('select * from test order by a', Select(
-        ['*'], FromClause([TableRef('test')]),
-            order_by_clause=[OrderBy(Name('a'), 'desc')],
+        [WildCard()], FromClause([TableRef('test')]),
+        order_by_clause=[OrderBy(Name('a'), 'desc')],
     )),
     ('select 1', Select([Column(Integer('1'))])),
     ('select 1, 2', Select([Column(Integer('1')), Column(Integer('2'))])),
