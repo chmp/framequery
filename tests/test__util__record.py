@@ -27,3 +27,7 @@ def test_unpack_api_test():
 
     alias, = unpack(Column('hello', alias='world'), Column.any(alias=Any(0)))
     assert alias == 'world'
+
+
+def test_unpack_instance_of():
+    assert bool(match('foo', InstanceOf(int))) is False

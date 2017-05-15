@@ -85,6 +85,9 @@ class UnpackResult(object):
     def __bool__(self):
         return self.matched
 
+    # backwards compatibility for py27
+    __nonzero__ = __bool__
+
     def __eq__(self, other):
         return (
             type(self) is type(other) and
@@ -322,7 +325,7 @@ class RuleSet(object):
         self.rules = []
 
         for m, t in rules:
-            self.add(m ,t)
+            self.add(m, t)
 
     def rule(self, matcher):
         def rule_impl(transform):
