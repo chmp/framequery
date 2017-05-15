@@ -128,7 +128,7 @@ keywords = {
     'select', 'as', 'from',
     'not','and', 'or', 'like', 'in',
     'count', 'having', 'distinct', 'all',
-    'order', 'from', 'by'
+    'order', 'from', 'by', 'group'
 }
 
 operators = {

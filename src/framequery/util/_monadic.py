@@ -1,4 +1,4 @@
-"""Helpers to write monadic parsers.
+"""Helpers to write monadic parsers
 """
 from __future__ import print_function, division, absolute_import
 
@@ -77,7 +77,7 @@ def fail(msg):
 def list_of(sep, item):
     return transform(
         lambda obj: [obj],
-            flat_sequence(item, many(flat_sequence(sep, item)))
+        flat_sequence(item, many(flat_sequence(sep, item)))
     )
 
 

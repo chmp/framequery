@@ -1,49 +1,7 @@
 from __future__ import print_function, division, absolute_import
 
+import collections
 import itertools as it
-
-
-class Record(object):
-    """Class to simplify creating typed nodes in ASTs, etc.."""
-    __fields__ = ()
-
-    def __init__(self, *args, **kwargs):
-        unknown  = set(kwargs) - set(self.__fields__)
-        if unknown:
-            raise ValueError('unknown fields: {}'.format(unknown))
-
-        kwargs.update(dict(zip(self.__fields__, args)))
-
-        for key in self.__fields__:
-            setattr(self, key, kwargs.get(key))
-
-    def __eq__(self, other):
-        try:
-            other_key = other.key
-
-        except AttributeError:
-            return NotImplemented
-
-        return self.key() == other_key()
-
-    def __repr__(self):
-        kv_pairs = ', '.join('{}={!r}'.format(k, getattr(self, k)) for k in self.__fields__)
-        return '{}({})'.format(self.__class__.__name__, kv_pairs)
-
-    def key(self):
-        self_dict = {k: getattr(self, k) for k in self.__fields__}
-        return self.__class__, self_dict
-
-    def update(self, **kwargs):
-        _, values = self.key()
-        values.update(kwargs)
-        return self.__class__(**values)
-
-    @classmethod
-    def any(cls, **kwargs):
-        items = {k: Any for k in cls.__fields__}
-        items.update(**kwargs)
-        return cls(**items)
 
 
 def record_diff(a, b):
@@ -67,68 +25,299 @@ def record_diff(a, b):
     return it.chain.from_iterable(record_diff(ak[k], bk[k]) for k in keys)
 
 
-
 def match(obj, matcher):
+    return bool(unpack(obj, matcher))
+
+
+def unpack(obj, matcher):
+    """Select variables based on a matcher.
+
+    Example::
+
+        res = unpack(obj, a.Name(Any(0))
+
+        if res:
+            name = res.get(0)
+
+    """
     if matcher is Any:
-        return True
+        return UnpackResult(True)
 
     elif isinstance(matcher, Matcher):
-        return matcher(obj)
-
-    if type(obj) is not type(matcher):
-        return False
-
-    if isinstance(matcher, Record):
-        return all(match(a, b) for a, b in zip(obj.key(), matcher.key()) )
-
-    elif isinstance(matcher, list):
-        return len(obj) == len(matcher) and all(match(a, b) for a, b in zip(obj, matcher))
-
-    elif isinstance(matcher, dict):
-        return set(matcher) == set(obj) and all(match(obj[k], matcher[k]) for k in obj.keys())
+        return matcher.unpack(obj)
 
     else:
-        return obj == matcher
+        return UnpackResult(obj == matcher)
 
 
-class Any(object):
-    pass
+def unpack_all(obj, matcher):
+    for item in obj:
+        m = unpack(item, matcher)
+        if m:
+            yield m
+
+
+class UnpackResult(object):
+    @classmethod
+    def make(cls, matched, group, val):
+        if not matched:
+            return cls(False)
+
+        if group is None:
+            return cls(True)
+
+        return cls(True, {group: [val]})
+
+    def __init__(self, matched=False, matches=None):
+        if matches is None:
+            matches = {}
+
+        self.matched = bool(matched)
+        self.matches = dict(matches)
+
+    def get(self, idx):
+        result, = self.getall(idx)
+        return result
+
+    def getall(self, idx):
+        return self.matches.get(idx, [])
+
+    def __bool__(self):
+        return self.matched
+
+    def __eq__(self, other):
+        return (
+            type(self) is type(other) and
+            self.matched is other.matched and
+            self.matches == other.matches
+        )
+
+    def __repr__(self):
+        return 'UnpackResult(%s, %s)' % (self.matched, self.matches)
+
+    def __or__(self, other):
+        if self.matched is False or other.matched is False:
+            return UnpackResult(False)
+
+        return UnpackResult(self.matched, {
+            k: self.matches.get(k, []) + other.matches.get(k, [])
+            for k in set(self.matches) | set(other.matches)
+        })
+
+    def __iter__(self):
+        if not self.matched:
+            raise ValueError()
+        return iter(self.get(idx) for idx in sorted(self.matches))
+
+    def __getitem__(self, item):
+        return self.get(item)
 
 
 class Matcher(object):
-    def __call__(self, obj):
+    def unpack(self, obj):
         raise NotImplementedError()
 
 
-class In(Matcher):
-    def __init__(self, *values):
-        self.values = set(values)
+class Any(Matcher):
+    def __init__(self, group):
+        self.group= group
 
-    def __call__(self, obj):
-        return obj in self.values
+    def unpack(self, obj):
+        return UnpackResult.make(True, self.group, obj)
+
+
+class OneOf(Matcher):
+    def __init__(self, *matchers):
+        self.matchers = matchers
+
+    def unpack(self, obj):
+        for m in self.matchers:
+            m = unpack(obj, m)
+            if m:
+                return m
+
+        return UnpackResult(False)
+
+
+class In(Matcher):
+    def __init__(self, *values, **kwargs):
+        self.values = set(values)
+        self.group = kwargs.get('group')
+
+    def unpack(self, obj):
+        return UnpackResult.make(obj in self.values, self.group, obj)
+
+
+class Not(Matcher):
+    def __init__(self, matcher, group=None):
+        self.matcher = matcher
+        self.group = group
+
+    def unpack(self, obj):
+        if unpack(obj, self.matcher):
+            return UnpackResult(False)
+
+        return UnpackResult.make(True, self.group, obj)
+
+
+class Eq(Matcher):
+    def __init__(self, value, group=None):
+        self.value = value
+        self.group = group
+
+    def unpack(self, obj):
+        return UnpackResult.make(obj == self.value, self.group, obj)
+
+
+class Literal(Matcher):
+    def __init__(self, value, group=None):
+        self.value = value
+        self.group = group
+
+    def unpack(self, _):
+        return UnpackResult.make(True, self.group, self.value)
+
+
+class Capture(Matcher):
+    def __init__(self, matcher, group=None):
+        self.matcher = matcher
+        self.group = group
+
+    def unpack(self, obj):
+        return UnpackResult.make(bool(unpack(obj, self.matcher)), self.group, obj)
+
+
+class Transform(Matcher):
+    def __init__(self, func, matcher):
+        self.func = func
+        self.matcher = matcher
+
+    def unpack(self, obj):
+        m = unpack(obj, self.matcher)
+        return UnpackResult(m.matched, {
+            k: [self.func(v) for v in vv] for k, vv in m.matches.items()
+        })
+
+
+class ExactSequence(Matcher):
+    def __init__(self, *matchers):
+        self.matchers = matchers
+
+    def unpack(self, obj):
+        if not isinstance(obj, collections.Sequence):
+            return UnpackResult(False)
+
+        if len(obj) != len(self.matchers):
+            return UnpackResult(False)
+
+        result = UnpackResult(True)
+        for o, m in zip(obj, self.matchers):
+            result |= unpack(o, m)
+
+        return result
 
 
 class Sequence(Matcher):
     def __init__(self, matcher):
         self.matcher = matcher
 
-    def __call__(self, obj):
+    def unpack(self, obj):
         if not isinstance(obj, (list, tuple)):
-            return False
+            return UnpackResult(False)
 
-        return all(match(item, self.matcher) for item in obj)
+        result = UnpackResult(True)
+        for item in obj:
+            result |= unpack(item, self.matcher)
+
+        return result
 
 
 class InstanceOf(Matcher):
-    def __init__(self, cls):
+    def __init__(self, cls, group=None):
         self.cls = cls
+        self.group = None
 
-    def __call__(self, obj):
-        return isinstance(obj, self.cls)
+    def unpack(self, obj):
+        return UnpackResult.make(isinstance(obj, self.cls), self.group, obj)
+
+
+class Record(Matcher):
+    """Class to simplify creating typed nodes in ASTs, etc.."""
+    __fields__ = ()
+    __types__ = ()
+
+    def __init__(self, *args, **kwargs):
+        unknown  = set(kwargs) - set(self.__fields__)
+        if unknown:
+            raise ValueError('unknown fields: {}'.format(unknown))
+
+        kwargs.update(dict(zip(self.__fields__, args)))
+
+        types = dict(zip(self.__fields__, self.__types__))
+
+        for key in self.__fields__:
+            type = types.get(key, lambda x: x)
+
+            val = kwargs.get(key)
+            if val is not None and val is not Any and not isinstance(val, Matcher):
+                val = type(val)
+
+            setattr(self, key, val)
+
+    def __eq__(self, other):
+        try:
+            other_key = other.key
+
+        except AttributeError:
+            return NotImplemented
+
+        return self.key() == other_key()
+
+    def __hash__(self):
+        return hash((type(self),) + self.key())
+
+    def __repr__(self):
+        kv_pairs = ', '.join('{}={!r}'.format(k, getattr(self, k)) for k in self.__fields__)
+        return '{}({})'.format(self.__class__.__name__, kv_pairs)
+
+    def key(self):
+        return tuple(getattr(self, k) for k in self.__fields__)
+
+    def update(self, **kwargs):
+        values = self.key()
+        values = dict(zip(self.__fields__, values))
+        values.update(kwargs)
+        return self.__class__(**values)
+
+    @classmethod
+    def any(cls, **kwargs):
+        items = {k: Any for k in cls.__fields__}
+        items.update(**kwargs)
+        return cls(**items)
+
+    def unpack(self, obj):
+        if type(self) is not type(obj):
+            return UnpackResult(False)
+
+        result = UnpackResult(True)
+        for obj_k, self_k in zip(obj.key(), self.key()):
+            result |= unpack(obj_k, self_k)
+
+        return result
 
 
 class RuleSet(object):
-    def __init__(self, rules=(), name=None):
+    @classmethod
+    def make(cls, name=None, rules=()):
+        def impl(root):
+            return cls(rules=rules, name=name, root=root)
+
+        return impl
+
+    def __init__(self, rules=(), name=None, root=None):
+        if root is not None:
+            self.root = root
+
         self.name = name
         self.rules = []
 
@@ -146,7 +335,12 @@ class RuleSet(object):
         self.rules.append((matcher, transform))
 
     def __call__(self, obj, *args):
+        return self.root(self, obj, *args)
 
+    def root(self, _, obj, *args):
+        return self.apply_rules(obj, *args)
+
+    def apply_rules(self, obj, *args):
         for m, t in self.rules:
             if match(obj, m):
                 return t(self, obj, *args)

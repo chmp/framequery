@@ -1,6 +1,16 @@
 from __future__ import print_function, division, absolute_import
 
 
+def column_match(col, internal_col):
+    col_schema, col = _split_table_column(col, '.')
+    internal_col_schema, internal_col = _split_table_column(internal_col)
+
+    if col_schema is None:
+        return col == internal_col
+
+    return internal_col_schema == col_schema and internal_col == col
+
+
 def column_set_table(column, table):
     """Given a string column, possibly containing a table, set the table.
 
@@ -71,8 +81,8 @@ def normalize_col_ref(ref, columns):
     return candidates[0]
 
 
-def _split_table_column(obj):
-    parts = obj.split('/@/', 1)
+def _split_table_column(obj, sep='/@/'):
+    parts = obj.split(sep, 1)
 
     if len(parts) == 1:
         return None, parts[0]

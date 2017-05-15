@@ -48,6 +48,7 @@ class Call(Record):
 
 class CallSetFunction(Record):
     __fields__ = ['func', 'args', 'quantifier']
+    __types__ = [str, tuple, str]
 
 
 class CallAnalyticsFunction(Record):
