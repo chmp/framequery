@@ -1,5 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
+import numpy as np
 import pandas as pd
 import framequery as fq
 
@@ -52,9 +53,9 @@ def test_select(setup, case):
 
     q = case['query']
 
-    expected = sorted(db.execute(q).fetchall())
+    expected = sorted(list(row) for row in db.execute(q).fetchall())
 
-    actual = fq.select(q, scope=scope)
-    actual = sorted(tuple(t) for _, t in actual.iterrows())
+    actual = fq.query(q, scope=scope)
+    actual = sorted(list(t) for _, t in actual.iterrows())
 
-    assert actual == expected
+    np.testing.assert_allclose(actual, expected)
