@@ -5,7 +5,7 @@ python:
   - "3.5"
 
 env:
-  - DB=postgresql://postgres@localhost:5432/travis_ci_test
+  - FQ_TEST_DB=postgresql://postgres@localhost:5432/travis_ci_test
 
 services:
   - postgresql
