@@ -2,7 +2,6 @@
 """
 from __future__ import print_function, division, absolute_import
 
-import enum
 import itertools as it
 import logging
 import re
@@ -10,7 +9,7 @@ import re
 _logger = logging.getLogger(__name__)
 
 
-class Status(enum.Enum):
+class Status(object):
     success = 'success'
     failure = 'failure'
 
