@@ -1,5 +1,8 @@
 from __future__ import print_function, division, absolute_import
 
+import itertools as it
+from ..util._misc import Matcher, UnpackResult
+
 
 def column_match(col, internal_col):
     col_schema, col = _split_table_column(col, '.')
@@ -88,3 +91,36 @@ def _split_table_column(obj, sep='/@/'):
         return None, parts[0]
 
     return tuple(parts)
+
+
+class InternalColumnMatcher(Matcher):
+    def __init__(self, internal_columns, group=None):
+        self.internal_columns = internal_columns
+        self.group = group
+
+    def unpack(self, obj):
+        for icol in self.internal_columns:
+            if column_match(obj, icol):
+                return UnpackResult.make(True, self.group, obj)
+
+        return UnpackResult(False)
+
+
+class Unique(object):
+    def __hash__(self):
+        return hash(id(self))
+
+
+class UniqueNameGenerator(object):
+    def __init__(self):
+        self.names = {}
+        self.ids = iter(it.count())
+
+    def get(self, obj):
+        if not isinstance(obj, Unique):
+            return obj
+
+        if obj not in self.names:
+            self.names[obj] = 'unique-{}'.format(next(self.ids))
+
+        return self.names[obj]
