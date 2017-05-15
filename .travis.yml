@@ -3,7 +3,18 @@ cache: pip
 python:
   - "2.7"
   - "3.5"
+
+env:
+  - DB=postgresql://postgres@localhost:5432/travis_ci_test
+
+services:
+  - postgresql
+
 install:
  - pip install tox
+
+before_script:
+  - psql -c 'create database travis_ci_test;' -U postgres
+
 script:
  - tox -v -e py${TRAVIS_PYTHON_VERSION//.}
