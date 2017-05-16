@@ -1,3 +1,23 @@
 from __future__ import print_function, division, absolute_import
 
-from .executor import query
+from .executor import execute
+
+
+class Scope(object):
+    def __init__(self, scope):
+        self.scope = scope
+
+    def execute(self, q):
+        result = execute(q, self.scope)
+        return ResultProxy(result)
+
+
+class ResultProxy(object):
+    def __init__(self, df):
+        self.df = df
+
+    def get(self):
+        return self.df
+
+    def fetchall(self):
+        return list(tuple(t) for _, t in self.df.iterrows())

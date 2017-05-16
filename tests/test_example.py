@@ -34,8 +34,9 @@ def setup(database):
         database.execute(q)
     database.execute('insert into public.test (c1, c2) values(%s, %s)', *data)
 
-    df = pd.DataFrame(data, columns=['c1', 'c2'])
-    scope = {'test': df}
+    scope = fq.Scope({
+        'test': pd.DataFrame(data, columns=['c1', 'c2'])
+    })
 
     return database, scope
 
@@ -52,8 +53,6 @@ def test_select(setup, query):
     db, scope = setup
 
     expected = sorted(list(row) for row in db.execute(query).fetchall())
-
-    actual = fq.query(query, scope=scope)
-    actual = sorted(list(t) for _, t in actual.iterrows())
+    actual = sorted(list(row) for row in scope.execute(query).fetchall())
 
     np.testing.assert_allclose(actual, expected)

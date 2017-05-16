@@ -1,4 +1,4 @@
-"""Execute queries on dataframes.
+"""execute_ast queries on dataframes.
 
 The most general query involves the following transformations:
 
@@ -21,7 +21,7 @@ from ..util._misc import (
 )
 
 
-def query(q, scope, debug=False):
+def execute(q, scope, debug=False):
     model = PandasModel(debug=debug)
 
     scope = {
@@ -30,7 +30,7 @@ def query(q, scope, debug=False):
     }
     ast = parse(q, a.Select)
 
-    result = execute(ast, scope, model)
+    result = execute_ast(ast, scope, model)
     result = model.remove_table_from_columns(result)
     return result
 
@@ -45,14 +45,14 @@ def get_alias(col, idx):
     return str(idx)
 
 
-execute = RuleSet(name='dag_compile')
+execute_ast = RuleSet(name='dag_compile')
 
 
-@execute.rule(InstanceOf(a.Select))
-def execute_select(execute, node, scope, model):
+@execute_ast.rule(InstanceOf(a.Select))
+def execute_ast_select(execute_ast, node, scope, model):
     name_generator = UniqueNameGenerator()
 
-    table = execute(node.from_clause, scope, model)
+    table = execute_ast(node.from_clause, scope, model)
 
     columns = normalize_columns(table.columns, node.columns)
 
@@ -175,9 +175,9 @@ def sort(table, values, model):
     return model.sort_values(table, names, ascending=False)
 
 
-@execute.rule(InstanceOf(a.FromClause))
-def execute_from_clause(execute, node, scope, model):
-    tables = [execute(table, scope, model) for table in node.tables]
+@execute_ast.rule(InstanceOf(a.FromClause))
+def execute_ast_from_clause(execute_ast, node, scope, model):
+    tables = [execute_ast(table, scope, model) for table in node.tables]
 
     if len(tables) == 0:
         raise NotImplementedError('no dual support')
@@ -188,8 +188,8 @@ def execute_from_clause(execute, node, scope, model):
     return tables[0]
 
 
-@execute.rule(InstanceOf(a.TableRef))
-def execute_table_ref(execute, node, scope, model):
+@execute_ast.rule(InstanceOf(a.TableRef))
+def execute_ast_table_ref(execute_ast, node, scope, model):
     if node.schema:
         name = '{}.{}'.format(node.schema, node.name)
 
