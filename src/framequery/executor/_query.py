@@ -21,8 +21,9 @@ from ..util._misc import (
 )
 
 
-def execute(q, scope, debug=False):
-    model = PandasModel(debug=debug)
+# TOOD: add option autodetect the required model
+def execute(q, scope, model='pandas'):
+    model = get_model(model)
 
     scope = {
         table_name: model.add_table_to_columns(df, table_name)
@@ -33,6 +34,22 @@ def execute(q, scope, debug=False):
     result = execute_ast(ast, scope, model)
     result = model.remove_table_from_columns(result)
     return result
+
+
+def get_model(model, debug=False):
+    if not isinstance(model, str):
+        return model
+
+    if model == 'pandas':
+        from ._pandas import PandasModel
+        return PandasModel()
+
+    elif model == 'dask':
+        from ._dask import DaskModel
+        return DaskModel()
+
+    else:
+        raise ValueError('unknown fq model: {}'.format(model))
 
 
 def get_alias(col, idx):

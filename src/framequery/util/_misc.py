@@ -309,6 +309,29 @@ class Record(Matcher):
         return result
 
 
+def walk(obj):
+    if isinstance(obj, collections.Mapping):
+        yield obj
+        for value in obj.values():
+            for item in walk(value):
+                yield item
+
+    elif isinstance(obj, collections.Sequence) and not isinstance(obj, str):
+        yield obj
+        for value in obj:
+            for item in walk(value):
+                yield item
+
+    elif isinstance(obj, Record):
+        yield obj
+        for value in obj.key():
+            for item in walk(value):
+                yield item
+
+    else:
+        yield obj
+
+
 class RuleSet(object):
     @classmethod
     def make(cls, name=None, rules=()):

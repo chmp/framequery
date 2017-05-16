@@ -1,7 +1,7 @@
 from __future__ import print_function, division, absolute_import
 
 import itertools as it
-from ..util._misc import Matcher, UnpackResult
+from ..util._misc import Matcher, UnpackResult, walk
 
 
 def column_match(col, internal_col):
@@ -111,16 +111,36 @@ class Unique(object):
         return hash(id(self))
 
 
+def all_unique(obj):
+    return [child for child in walk(obj) if isinstance(child, Unique)]
+
+
 class UniqueNameGenerator(object):
-    def __init__(self):
-        self.names = {}
-        self.ids = iter(it.count())
+    def __init__(self, names=None, fixed=False):
+        if names is None:
+            names = {}
+
+        self.names = dict(names)
+
+        if not fixed:
+            self.ids = iter(it.count())
+
+        else:
+            self.ids = None
 
     def get(self, obj):
         if not isinstance(obj, Unique):
             return obj
 
         if obj not in self.names:
+            if self.ids is None:
+                raise RuntimeError('cannot request unknown unique from a fixed generator')
             self.names[obj] = 'unique-{}'.format(next(self.ids))
 
         return self.names[obj]
+
+    def fix(self, objs=()):
+        for obj in objs:
+            self.get(obj)
+
+        return UniqueNameGenerator(self.names, fixed=True)
