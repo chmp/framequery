@@ -33,31 +33,5 @@ class DaskModel(PandasModel):
     def sort_values(self, table, names, ascending=False):
         raise NotImplementedError('dask does not yet support sorting')
 
-    # TODO: unify impl between pandas / dask
-    # TODO: add execution hints to allow group-by based aggregate?
-    def aggregate(self, table, columns, group_by, name_generator):
-        group_spec = [name_generator.get(col.alias) for col in group_by]
-
-        agg_spec = {}
-        rename__spec = []
-
-        for col in columns:
-            function = col.value.func
-            arg = name_generator.get(col.value.args[0].name)
-            alias = name_generator.get(col.alias)
-
-            assert col.value.quantifier is None
-
-            agg_spec.setdefault(arg, []).append(function)
-            rename__spec.append((alias, (arg, function)))
-
-        table = table.groupby(group_spec).aggregate(agg_spec)
-        table = dd.map_partitions(self.rename_aggregation_results, table, rename__spec)
-        table = table.reset_index(drop=False)
-
-        return table
-
-    def rename_aggregation_results(self, df, spec):
-        df = df[[input_col for _, input_col in spec]]
-        df.columns = [output_col for output_col, _ in spec]
-        return df
+    def select_rename(self, df, spec):
+        return dd.map_partitions(super(DaskModel, self).select_rename, df, spec)

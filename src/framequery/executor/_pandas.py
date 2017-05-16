@@ -72,33 +72,32 @@ class PandasModel(object):
 
         return pd.DataFrame(result, index=table.index)
 
+    # TODO: add execution hints to allow group-by-apply based aggregate?
     def aggregate(self, table, columns, group_by, name_generator):
-        group_by = [name_generator.get(col.alias) for col in group_by]
-        grouped = table.groupby(group_by)
+        group_spec = [name_generator.get(col.alias) for col in group_by]
 
-        result = collections.OrderedDict()
+        agg_spec = {}
+        rename_spec = []
 
         for col in columns:
-            matcher = a.Column(
-                a.CallSetFunction.any(args=ExactSequence(InstanceOf(a.Name))),
-                alias=Any,
-            )
-            if not match(col, matcher):
-                raise ValueError('cannot aggregate {}, expected {}'.format(col, matcher))
-
             function = col.value.func
             arg = name_generator.get(col.value.args[0].name)
-            quantifier = col.value.quantifier
-
-            assert quantifier is None
-
-            impl = self.aggregates[function]
-
             alias = name_generator.get(col.alias)
-            result[alias] = impl(grouped[arg])
 
-        result = pd.DataFrame(result)
-        return result.reset_index(drop=False)
+            assert col.value.quantifier is None
+
+            agg_spec.setdefault(arg, []).append(function)
+            rename_spec.append((alias, (arg, function)))
+
+        table = table.groupby(group_spec).aggregate(agg_spec)
+        table = self.select_rename(table, rename_spec)
+        table = table.reset_index(drop=False)
+        return table
+
+    def select_rename(self, df, spec):
+        df = df[[input_col for _, input_col in spec]]
+        df.columns = [output_col for output_col, _ in spec]
+        return df
 
 
 eval_pandas = RuleSet(name='eval_pandas')
