@@ -11,7 +11,6 @@ from __future__ import print_function, division, absolute_import
 
 import itertools as it
 
-from ._pandas import PandasModel
 from ._util import (
     normalize_col_ref, Unique, UniqueNameGenerator, InternalColumnMatcher, column_get_table,
 )

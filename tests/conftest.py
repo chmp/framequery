@@ -24,4 +24,3 @@ def pytest_assertrepr_compare(op, left, right):
         'Comparing Records',
         '%r != %r' % (left, right),
     ] + list(record_diff(left, right))
-

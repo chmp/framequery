@@ -1,7 +1,7 @@
 from __future__ import print_function, division, absolute_import
 
 from framequery.parser.ast import Name, Column
-from framequery.util._misc import *
+from framequery.util._misc import match, Any, UnpackResult, unpack, Sequence, In, InstanceOf
 import pytest
 
 examples = [

@@ -10,7 +10,7 @@ def record_diff(a, b):
 
     if isinstance(a, list):
         if len(a) != len(b):
-           return ['length differ: %r != %r' % (a, b)]
+            return ['length differ: %r != %r' % (a, b)]
 
         return it.chain.from_iterable(record_diff(u, v) for (u, v) in zip(a, b))
 
@@ -123,7 +123,7 @@ class Matcher(object):
 
 class Any(Matcher):
     def __init__(self, group):
-        self.group= group
+        self.group = group
 
     def unpack(self, obj):
         return UnpackResult.make(True, self.group, obj)
@@ -250,7 +250,7 @@ class Record(Matcher):
     __types__ = ()
 
     def __init__(self, *args, **kwargs):
-        unknown  = set(kwargs) - set(self.__fields__)
+        unknown = set(kwargs) - set(self.__fields__)
         if unknown:
             raise ValueError('unknown fields: {}'.format(unknown))
 

@@ -87,6 +87,6 @@ def test_example(query, expected, model):
     expected = expected()
 
     # set empty columns in expected to the ones in actual
-    expected.columns= [e or a for a, e in zip(actual.columns, expected.columns)]
+    expected.columns = [e or a for a, e in zip(actual.columns, expected.columns)]
 
     pdt.assert_frame_equal(actual, expected, check_dtype=False)

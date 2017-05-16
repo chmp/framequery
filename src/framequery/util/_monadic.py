@@ -229,7 +229,7 @@ class construct(object):
             self.matcher = matcher
 
     def __call__(self, seq):
-        matches, rest, debug  = self.matcher(seq)
+        matches, rest, debug = self.matcher(seq)
         if matches is None:
             return None, seq, Status.fail(children=[debug], where='construct')
 

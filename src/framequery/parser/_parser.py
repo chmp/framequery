@@ -126,7 +126,7 @@ name_format = r'\w+'
 
 keywords = {
     'select', 'as', 'from',
-    'not','and', 'or', 'like', 'in',
+    'not', 'and', 'or', 'like', 'in',
     'count', 'having', 'distinct', 'all',
     'order', 'from', 'by', 'group'
 }

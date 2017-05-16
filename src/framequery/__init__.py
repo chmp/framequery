@@ -2,6 +2,8 @@ from __future__ import print_function, division, absolute_import
 
 from .executor import execute
 
+__all__ = ['execute', 'Scope', 'ResultProxy']
+
 
 class Scope(object):
     def __init__(self, scope, model='pandas'):

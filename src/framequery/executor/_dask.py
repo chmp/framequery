@@ -1,9 +1,5 @@
 from __future__ import print_function, division, absolute_import
 
-import collections
-
-from ..parser import ast as a
-from ..util._misc import match, ExactSequence, Any, InstanceOf
 from ._util import all_unique
 from ._pandas import PandasModel
 

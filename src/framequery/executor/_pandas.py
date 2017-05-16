@@ -2,7 +2,7 @@ from __future__ import print_function, division, absolute_import
 
 from ._util import column_set_table, column_get_column, normalize_col_ref
 from ..parser import ast as a
-from ..util._misc import ExactSequence, InstanceOf, Any, match, RuleSet
+from ..util._misc import InstanceOf, RuleSet
 from ..util import like, not_like
 
 import collections
