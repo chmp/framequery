@@ -4,11 +4,12 @@ from .executor import execute
 
 
 class Scope(object):
-    def __init__(self, scope):
+    def __init__(self, scope, model='pandas'):
         self.scope = scope
+        self.model = model
 
     def execute(self, q):
-        result = execute(q, self.scope)
+        result = execute(q, self.scope, model=self.model)
         return ResultProxy(result)
 
 

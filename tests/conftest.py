@@ -7,6 +7,7 @@ import sqlalchemy
 
 from framequery.util._misc import Record, record_diff
 
+
 @pytest.fixture
 def database():
     if 'FQ_TEST_DB' in os.environ:

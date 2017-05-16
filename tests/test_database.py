@@ -1,5 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
+import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 import framequery as fq
@@ -34,10 +35,7 @@ def setup(database):
         database.execute(q)
     database.execute('insert into public.test (c1, c2) values(%s, %s)', *data)
 
-    scope = fq.Scope({
-        'test': pd.DataFrame(data, columns=['c1', 'c2'])
-    })
-
+    scope = {'test': pd.DataFrame(data, columns=['c1', 'c2'])}
     return database, scope
 
 
@@ -47,10 +45,24 @@ examples = [
     'select test.* from test'
 ]
 
+examples = (
+    [('pandas', q) for q in examples] +
+    [('dask', q) for q in examples]
+)
 
-@pytest.mark.parametrize('query', examples)
-def test_select(setup, query):
+
+@pytest.mark.parametrize('model, query', examples)
+def test_select(setup, model, query):
     db, scope = setup
+
+    if model == 'dask':
+        scope = fq.Scope(
+            {k: dd.from_pandas(df, npartitions=3) for (k, df) in scope.items()},
+            model=model,
+        )
+
+    else:
+        scope = fq.Scope(scope)
 
     expected = sorted(list(row) for row in db.execute(query).fetchall())
     actual = sorted(list(row) for row in scope.execute(query).fetchall())
