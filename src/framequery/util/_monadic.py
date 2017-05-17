@@ -396,6 +396,9 @@ def map_verbatim(f, *p):
     return impl
 
 
+# ************************************************
+# **            higher level parsers            **
+# ************************************************
 def list_of(sep, item):
     return transform(
         lambda obj: [obj],

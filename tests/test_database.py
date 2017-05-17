@@ -42,7 +42,8 @@ def setup(database):
 examples = [
     'select c1, count(1) as cnt, sum(c2) from test group by c1',
     'select c1 as a, c2 as b, c1 + c2 from test',
-    'select test.* from test'
+    'select test.* from test',
+    'select test.c1, 2 * test.c2 from test',
 ]
 
 examples = (

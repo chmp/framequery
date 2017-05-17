@@ -1,5 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
+import re
 import string as _string
 
 from framequery.util import _monadic as m
@@ -51,17 +52,6 @@ def full_word(matcher):
         return None, seq, dict(d, status=m.Status.failure)
 
     return full_word_impl
-
-
-def base_name(seq):
-    "hand crafted name parser to ensure names do not pass as a name"
-    if not seq:
-        return None, seq, m.Status.fail(message='no input', where='basename')
-
-    if seq[0].lower() in keywords:
-        return None, seq, m.Status.fail(message='string is a keyword', where='basename')
-
-    return regex_token(name_format)(seq)
 
 
 def base_string(seq):
@@ -137,9 +127,16 @@ string = m.construct(
     m.keyword(value=base_string)
 )
 
-name = m.construct(
-    a.Name,
-    m.keyword(name=base_name),
+
+base_name = m.pred(lambda v: v not in keywords and re.match(name_format, v))
+
+name = m.transform(
+    lambda *parts: [a.Name('.'.join(*parts))],
+    m.sequence(
+        m.optional(m.sequence(base_name, svtok('.'))),
+        m.optional(m.sequence(base_name, svtok('.'))),
+        base_name,
+    )
 )
 
 
@@ -276,9 +273,11 @@ select = m.construct(
 constructors = {
     constructor.cls: constructor
     for constructor in [
-        select, from_clause, column, integer, table_ref, name, call, call_set_function,
+        select, from_clause, column, integer, table_ref, call, call_set_function,
     ]
 }
+
+constructors[a.Name] = name
 
 parser = select
 
