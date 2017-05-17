@@ -1,6 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
-from framequery.util._misc import Record
+from framequery.util._record import Record
 
 
 class Select(Record):

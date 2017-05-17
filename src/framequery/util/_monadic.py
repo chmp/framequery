@@ -1,12 +1,157 @@
 """Helpers to write monadic parsers
+
+This mechanism is used in three ways inside framequery:
+
+- parse sequences into sequences (tokenize)
+- parse sequences into object trees (parsing)
+- extract parts of an object tree (matching)
+
 """
 from __future__ import print_function, division, absolute_import
 
-import itertools as it
 import logging
 import re
 
 _logger = logging.getLogger(__name__)
+
+
+def match(val, matcher):
+    m, r, d = matcher([val])
+
+    if m is None:
+        return MatchResult(False)
+
+    if r:
+        raise ValueError('not fully consumed {}: {}'.format(r, '\n'.join(format_debug(d))))
+
+    matches = {}
+
+    for v in m:
+        if isinstance(v, CaptureGroup):
+            matches.setdefault(v.key, []).append(v.val)
+
+    return MatchResult(True, matches)
+
+
+class MatchResult(object):
+    @classmethod
+    def make(cls, matched, group, val):
+        if not matched:
+            return cls(False)
+
+        if group is None:
+            return cls(True)
+
+        return cls(True, {group: [val]})
+
+    def __init__(self, matched=False, matches=None):
+        if matches is None:
+            matches = {}
+
+        self.matched = bool(matched)
+        self.matches = dict(matches)
+
+    def get(self, idx):
+        result, = self.getall(idx)
+        return result
+
+    def getall(self, idx):
+        return self.matches.get(idx, [])
+
+    def __bool__(self):
+        return self.matched
+
+    # backwards compatibility for py27
+    __nonzero__ = __bool__
+
+    def __eq__(self, other):
+        return (
+            type(self) is type(other) and
+            self.matched is other.matched and
+            self.matches == other.matches
+        )
+
+    def __repr__(self):
+        return 'UnpackResult(%s, %s)' % (self.matched, self.matches)
+
+    def __or__(self, other):
+        if self.matched is False or other.matched is False:
+            return MatchResult(False)
+
+        return MatchResult(self.matched, {
+            k: self.matches.get(k, []) + other.matches.get(k, [])
+            for k in set(self.matches) | set(other.matches)
+        })
+
+    def __iter__(self):
+        if not self.matched:
+            raise ValueError()
+        return iter(self.get(idx) for idx in sorted(self.matches))
+
+    def __getitem__(self, item):
+        return self.get(item)
+
+
+class RuleSet(object):
+    """A dispatcher based on matching rules"""
+    @classmethod
+    def make(cls, name=None, rules=()):
+        def impl(root):
+            return cls(rules=rules, name=name, root=root)
+
+        return impl
+
+    def __init__(self, rules=(), name=None, root=None):
+        if root is not None:
+            self.root = root
+
+        self.name = name
+        self.rules = []
+
+        for m, t in rules:
+            self.add(m, t)
+
+    def rule(self, matcher):
+        def rule_impl(transform):
+            self.add(matcher, transform)
+            return transform
+        return rule_impl
+
+    def add(self, matcher, transform):
+        # TODO: precompute dispatcher table based on matcher class
+        self.rules.append((matcher, transform))
+
+    def __call__(self, obj, *args):
+        return self.root(self, obj, *args)
+
+    def root(self, _, obj, *args):
+        return self.apply_rules(obj, *args)
+
+    def apply_rules(self, obj, *args):
+        for m, t in self.rules:
+            if match(obj, m):
+                return t(self, obj, *args)
+
+        raise ValueError('not support, no rule matches {}'.format(obj))
+
+    def __repr__(self):
+        if self.name is not None:
+            return 'RuleSet(name={}, ...)'.format(self.name)
+
+        return 'RuleSet(...)'
+
+
+def format_debug(debug, indent=0):
+    status = debug.get('status', '/')
+    message = debug.get('message', '')
+    children = debug.get('children', [])
+    where = debug.get('where', '<unknown>')
+
+    yield('{}{}: {} in {}'.format(' ' * indent,  status, message, where))
+
+    for d in children:
+        for msg in format_debug(d, indent=indent + 1):
+            yield msg
 
 
 class Status(object):
@@ -24,8 +169,22 @@ class Status(object):
     @classmethod
     def _gen(cls, s, **kwargs):
         kwargs.setdefault('children', [])
-        kwargs.setdefault('message', None)
+        kwargs.setdefault('message', '')
         return dict(status=s, **kwargs)
+
+
+def capture(matcher, group=0):
+    @_delegate(matcher, where='capture')
+    def capture_impl(m, r, d, seq):
+        return [CaptureGroup(group, v) for v in m], r, d
+
+    return capture_impl
+
+
+class CaptureGroup(object):
+    def __init__(self, key, val):
+        self.key = key
+        self.val = val
 
 
 def _delegate(matcher, func=None, **kwargs):
@@ -58,43 +217,6 @@ def _call(matcher, seq):
         raise RuntimeError('parsing error in %s: %s' % (matcher, exc))
 
 
-def new_interface(matcher):
-    """Adapt a matcher to the old interface"""
-    def new_interface_impl(seq):
-        m, s, _ = matcher(seq)
-        return m, s
-
-    return new_interface_impl
-
-
-def fail(msg):
-    def impl(seq):
-        raise ValueError(msg)
-    return impl
-
-
-def list_of(sep, item):
-    return transform(
-        lambda obj: [obj],
-        flat_sequence(item, many(flat_sequence(sep, item)))
-    )
-
-
-def debug(msg, matcher):
-    def impl(seq):
-        m, s = matcher(seq)
-
-        if m is not None:
-            print('{} match {}'.format(msg, seq[:10]))
-
-        else:
-            print('{} not match {}'.format(msg, seq[:10]))
-
-        return m, s
-
-    return impl
-
-
 class define(object):
     """Definition of recursive parsers"""
     def __init__(self, factory=None):
@@ -108,8 +230,9 @@ class define(object):
         return self._parser(seq)
 
 
-def literal(val):
-    return lambda seq: ([val], seq, Status.succeed())
+def literal(*vals):
+    """Insert values into the result list"""
+    return lambda seq: (list(vals), seq, Status.succeed(where='insert'))
 
 
 def optional(matcher):
@@ -124,31 +247,27 @@ def optional(matcher):
     return optional_impl
 
 
-def flat_sequence(*matchers):
-    return transform(lambda seq: list(it.chain.from_iterable(seq)), sequence(*matchers))
-
-
 def sequence(*matchers):
     def sequence_impl(seq):
         result = []
-        results = []
+        children = []
         s = seq
 
         for matcher in matchers:
             m, s, d = _call(matcher, s)
 
-            results += [d]
+            children.append(d)
             if m is None:
-                return None, seq, Status.fail(children=results, where='sequence')
+                return None, seq, Status.fail(children=children, where='sequence')
 
-            result += [m]
+            result += m
 
-        return result, s, Status.succeed(children=results, where='sequence')
+        return result, s, Status.succeed(children=children, where='sequence')
 
     return sequence_impl
 
 
-def many(matcher):
+def repeat(matcher):
     def many_impl(seq):
         parts = []
         children = []
@@ -156,13 +275,13 @@ def many(matcher):
         while True:
             p, seq, d = matcher(seq)
 
+            children.append(d)
             if p is None:
                 break
 
             parts += p
-            children.append(d)
 
-        return parts, seq, Status.succeed(consumed=0, children=children, where='many')
+        return parts, seq, Status.succeed(children=children, where='many')
 
     return many_impl
 
@@ -182,77 +301,57 @@ def any(*matchers):
     return any_impl
 
 
-def token(matcher):
-    def token_impl(seq):
+def one(matcher):
+    def one_impl(seq):
         if not seq:
-            return None, seq, Status.fail(mesage='no input', where='token')
+            return None, seq, Status.fail(where='one', message='no items')
 
         m, r, d = matcher(seq[0])
 
         if m is None:
-            return None, seq, Status.fail(children=[d])
+            return None, seq, Status.fail(where='one', children=[d], message='did not match')
 
-        elif r:
-            return None, seq, Status.fail(message='remaining: {}'.format(r), children=[d], where='token')
+        if r:
+            return None, seq, Status.fail(where='one', children=[d], message='not fully consumed')
 
-        return m, seq[1:], Status.succeed(children=[d], where='token')
+        return m, seq[1:], Status.succeed(where='one', children=[d])
 
-    return token_impl
-
-
-def consume(n):
-    def consume_impl(seq):
-        if len(seq) < n:
-            return None, seq, Status.fail(children=[], message='not enough inputs', where='consume')
-
-        return seq[:n], seq[n:], Status.succeed()
-
-    return consume_impl
+    return one_impl
 
 
-def skip(matcher):
-    @_delegate(matcher, where='skip')
+def lit(val):
+    """Accept a single item and return the given value."""
+    return lambda seq: ([val], seq[1:], Status.succeed(where='lit'))
+
+
+def rep(matcher):
+    """Accept a single list and match each item against the matcher."""
+    return one(repeat(matcher))
+
+
+def verb(*p):
+    """Match a single item against the given prototypes verbatim."""
+    # NOTE: do not rely on verbatim, since verbatim is relying on the sequence interface
+    return any(*[eq(v) for v in p])
+
+
+def ignore(matcher):
+    @_delegate(matcher, where='ignore')
     def skip_impl(m, r, d, _):
         return [], r, d
 
     return skip_impl
 
 
-class construct(object):
-    def __init__(self, cls, matcher, *matchers):
-        self.cls = cls
-
-        if matchers:
-            self.matcher = flat_sequence(matcher, *matchers)
-
-        else:
-            self.matcher = matcher
-
-    def __call__(self, seq):
-        matches, rest, debug = self.matcher(seq)
-        if matches is None:
-            return None, seq, Status.fail(children=[debug], where='construct')
-
-        kw = {}
-        for d in matches:
-            duplicates = set(kw) & set(d)
-            if duplicates:
-                raise ValueError('duplicate keys: {}'.format(duplicates))
-
-            kw.update(d)
-
-        try:
-            res = self.cls(**kw)
-
-        except Exception as exc:
-            raise RuntimeError('error constructing %s: %s' % (self.cls, exc))
-
-        return [res], rest, Status.succeed(children=[debug], where='construct')
-
-
-def keyword(**kw):
-    (name, matcher), = kw.items()
-    return map(lambda obj: {name: obj}, matcher)
+def map_capture(f, matcher):
+    return transform(
+        lambda seq: [
+            CaptureGroup(item.key, f(item.val))
+            for item in seq
+            if isinstance(item, CaptureGroup)
+        ],
+        matcher,
+    )
 
 
 def map(f, matcher):
@@ -297,6 +396,13 @@ def map_verbatim(f, *p):
     return impl
 
 
+def list_of(sep, item):
+    return transform(
+        lambda obj: [obj],
+        sequence(item, repeat(sequence(sep, item)))
+    )
+
+
 def regex(p):
     p = re.compile(p)
 
@@ -333,3 +439,113 @@ def string(quote='\'', escape='\\', find=str.find):
         return [s[:idx + 1]], s[idx + 1:], Status.succeed(consumed=idx + 1)
 
     return impl
+
+
+def pred(func):
+    def pred_impl(obj):
+        if not obj:
+            return [], obj, Status.fail(where='pred<%s>' % func, message='no input')
+
+        if not func(obj[0]):
+            return None, obj, Status.fail(
+                where='pred<%s>' % func,
+                message='predicate %s failed' % func,
+            )
+
+        return [obj[0]], obj[1:], Status.succeed(where='pred<%s>' % func)
+
+    return pred_impl
+
+
+def eq(val):
+    return pred(lambda obj: obj == val)
+
+
+def ne(val):
+    return pred(lambda obj: obj != val)
+
+
+def instanceof(cls):
+    return pred(lambda obj: isinstance(obj, cls))
+
+
+wildcard = pred(lambda _: True)
+
+
+# *************************************************
+# **   object support: build and match objects   **
+# *************************************************
+class construct(object):
+    def __init__(self, cls, matcher, *matchers):
+        self.cls = cls
+
+        if matchers:
+            self.matcher = sequence(matcher, *matchers)
+
+        else:
+            self.matcher = matcher
+
+    def __call__(self, seq):
+        matches, rest, debug = self.matcher(seq)
+        if matches is None:
+            return None, seq, Status.fail(children=[debug], where='construct')
+
+        kw = {}
+        for d in matches:
+            duplicates = set(kw) & set(d)
+            if duplicates:
+                raise ValueError('duplicate keys: {}'.format(duplicates))
+
+            kw.update(d)
+
+        try:
+            res = self.cls(**kw)
+
+        except Exception as exc:
+            raise RuntimeError('error constructing %s: %s' % (self.cls, exc))
+
+        return [res], rest, Status.succeed(children=[debug], where='construct')
+
+
+def keyword(**kw):
+    (name, matcher), = kw.items()
+    return map(lambda obj: {name: obj}, matcher)
+
+
+def record(*args, **kwargs):
+    cls, args = args[0], args[1:]
+
+    if args:
+        kwargs.update(dict(zip(cls.__fields__, args)))
+
+    def record_impl(obj):
+        if not obj:
+            return None, obj, {}
+
+        if type(obj[0]) is not cls:
+            return None, obj, {
+                'where': 'record', 'children': [], 'message': 'different type of {!r}'.format(obj),
+            }
+
+        result = []
+        debug = {'where': 'record', 'children': [], 'keys': []}
+
+        for k, mm in sorted(kwargs.items()):
+            v = getattr(obj[0], k)
+            m, r, d = mm([v])
+
+            debug['children'].append(d)
+            debug['keys'].append(k)
+
+            if m is None:
+                return None, obj, debug
+
+            elif r:
+                return None, obj, debug
+
+            else:
+                result.extend(m)
+
+        return result, obj[1:], debug
+
+    return record_impl

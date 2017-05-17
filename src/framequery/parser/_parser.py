@@ -22,7 +22,7 @@ def parse(query, what=a.Select):
     ast, rest, debug = parser(tokens)
 
     if rest:
-        raise ValueError('extra tokens: {}\n{}'.format(tokens, '\n'.join(_format_debug(debug))))
+        raise ValueError('extra tokens: {}\n{}'.format(tokens, '\n'.join(m.format_debug(debug))))
 
     if len(ast) != 1:
         raise RuntimeError('internal parser error')
@@ -30,29 +30,16 @@ def parse(query, what=a.Select):
     return ast[0]
 
 
-def _format_debug(debug, indent=0):
-    status = debug['status']
-    message = debug['message'] or ''
-    children = debug['children']
-    where = debug.get('where', '<unknown>')
-
-    yield('{}{}: {} in {}'.format(' ' * indent,  status, message, where))
-
-    for d in children:
-        for msg in _format_debug(d, indent=indent + 1):
-            yield msg
-
-
 def verbatim_token(*p):
-    return m.token(m.verbatim(*p))
+    return m.one(m.verbatim(*p))
 
 
 def regex_token(p):
-    return m.token(m.regex(p))
+    return m.one(m.regex(p))
 
 
 def svtok(*p):
-    return m.skip(m.token(m.verbatim(*p)))
+    return m.ignore(m.one(m.verbatim(*p)))
 
 
 def full_word(matcher):
@@ -117,7 +104,7 @@ def unary_op(value, *ops):
 def compound_token(*parts):
     return m.transform(
         lambda s: [' '.join(s)],
-        m.flat_sequence(*[verbatim_token(p) for p in parts]),
+        m.sequence(*[verbatim_token(p) for p in parts]),
     )
 
 
@@ -159,7 +146,7 @@ name = m.construct(
 @m.define
 def value(value):
     value = m.any(
-        m.flat_sequence(svtok('('), value, svtok(')')),
+        m.sequence(svtok('('), value, svtok(')')),
         count_all, call_analytics_function, call_set_function, call,
         integer, string, name
     )
@@ -225,8 +212,8 @@ order_by_item = m.construct(
     m.keyword(order=m.any(verbatim_token('desc', 'asc'), m.literal('desc'))),
 )
 
-order_by_clause = m.flat_sequence(svtok('order'), svtok('by'), m.list_of(svtok(','), order_by_item))
-partition_by_clause = m.flat_sequence(svtok('partition'), svtok('by'), m.list_of(svtok(','), value))
+order_by_clause = m.sequence(svtok('order'), svtok('by'), m.list_of(svtok(','), order_by_item))
+partition_by_clause = m.sequence(svtok('partition'), svtok('by'), m.list_of(svtok(','), value))
 
 call_analytics_function = m.construct(
     a.CallAnalyticsFunction,
@@ -237,7 +224,7 @@ call_analytics_function = m.construct(
     svtok(')')
 )
 
-alias = m.flat_sequence(
+alias = m.sequence(
     m.optional(svtok('as')),
     base_name,
 )
@@ -250,8 +237,8 @@ column = m.construct(
 
 table_ref = m.construct(
     a.TableRef,
-    m.flat_sequence(
-        m.optional(m.flat_sequence(m.keyword(schema=base_name), svtok('.'))),
+    m.sequence(
+        m.optional(m.sequence(m.keyword(schema=base_name), svtok('.'))),
         m.keyword(name=base_name),
         m.optional(m.keyword(alias=alias)),
     )
@@ -260,7 +247,7 @@ table_ref = m.construct(
 from_clause = m.construct(
     a.FromClause,
     svtok('from'),
-    m.keyword(tables=m.list_of(m.skip(svtok(',')), table_ref))
+    m.keyword(tables=m.list_of(m.ignore(svtok(',')), table_ref))
 )
 
 select = m.construct(
@@ -270,18 +257,18 @@ select = m.construct(
     m.keyword(columns=m.list_of(svtok(','), m.any(
         m.construct(
             a.WildCard,
-            m.optional(m.flat_sequence(m.keyword(table=base_name), svtok('.'))),
-            m.skip(verbatim_token('*'))
+            m.optional(m.sequence(m.keyword(table=base_name), svtok('.'))),
+            m.ignore(verbatim_token('*'))
         ),
         column
     ))),
     m.optional(m.keyword(from_clause=from_clause)),
-    m.optional(m.keyword(where_clause=m.flat_sequence(svtok('where'), value))),
-    m.optional(m.keyword(group_by_clause=m.flat_sequence(
+    m.optional(m.keyword(where_clause=m.sequence(svtok('where'), value))),
+    m.optional(m.keyword(group_by_clause=m.sequence(
         svtok('group'), svtok('by'), m.list_of(svtok(','), value),
     ))),
-    m.optional(m.keyword(having_clause=m.flat_sequence(svtok('having'), value))),
-    m.optional(m.keyword(order_by_clause=m.flat_sequence(
+    m.optional(m.keyword(having_clause=m.sequence(svtok('having'), value))),
+    m.optional(m.keyword(order_by_clause=m.sequence(
         svtok('order'), svtok('by'), m.list_of(svtok(','), order_by_item),
     )))
 )
@@ -295,12 +282,12 @@ constructors = {
 
 parser = select
 
-splitter = m.many(
+splitter = m.repeat(
     m.any(
         full_word(m.map_verbatim(str.lower, *keywords)),
         m.map_verbatim(str.lower, *operators),
         m.regex(name_format),
-        m.skip(m.regex(r'\s+')),
+        m.ignore(m.regex(r'\s+')),
         m.regex(integer_format),
         m.string(),
     )

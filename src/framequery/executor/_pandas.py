@@ -2,7 +2,7 @@ from __future__ import print_function, division, absolute_import
 
 from ._util import column_set_table, column_get_column, normalize_col_ref
 from ..parser import ast as a
-from ..util._misc import InstanceOf, RuleSet
+from ..util import _monadic as m
 from ..util import like, not_like
 
 import collections
@@ -100,22 +100,22 @@ class PandasModel(object):
         return df
 
 
-eval_pandas = RuleSet(name='eval_pandas')
+eval_pandas = m.RuleSet(name='eval_pandas')
 
 
-@eval_pandas.rule(InstanceOf(a.Name))
+@eval_pandas.rule(m.instanceof(a.Name))
 def eval_pandas_name(_, expr, df, name_generator):
     name = name_generator.get(expr.name)
     col = normalize_col_ref(name, df.columns)
     return df[col]
 
 
-@eval_pandas.rule(InstanceOf(a.Integer))
+@eval_pandas.rule(m.instanceof(a.Integer))
 def eval_integer(_, expr, *__):
     return int(expr.value)
 
 
-@eval_pandas.rule(InstanceOf(a.BinaryOp))
+@eval_pandas.rule(m.instanceof(a.BinaryOp))
 def eval_pandas_binary_op(eval_pandas, expr, df, name_generator):
     left = eval_pandas(expr.left, df, name_generator)
     right = eval_pandas(expr.right, df, name_generator)

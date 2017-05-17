@@ -1,7 +1,8 @@
 from __future__ import print_function, division, absolute_import
 
 import itertools as it
-from ..util._misc import Matcher, UnpackResult, walk
+from ..util._record import walk
+from ..util import _monadic as m
 
 
 def column_match(col, internal_col):
@@ -93,17 +94,15 @@ def _split_table_column(obj, sep='/@/'):
     return tuple(parts)
 
 
-class InternalColumnMatcher(Matcher):
-    def __init__(self, internal_columns, group=None):
-        self.internal_columns = internal_columns
-        self.group = group
-
-    def unpack(self, obj):
-        for icol in self.internal_columns:
+def internal_column(internal_columns):
+    def internal_column_impl(obj):
+        for icol in internal_columns:
             if column_match(obj, icol):
-                return UnpackResult.make(True, self.group, obj)
+                return [obj], None, {}
 
-        return UnpackResult(False)
+        return None, obj, {}
+
+    return m.one(internal_column_impl)
 
 
 class Unique(object):

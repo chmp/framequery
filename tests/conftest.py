@@ -5,7 +5,7 @@ import os
 import pytest
 import sqlalchemy
 
-from framequery.util._misc import Record, record_diff
+from framequery.util._record import Record, diff
 
 
 @pytest.fixture
@@ -23,4 +23,4 @@ def pytest_assertrepr_compare(op, left, right):
     return [
         'Comparing Records',
         '%r != %r' % (left, right),
-    ] + list(record_diff(left, right))
+    ] + list(diff(left, right))

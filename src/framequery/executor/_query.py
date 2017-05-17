@@ -12,12 +12,10 @@ from __future__ import print_function, division, absolute_import
 import itertools as it
 
 from ._util import (
-    normalize_col_ref, Unique, UniqueNameGenerator, InternalColumnMatcher, column_get_table,
+    normalize_col_ref, Unique, UniqueNameGenerator, internal_column, column_get_table,
 )
 from ..parser import ast as a, parse
-from ..util._misc import (
-    match, Any, In, Sequence, InstanceOf, RuleSet, unpack, OneOf, Not, Transform, Literal, Eq,
-)
+from ..util import _monadic as m
 
 
 # TOOD: add option autodetect the required model
@@ -51,20 +49,10 @@ def get_model(model, debug=False):
         raise ValueError('unknown fq model: {}'.format(model))
 
 
-def get_alias(col, idx):
-    if match(col, a.Column(value=Any, alias=InstanceOf(str))):
-        return col.alias
-
-    elif match(col, a.Column(value=a.Name(Any))):
-        return col.value.name
-
-    return str(idx)
+execute_ast = m.RuleSet(name='execute_ast')
 
 
-execute_ast = RuleSet(name='dag_compile')
-
-
-@execute_ast.rule(InstanceOf(a.Select))
+@execute_ast.rule(m.instanceof(a.Select))
 def execute_ast_select(execute_ast, node, scope, model):
     name_generator = UniqueNameGenerator()
 
@@ -119,11 +107,7 @@ def normalize_columns(table_columns, columns):
                 )
 
         elif isinstance(col, a.Column):
-            alias, = unpack(col, OneOf(
-                a.Column.any(alias=Not(Eq(None), group=0)),
-                a.Column(value=a.Name(Any(group=0)), alias=None),
-                Literal(Unique(), group=0),
-            ))
+            alias = get_alias(col)
 
             # make sure a column always has a name
             result.append(col.update(alias=alias))
@@ -151,35 +135,37 @@ def normalize_group_by(table_columns, columns, group_by):
 
     aliases = {col.alias: col.value for col in columns if col.alias is not None}
 
-    matcher = OneOf(
-        Transform(
+    matcher = m.any(
+        m.map_capture(
             lambda name: a.Column(a.Name(name), alias=name),
-            a.Name(InternalColumnMatcher(table_columns, group=0)),
+            m.record(a.Name, m.capture(internal_column(table_columns))),
         ),
-        Transform(
+        m.map_capture(
             lambda name: a.Column(aliases[name], alias=name),
-            a.Name(In(*aliases, group=0)),
+            m.record(a.Name, m.capture(m.verb(*aliases))),
         ),
-        Transform(
+        m.map_capture(
             lambda value: a.Column(value, alias=Unique()),
-            Not(a.Name(Any), group=0),
+            m.capture(m.pred(lambda obj: type(obj) is not a.Name)),
         )
     )
 
     normalized = []
     for expr in group_by:
-        m = unpack(expr, matcher)
+        match = m.match(expr, matcher)
 
-        if not m:
+        if not match:
             raise ValueError('cannot handle %s', expr)
 
-        normalized.append(m[0])
+        normalized.append(match[0])
 
     return normalized
 
 
 def sort(table, values, model):
-    if not match(values, Sequence(a.OrderBy(a.Name(Any), In('desc', 'asc')))):
+    if not m.match(values, m.rep(
+        m.record(a.OrderBy, m.record(a.Name, m.wildcard), m.verb('desc', 'asc'))
+    )):
         raise ValueError('cannot sort by: %s' % values)
 
     names = []
@@ -191,7 +177,7 @@ def sort(table, values, model):
     return model.sort_values(table, names, ascending=False)
 
 
-@execute_ast.rule(InstanceOf(a.FromClause))
+@execute_ast.rule(m.instanceof(a.FromClause))
 def execute_ast_from_clause(execute_ast, node, scope, model):
     tables = [execute_ast(table, scope, model) for table in node.tables]
 
@@ -204,7 +190,7 @@ def execute_ast_from_clause(execute_ast, node, scope, model):
     return tables[0]
 
 
-@execute_ast.rule(InstanceOf(a.TableRef))
+@execute_ast.rule(m.instanceof(a.TableRef))
 def execute_ast_table_ref(execute_ast, node, scope, model):
     if node.schema:
         name = '{}.{}'.format(node.schema, node.name)
@@ -215,7 +201,7 @@ def execute_ast_table_ref(execute_ast, node, scope, model):
     return model.get_table(scope, name, alias=node.alias)
 
 
-@RuleSet.make(name='aggregate_split')
+@m.RuleSet.make(name='aggregate_split')
 def aggregate_split(aggregate_split, node, group_by):
     group_by_map = {col.value: a.Name(col.alias) for col in group_by}
     if node in group_by_map:
@@ -224,13 +210,9 @@ def aggregate_split(aggregate_split, node, group_by):
     return aggregate_split.apply_rules(node, group_by)
 
 
-@aggregate_split.rule(InstanceOf(a.Column))
+@aggregate_split.rule(m.instanceof(a.Column))
 def aggregate_split_column(aggregate_split, node, group_by):
-    alias, = unpack(node, OneOf(
-        a.Column(value=Any, alias=Not(Eq(None), group=0)),
-        a.Column(value=a.Name(name=Any(group=0)), alias=None),
-        Literal(Unique(), group=0),
-    ))
+    alias = get_alias(node)
 
     result = aggregate_split(node.value, group_by)
     post, agg, pre = result.by_levels(2)
@@ -240,12 +222,12 @@ def aggregate_split_column(aggregate_split, node, group_by):
     return SplitResult.from_levels(post, agg, pre)
 
 
-@aggregate_split.rule(InstanceOf(a.Name))
+@aggregate_split.rule(m.instanceof(a.Name))
 def aggregate_split_name(aggregate_split, node, group_by):
     return SplitResult([(0, node)])
 
 
-@aggregate_split.rule(InstanceOf(a.CallSetFunction))
+@aggregate_split.rule(m.instanceof(a.CallSetFunction))
 def aggregate_split_call_set_function(aggregate_split, node, group_by):
     ids = [Unique() for _ in node.args]
     self_id = Unique()
@@ -284,3 +266,12 @@ class SplitResult(list):
         assert max(r) <= maxlevel
 
         return tuple(r.get(level, []) for level in range(maxlevel + 1))
+
+
+def get_alias(col_node):
+    alias, = m.match(col_node, m.any(
+        m.record(a.Column, alias=m.capture(m.ne(None))),
+        m.record(a.Column, value=m.record(a.Name, m.capture(m.wildcard)), alias=m.eq(None)),
+        m.capture(m.lit(Unique())),
+    ))
+    return alias
