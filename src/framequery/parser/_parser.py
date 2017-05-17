@@ -54,15 +54,20 @@ def full_word(matcher):
     return full_word_impl
 
 
-def base_string(seq):
-    if not seq:
-        return None, seq
+def base_string(quote="'"):
+    def base_string_impl(seq):
+        if not seq:
+            return None, seq
 
-    s = seq[0]
-    if s[0] != "'" or s[-1] != "'":
-        return None, seq, m.Status.fail(where='string', message='%r is not a string' % seq)
+        s = seq[0]
+        if s[0] != quote or s[-1] != quote:
+            return None, seq, m.Status.fail(where='string', message='%r is not a string' % seq)
 
-    return [s], seq[1:], m.Status.succeed()
+        # TODO: remove quotes
+
+        return [s], seq[1:], m.Status.succeed()
+
+    return base_string_impl
 
 
 def build_binary_tree(seq):
@@ -117,18 +122,14 @@ operators = {
     '=', '!=', '>', '<', '>=', '<=', '<>', '!>', '!<',
 }
 
-integer = m.construct(
-    a.Integer,
-    m.keyword(value=regex_token(integer_format)),
+integer = m.construct(a.Integer, m.keyword(value=regex_token(integer_format)))
+
+string = m.construct(a.String, m.keyword(value=base_string()))
+
+base_name = m.any(
+    m.pred(lambda v: v not in keywords and re.match(name_format, v)),
+    base_string('"'),
 )
-
-string = m.construct(
-    a.String,
-    m.keyword(value=base_string)
-)
-
-
-base_name = m.pred(lambda v: v not in keywords and re.match(name_format, v))
 
 name = m.transform(
     lambda *parts: [a.Name('.'.join(*parts))],
@@ -288,6 +289,7 @@ splitter = m.repeat(
         m.regex(name_format),
         m.ignore(m.regex(r'\s+')),
         m.regex(integer_format),
-        m.string(),
+        m.string('\''),
+        m.string('"')
     )
 )

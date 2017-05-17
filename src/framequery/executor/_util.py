@@ -59,7 +59,7 @@ def column_from_parts(table, column):
 
 
 def normalize_col_ref(ref, columns):
-    ref = ref.split('.')
+    ref = split_quoted_name(ref)
     ref = ref[-2:]
 
     if len(ref) == 2:
@@ -83,6 +83,39 @@ def normalize_col_ref(ref, columns):
         )
 
     return candidates[0]
+
+
+def split_quoted_name(name):
+    parts = []
+    current = ''
+
+    in_string = False
+    after_quote = False
+
+    for c in name:
+        if after_quote:
+            current += c
+            after_quote = False
+
+        elif in_string and c != '"':
+            current += c
+
+        elif c == '"':
+            in_string = not in_string
+
+        elif c == '\\':
+            after_quote = True
+
+        elif c == '.':
+            parts.append(current)
+            current = ''
+
+        else:
+            current += c
+
+    parts.append(current)
+
+    return parts
 
 
 def _split_table_column(obj, sep='/@/'):

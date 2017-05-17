@@ -44,6 +44,7 @@ examples = [
     'select c1 as a, c2 as b, c1 + c2 from test',
     'select test.* from test',
     'select test.c1, 2 * test.c2 from test',
+    'select "c1", "test"."c2" from test',
 ]
 
 examples = (
