@@ -32,6 +32,8 @@ def test_scope_files():
     fname = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data', 'scope.json'))
     engine = create_engine('framequery:///' + fname)
 
+    assert engine.table_names() == ['foo']
+
     with engine.begin() as conn:
         actual = conn.execute('select g, sum(i) from foo group by g').fetchall()
         actual = sorted(actual)

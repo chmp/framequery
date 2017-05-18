@@ -40,9 +40,7 @@ class PandasDialect(PGDialect):
         for q in context.pop('setup', []):
             execute(q, scope=context['scope'], model=context['model'], basepath=basepath)
 
-    def noop(self, *args):
-        pass
+    def get_table_names(self, conn, schema=None, **kwargs):
+        return sorted(conn.connection.scope.keys())
 
-    on_connect = do_rollback = noop
-
-    del noop
+    on_connect = do_rollback = lambda *args: None
