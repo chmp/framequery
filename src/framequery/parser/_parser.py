@@ -48,9 +48,15 @@ def svtok(*p):
 
 
 def full_word(matcher):
+    non_terminating = (
+        _string.ascii_letters +
+        _string.digits +
+        '_'
+    )
+
     @m._delegate(matcher, where='full_word')
     def full_word_impl(matches, s, d, seq):
-        if not s or s[0] not in _string.ascii_letters:
+        if not s or s[0] not in non_terminating:
             return matches, s, d
 
         return None, seq, dict(d, status=m.Status.failure)
@@ -256,10 +262,16 @@ table_ref = m.construct(
     )
 )
 
+table_like = m.any(
+    # first parse call, otherwise in both `test` and `test()`, `test` will be consumed
+    call,
+    table_ref,
+)
+
 from_clause = m.construct(
     a.FromClause,
     svtok('from'),
-    m.keyword(tables=m.list_of(m.ignore(svtok(',')), table_ref))
+    m.keyword(tables=m.list_of(m.ignore(svtok(',')), table_like))
 )
 
 select = m.construct(

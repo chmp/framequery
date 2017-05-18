@@ -60,3 +60,19 @@ def test_scope_load_and_save(tmpdir):
     actual = sorted(tuple(row) for _, row in actual.iterrows())
 
     assert actual == [(0, 6), (1, 9), (2, 6)]
+
+
+def test_scope_table_valued():
+    source = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data', 'test.csv'))
+
+    q = '''
+        select g, sum(i)
+        from copy_from('{}', 'delimiter', ';', 'format', 'csv')
+        group by g
+    '''.format(source)
+
+    engine = create_engine('framequery://')
+    actual = engine.execute(q).fetchall()
+    actual = sorted(actual)
+
+    assert actual == [(0, 6), (1, 9), (2, 6)]

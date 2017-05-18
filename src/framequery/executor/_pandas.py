@@ -115,18 +115,7 @@ class PandasModel(object):
         return df
 
     def copy_from(self, scope, name, filename, options):
-        format = options.pop('format', 'csv')
-
-        if format == 'csv':
-            filename = os.path.join(self.basepath, filename)
-
-            if 'delimiter' in options:
-                options['sep'] = options.pop('delimiter')
-
-            scope[name] = pd.read_csv(filename, **options)
-
-        else:
-            raise RuntimeError('unknown format %s' % format)
+        scope[name] = load_from(filename, self.basepath, options)
 
     def copy_to(self, scope, name, filename, options):
         df = scope[name]
@@ -144,6 +133,31 @@ class PandasModel(object):
 
         else:
             raise RuntimeError('unknown format %s' % format)
+
+    def eval_table_valued(self, node, scope):
+        if not node.func.lower() == 'copy_from':
+            raise RuntimeError('unknown table valued function: %r' % node.func)
+
+        args = [eval_string_literal(arg.value) for arg in node.args]
+        filename, options = args[0], args[1:]
+        options = dict(zip(options[:-1:2], options[1::2]))
+
+        return load_from(filename, self.basepath, options)
+
+
+def load_from(filename, basepath, options):
+    format = options.pop('format', 'csv')
+
+    if format == 'csv':
+        filename = os.path.join(basepath, filename)
+
+        if 'delimiter' in options:
+            options['sep'] = options.pop('delimiter')
+
+        return pd.read_csv(filename, **options)
+
+    else:
+        raise RuntimeError('unknown format %s' % format)
 
 
 eval_pandas = m.RuleSet(name='eval_pandas')

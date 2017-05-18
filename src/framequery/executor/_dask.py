@@ -32,5 +32,11 @@ class DaskModel(PandasModel):
     def select_rename(self, df, spec):
         return dd.map_partitions(super(DaskModel, self).select_rename, df, spec)
 
-    def copy_from(self, scope, name, options):
+    def copy_from(self, scope, name, filename, options):
+        raise NotImplementedError()
+
+    def copy_to(self, scope, name, filename, options):
+        raise NotImplementedError()
+
+    def eval_table_valued(self, node, scope):
         raise NotImplementedError()

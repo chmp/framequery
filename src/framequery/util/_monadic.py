@@ -268,7 +268,7 @@ def sequence(*matchers):
 
 
 def repeat(matcher):
-    def many_impl(seq):
+    def repeat_impl(seq):
         parts = []
         children = []
 
@@ -281,9 +281,9 @@ def repeat(matcher):
 
             parts += p
 
-        return parts, seq, Status.succeed(children=children, where='many')
+        return parts, seq, Status.succeed(children=children, where='repeat')
 
-    return many_impl
+    return repeat_impl
 
 
 def any(*matchers):
