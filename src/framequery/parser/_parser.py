@@ -351,8 +351,9 @@ constructors[a.Name] = name
 
 splitter = m.repeat(
     m.any(
-        full_word(m.map_verbatim(str.lower, *keywords)),
-        m.map_verbatim(str.lower, *operators),
+        # NOTE: do not use str.lower, due to py2 compat
+        full_word(m.map_verbatim(lambda s: s.lower(), *keywords)),
+        m.map_verbatim(lambda s: s.lower(), *operators),
         m.regex(name_format),
         m.ignore(m.regex(r'\s+')),
         m.regex(integer_format),

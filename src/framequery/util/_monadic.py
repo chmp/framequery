@@ -421,7 +421,8 @@ def regex(p):
     return impl
 
 
-def string(quote='\'', escape='\\', find=str.find):
+# NOTE: do not use str.find to avoid py2 incompatibility
+def string(quote='\'', escape='\\', find=lambda s, n, i: s.find(n, i)):
     def impl(s):
         if not s:
             return None, s, Status.fail(consumed=0)
