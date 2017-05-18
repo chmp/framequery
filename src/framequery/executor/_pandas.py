@@ -123,10 +123,24 @@ class PandasModel(object):
             if 'delimiter' in options:
                 options['sep'] = options.pop('delimiter')
 
-            df = pd.read_csv(filename, **options)
-            df = self.add_table_to_columns(df, name)
+            scope[name] = pd.read_csv(filename, **options)
 
-            scope[name] = df
+        else:
+            raise RuntimeError('unknown format %s' % format)
+
+    def copy_to(self, scope, name, filename, options):
+        df = scope[name]
+        df = self.remove_table_from_columns(df)
+
+        format = options.pop('format', 'csv')
+
+        if format == 'csv':
+            filename = os.path.join(self.basepath, filename)
+
+            if 'delimiter' in options:
+                options['sep'] = options.pop('delimiter')
+
+            df.to_csv(filename, index=False, **options)
 
         else:
             raise RuntimeError('unknown format %s' % format)

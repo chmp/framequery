@@ -82,3 +82,15 @@ class Cast(Record):
 
 class CopyFrom(Record):
     __fields__ = ['name', 'filename', 'options']
+
+
+class CopyTo(Record):
+    __fields__ = ['name', 'filename', 'options']
+
+
+class DropTable(Record):
+    __fields__ = ['names']
+
+
+class CreateTableAs(Record):
+    __fields__ = ['name', 'query']

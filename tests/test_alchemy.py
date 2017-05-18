@@ -39,3 +39,24 @@ def test_scope_files():
         actual = sorted(actual)
 
         assert actual == [(0, 6), (1, 9), (2, 6)]
+
+
+def test_scope_load_and_save(tmpdir):
+    source = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data', 'test.csv'))
+    target = os.path.join(str(tmpdir), 'test.csv')
+
+    engine = create_engine('framequery://')
+
+    for q in [
+        "COPY foo FROM '{}' WITH delimiter ';', format 'csv'  ".format(source),
+        "CREATE TABLE bar AS select g, sum(i) from foo group by g",
+        "COPY bar TO '{}' WITH delimiter ';', format 'csv'".format(target),
+        "DROP TABLE bar",
+    ]:
+        engine.execute(q)
+
+    assert engine.table_names() == ['foo']
+    actual = pd.read_csv(target, sep=";")
+    actual = sorted(tuple(row) for _, row in actual.iterrows())
+
+    assert actual == [(0, 6), (1, 9), (2, 6)]

@@ -115,7 +115,7 @@ keywords = {
     'not', 'and', 'or', 'like', 'in',
     'count', 'having', 'distinct', 'all',
     'order', 'from', 'by', 'group', 'show',
-    'options', 'create', 'table', 'with',
+    'options', 'create', 'table', 'with', 'drop', 'to',
 }
 
 operators = {
@@ -299,6 +299,30 @@ copy_from = m.construct(
     m.keyword(options=m.list_of(svtok(','), name_value_pair))
 )
 
+copy_to = m.construct(
+    a.CopyTo,
+    svtok('copy'),
+    m.keyword(name=name),
+    svtok('to'),
+    m.keyword(filename=value),
+    svtok('with'),
+    m.keyword(options=m.list_of(svtok(','), name_value_pair))
+)
+
+drop_tabe = m.construct(
+    a.DropTable,
+    svtok('drop'), svtok('table'),
+    m.keyword(names=m.list_of(svtok(','), name)),
+)
+
+create_table_as = m.construct(
+    a.CreateTableAs,
+    svtok('create'), svtok('table'),
+    m.keyword(name=name),
+    svtok('as'),
+    m.keyword(query=select),
+)
+
 
 def show_option(seq):
     if seq[:1] != ['show']:
@@ -310,6 +334,9 @@ def show_option(seq):
 parser = m.any(
     select,
     copy_from,
+    copy_to,
+    drop_tabe,
+    create_table_as,
     show_option,
 )
 

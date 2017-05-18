@@ -10,6 +10,7 @@ The most general query involves the following transformations:
 from __future__ import print_function, division, absolute_import
 
 import itertools as it
+import logging
 
 import pandas as pd
 
@@ -19,6 +20,8 @@ from ._util import (
 )
 from ..parser import ast as a, parse
 from ..util import _monadic as m
+
+_logger = logging.getLogger(__name__)
 
 
 # TOOD: add option autodetect the required model
@@ -221,7 +224,7 @@ def execute_show(_, node, scope, model):
 
 
 @execute_ast.rule(m.instanceof(a.CopyFrom))
-def execute_create_foreign_table(_, node, scope, model):
+def execute_copy_from(_, node, scope, model):
     # TODO: parse the options properly
     options = {
         name.name: eval_string_literal(value.value)
@@ -229,6 +232,29 @@ def execute_create_foreign_table(_, node, scope, model):
     }
 
     model.copy_from(scope, node.name.name, eval_string_literal(node.filename.value), options)
+
+
+@execute_ast.rule(m.instanceof(a.CopyTo))
+def execute_copy_to(_, node, scope, model):
+    # TODO: parse the options properly
+    options = {
+        name.name: eval_string_literal(value.value)
+        for name, value in node.options
+    }
+
+    model.copy_to(scope, node.name.name, eval_string_literal(node.filename.value), options)
+
+
+@execute_ast.rule(m.instanceof(a.DropTable))
+def execute_drop_table(_, node, scope, __):
+    for name in node.names:
+        del scope[name.name]
+
+
+@execute_ast.rule(m.instanceof(a.CreateTableAs))
+def execute_create_table_as(execute_ast, node, scope, model):
+    _logger.info('create table %s', node.name.name)
+    scope[node.name.name] = execute_ast(node.query, scope, model)
 
 
 @m.RuleSet.make(name='aggregate_split')
