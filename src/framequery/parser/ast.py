@@ -78,3 +78,7 @@ class Show(Record):
 
 class Cast(Record):
     __fields__ = ['value', 'type']
+
+
+class CopyFrom(Record):
+    __fields__ = ['name', 'filename', 'options']

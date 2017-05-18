@@ -176,3 +176,11 @@ class UniqueNameGenerator(object):
             self.get(obj)
 
         return UniqueNameGenerator(self.names, fixed=True)
+
+
+def eval_string_literal(value):
+    # TODO: remove escapes etc..
+    if value[:1] != "'":
+        raise ValueError('unquoted string')
+
+    return str(value[1:-1])

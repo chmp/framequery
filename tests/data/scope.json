@@ -1,0 +1,5 @@
+{
+  "setup": [
+    "COPY foo FROM './test.csv' WITH delimiter ';', format 'csv'  "
+  ]
+}

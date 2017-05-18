@@ -60,9 +60,9 @@ def connect(**kwargs):
 
 
 class Connection(object):
-    def __init__(self, scope, model='pandas'):
+    def __init__(self, scope, **exec_kwargs):
         self.scope = scope
-        self.model = model
+        self.exec_kwargs = exec_kwargs
 
     def cursor(self):
         return Cursor(self)
@@ -91,7 +91,7 @@ class Cursor(object):
         if params:
             raise ValueError('params (%s) not yet supported' % params)
 
-        self.result = execute(q, self.connection.scope, model=self.connection.model)
+        self.result = execute(q, self.connection.scope, **self.connection.exec_kwargs)
 
         self.description = []
 

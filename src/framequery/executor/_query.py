@@ -15,37 +15,36 @@ import pandas as pd
 
 from ._util import (
     normalize_col_ref, Unique, UniqueNameGenerator, internal_column, column_get_table,
+    eval_string_literal,
 )
 from ..parser import ast as a, parse
 from ..util import _monadic as m
 
 
 # TOOD: add option autodetect the required model
-def execute(q, scope, model='pandas'):
-    model = get_model(model)
+def execute(q, scope, model='pandas', basepath='.'):
+    model = get_model(model, basepath=basepath)
 
-    scope = {
-        table_name: model.add_table_to_columns(df, table_name)
-        for (table_name, df) in scope.items()
-    }
     ast = parse(q)
-
     result = execute_ast(ast, scope, model)
-    result = model.remove_table_from_columns(result)
+
+    if result is not None:
+        result = model.remove_table_from_columns(result)
+
     return result
 
 
-def get_model(model, debug=False):
+def get_model(model, basepath='.'):
     if not isinstance(model, str):
         return model
 
     if model == 'pandas':
         from ._pandas import PandasModel
-        return PandasModel()
+        return PandasModel(basepath=basepath)
 
     elif model == 'dask':
         from ._dask import DaskModel
-        return DaskModel()
+        return DaskModel(basepath=basepath)
 
     else:
         raise ValueError('unknown fq model: {}'.format(model))
@@ -219,6 +218,17 @@ def execute_show(_, node, scope, model):
 
     value = config[node.args]
     return pd.DataFrame({'value': [value]})
+
+
+@execute_ast.rule(m.instanceof(a.CopyFrom))
+def execute_create_foreign_table(_, node, scope, model):
+    # TODO: parse the options properly
+    options = {
+        name.name: eval_string_literal(value.value)
+        for name, value in node.options
+    }
+
+    model.copy_from(scope, node.name.name, eval_string_literal(node.filename.value), options)
 
 
 @m.RuleSet.make(name='aggregate_split')

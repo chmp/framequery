@@ -1,20 +1,24 @@
 from __future__ import print_function, division, absolute_import
 
-from ._util import column_set_table, column_get_column, normalize_col_ref
+from ._util import column_set_table, column_get_column, normalize_col_ref, eval_string_literal
 from ..parser import ast as a
-from ..util import _monadic as m
-from ..util import like, not_like
+from ..util import _monadic as m, like, not_like
 
 import collections
+import logging
 import operator
+import os.path
 
 import pandas as pd
 
+_logger = logging.getLogger(__name__)
+
 
 class PandasModel(object):
-    def __init__(self, debug=False):
+    def __init__(self, debug=False, basepath='.'):
         self._debug = debug
         self.eval = eval_pandas
+        self.basepath = basepath
 
         self.aggregates = {
             'sum': lambda col: col.sum(),
@@ -53,8 +57,11 @@ class PandasModel(object):
         return caller
 
     def get_table(self, scope, name, alias=None):
+        if alias is None:
+            alias = name
+
         table = scope[name]
-        return self.add_table_to_columns(table, alias) if alias is not None else table
+        return self.add_table_to_columns(table, alias)
 
     @staticmethod
     def add_table_to_columns(df, table_name):
@@ -107,6 +114,23 @@ class PandasModel(object):
         df.columns = [output_col for output_col, _ in spec]
         return df
 
+    def copy_from(self, scope, name, filename, options):
+        format = options.pop('format', 'csv')
+
+        if format == 'csv':
+            filename = os.path.join(self.basepath, filename)
+
+            if 'delimiter' in options:
+                options['sep'] = options.pop('delimiter')
+
+            df = pd.read_csv(filename, **options)
+            df = self.add_table_to_columns(df, name)
+
+            scope[name] = df
+
+        else:
+            raise RuntimeError('unknown format %s' % format)
+
 
 eval_pandas = m.RuleSet(name='eval_pandas')
 
@@ -124,12 +148,8 @@ def eval_integer(_, expr, *__):
 
 
 @eval_pandas.rule(m.instanceof(a.String))
-def eval_integer(_, expr, *__):
-    # TODO: remove escapes etc..
-    if expr.value[:1] != "'":
-        raise ValueError('unquoted string')
-
-    return str(expr.value[1:-1])
+def eval_string(_, expr, *__):
+    return eval_string_literal(expr.value)
 
 
 @eval_pandas.rule(m.instanceof(a.BinaryOp))
@@ -168,7 +188,7 @@ def eval_pandas_binary_op(eval_pandas, expr, df, model, name_generator):
 
 
 @eval_pandas.rule(m.instanceof(a.Call))
-def eval_integer(eval_pandas, expr, df, model, name_generator):
+def eval_call(eval_pandas, expr, df, model, name_generator):
     assert not expr.args
 
     func = model.functions[expr.func.lower()]

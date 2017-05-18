@@ -61,11 +61,11 @@ def full_word(matcher):
 def base_string(quote="'"):
     def base_string_impl(seq):
         if not seq:
-            return None, seq
+            return None, seq, m.Status.fail(where='base_string', message='no value')
 
         s = seq[0]
         if s[0] != quote or s[-1] != quote:
-            return None, seq, m.Status.fail(where='string', message='%r is not a string' % seq)
+            return None, seq, m.Status.fail(where='base_string', message='%r is not a string' % seq)
 
         # TODO: remove quotes
 
@@ -111,10 +111,11 @@ integer_format = r'\d+'
 name_format = r'\w+'
 
 keywords = {
-    'select', 'as', 'from', 'cast',
+    'select', 'as', 'from', 'cast', 'copy',
     'not', 'and', 'or', 'like', 'in',
     'count', 'having', 'distinct', 'all',
-    'order', 'from', 'by', 'group', 'show'
+    'order', 'from', 'by', 'group', 'show',
+    'options', 'create', 'table', 'with',
 }
 
 operators = {
@@ -284,6 +285,34 @@ select = m.construct(
     )))
 )
 
+name_value_pair = m.construct(
+    lambda name, value: (name, value), m.keyword(name=name), m.keyword(value=value)
+)
+
+copy_from = m.construct(
+    a.CopyFrom,
+    svtok('copy'),
+    m.keyword(name=name),
+    svtok('from'),
+    m.keyword(filename=value),
+    svtok('with'),
+    m.keyword(options=m.list_of(svtok(','), name_value_pair))
+)
+
+
+def show_option(seq):
+    if seq[:1] != ['show']:
+        return None, seq, {}
+
+    return [a.Show(seq[1:])], [], {}
+
+
+parser = m.any(
+    select,
+    copy_from,
+    show_option,
+)
+
 constructors = {
     constructor.cls: constructor
     for constructor in [
@@ -292,11 +321,6 @@ constructors = {
 }
 
 constructors[a.Name] = name
-
-parser = m.any(
-    select,
-    lambda seq: (None, seq, {}) if seq[:1] != ['show'] else ([a.Show(seq[1:])], [], {}),
-)
 
 splitter = m.repeat(
     m.any(
