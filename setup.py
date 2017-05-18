@@ -34,4 +34,9 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
     ],
+    entry_points={
+          'sqlalchemy.dialects': [
+              'framequery.pandas = framequery.alchemy:PandasDialect',
+          ]
+    },
 )
