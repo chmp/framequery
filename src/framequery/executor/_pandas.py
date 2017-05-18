@@ -27,6 +27,14 @@ class PandasModel(object):
             # 'first_value': self._first,
         }
 
+        self.functions = {
+            'version': lambda: 'PostgreSQL 9.6.0',
+            'current_schema': lambda: 'public',
+        }
+
+    def dual(self):
+        return pd.DataFrame({}, index=[0])
+
     def debug(self, msg, *args, **kwargs):
         if self._debug:
             print(msg.format(*args, **kwargs))
@@ -57,7 +65,7 @@ class PandasModel(object):
         return df.rename(columns=column_get_column)
 
     def evaluate(self, df, expr, name_generator):
-        return self.eval(expr, df, name_generator)
+        return self.eval(expr, df, self, name_generator)
 
     def transform(self, table, columns, name_generator):
         result = collections.OrderedDict()
@@ -104,7 +112,7 @@ eval_pandas = m.RuleSet(name='eval_pandas')
 
 
 @eval_pandas.rule(m.instanceof(a.Name))
-def eval_pandas_name(_, expr, df, name_generator):
+def eval_pandas_name(_, expr, df, model, name_generator):
     name = name_generator.get(expr.name)
     col = normalize_col_ref(name, df.columns)
     return df[col]
@@ -115,10 +123,19 @@ def eval_integer(_, expr, *__):
     return int(expr.value)
 
 
+@eval_pandas.rule(m.instanceof(a.String))
+def eval_integer(_, expr, *__):
+    # TODO: remove escapes etc..
+    if expr.value[:1] != "'":
+        raise ValueError('unquoted string')
+
+    return str(expr.value[1:-1])
+
+
 @eval_pandas.rule(m.instanceof(a.BinaryOp))
-def eval_pandas_binary_op(eval_pandas, expr, df, name_generator):
-    left = eval_pandas(expr.left, df, name_generator)
-    right = eval_pandas(expr.right, df, name_generator)
+def eval_pandas_binary_op(eval_pandas, expr, df, model, name_generator):
+    left = eval_pandas(expr.left, df, model, name_generator)
+    right = eval_pandas(expr.right, df, model, name_generator)
 
     operator_map = {
         '*': operator.mul,
@@ -148,3 +165,24 @@ def eval_pandas_binary_op(eval_pandas, expr, df, name_generator):
 
     else:
         return op(left, right)
+
+
+@eval_pandas.rule(m.instanceof(a.Call))
+def eval_integer(eval_pandas, expr, df, model, name_generator):
+    assert not expr.args
+
+    func = model.functions[expr.func.lower()]
+    return func()
+
+
+@eval_pandas.rule(m.instanceof(a.Cast))
+def eval_cast(eval_pandas, expr, df, model, name_generator):
+    value = eval_pandas(expr.value, df, model, name_generator)
+
+    if m.match(expr.type, m.record(a.Call, func=m.eq('VARCHAR'))):
+        base_type = str
+
+    else:
+        raise ValueError('unknown type: {}'.format(expr.type))
+
+    return value.astype(base_type) if isinstance(value, pd.Series) else base_type(value)

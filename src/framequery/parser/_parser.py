@@ -16,11 +16,15 @@ def tokenize(query):
     return parts
 
 
-def parse(query, what=a.Select):
-    parser = constructors[what]
+def parse(query, what=None):
+    if what is not None:
+        used_parser = constructors[what]
+
+    else:
+        used_parser = parser
 
     tokens = tokenize(query)
-    ast, rest, debug = parser(tokens)
+    ast, rest, debug = used_parser(tokens)
 
     if rest:
         raise ValueError('extra tokens: {}\n{}'.format(tokens, '\n'.join(m.format_debug(debug))))
@@ -107,10 +111,10 @@ integer_format = r'\d+'
 name_format = r'\w+'
 
 keywords = {
-    'select', 'as', 'from',
+    'select', 'as', 'from', 'cast',
     'not', 'and', 'or', 'like', 'in',
     'count', 'having', 'distinct', 'all',
-    'order', 'from', 'by', 'group'
+    'order', 'from', 'by', 'group', 'show'
 }
 
 operators = {
@@ -145,7 +149,7 @@ name = m.transform(
 def value(value):
     value = m.any(
         m.sequence(svtok('('), value, svtok(')')),
-        count_all, call_analytics_function, call_set_function, call,
+        cast_expression, count_all, call_analytics_function, call_set_function, call,
         integer, string, name
     )
 
@@ -171,6 +175,15 @@ def value(value):
 
     return value
 
+
+cast_expression = m.construct(
+    a.Cast,
+    svtok('cast'), svtok('('),
+    m.keyword(value=value),
+    svtok('as'),
+    m.keyword(type=value),
+    svtok(')')
+)
 
 call_set_function = m.construct(
     a.CallSetFunction,
@@ -280,7 +293,10 @@ constructors = {
 
 constructors[a.Name] = name
 
-parser = select
+parser = m.any(
+    select,
+    lambda seq: (None, seq, {}) if seq[:1] != ['show'] else ([a.Show(seq[1:])], [], {}),
+)
 
 splitter = m.repeat(
     m.any(

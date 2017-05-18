@@ -11,6 +11,8 @@ from __future__ import print_function, division, absolute_import
 
 import itertools as it
 
+import pandas as pd
+
 from ._util import (
     normalize_col_ref, Unique, UniqueNameGenerator, internal_column, column_get_table,
 )
@@ -26,7 +28,7 @@ def execute(q, scope, model='pandas'):
         table_name: model.add_table_to_columns(df, table_name)
         for (table_name, df) in scope.items()
     }
-    ast = parse(q, a.Select)
+    ast = parse(q)
 
     result = execute_ast(ast, scope, model)
     result = model.remove_table_from_columns(result)
@@ -56,7 +58,11 @@ execute_ast = m.RuleSet(name='execute_ast')
 def execute_ast_select(execute_ast, node, scope, model):
     name_generator = UniqueNameGenerator()
 
-    table = execute_ast(node.from_clause, scope, model)
+    if node.from_clause is None:
+        table = model.dual()
+
+    else:
+        table = execute_ast(node.from_clause, scope, model)
 
     columns = normalize_columns(table.columns, node.columns)
 
@@ -199,6 +205,20 @@ def execute_ast_table_ref(execute_ast, node, scope, model):
         name = node.name
 
     return model.get_table(scope, name, alias=node.alias)
+
+
+@execute_ast.rule(m.instanceof(a.Show))
+def execute_show(_, node, scope, model):
+    config = {
+        ('transaction', 'isolation', 'level'): 'read only',
+        ('standard_conforming_strings',): 'on'
+    }
+
+    if node.args not in config:
+        raise NotImplementedError('unknown option: %s' % node.args)
+
+    value = config[node.args]
+    return pd.DataFrame({'value': [value]})
 
 
 @m.RuleSet.make(name='aggregate_split')

@@ -69,3 +69,12 @@ class OrderBy(Record):
 
 class PartitionByClause(Record):
     __fields__ = []
+
+
+class Show(Record):
+    __fields__ = ['args']
+    __types__ = [tuple]
+
+
+class Cast(Record):
+    __fields__ = ['value', 'type']

@@ -58,15 +58,11 @@ def test_select(setup, model, query):
     db, scope = setup
 
     if model == 'dask':
-        scope = fq.Scope(
-            {k: dd.from_pandas(df, npartitions=3) for (k, df) in scope.items()},
-            model=model,
-        )
+        scope = {k: dd.from_pandas(df, npartitions=3) for (k, df) in scope.items()}
 
-    else:
-        scope = fq.Scope(scope)
+    actual = fq.execute(query, scope, model=model)
 
     expected = sorted(list(row) for row in db.execute(query).fetchall())
-    actual = sorted(list(row) for row in scope.execute(query).fetchall())
+    actual = sorted(list(row) for _, row in actual.iterrows())
 
     np.testing.assert_allclose(actual, expected)
