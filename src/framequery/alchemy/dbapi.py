@@ -60,36 +60,42 @@ def connect(**kwargs):
 
 
 class Connection(object):
-    def __init__(self, scope=None, model='pandas'):
-        if scope is None:
-            scope = {}
-
+    def __init__(self, scope, model='pandas'):
         self.scope = scope
         self.model = model
 
     def cursor(self):
         return Cursor(self)
 
+    def noop(self, *args):
+        pass
+
+    commit = rollback = close = noop
+    del noop
+
 
 class Cursor(object):
-    def __init__(self, scope):
-        self.scope = scope
-        self.description = self.result = None
+    def __init__(self, connection):
+        self.connection = connection
+        self.rowcount = self.description = self.result = None
 
-        self.arraysize = 1
+        self.arraysize = 100
 
     def close(self):
-        self.description = self.result = None
+        self.rowcount = self.description = self.result = None
 
     def execute(self, q, params=None):
+        if q.strip().startswith('!'):
+            return self._execute_extension(q, params)
+
         if params:
             raise ValueError('params (%s) not yet supported' % params)
 
-        self.result = execute(q, self.scope.scope, model=self.scope.model)
+        self.result = execute(q, self.connection.scope, model=self.connection.model)
 
         self.description = []
 
-        typemap = {'object': object, 'float': float}
+        typemap = {'object': object, 'float': float, 'int64': int}
 
         for col in self.result.columns:
             name = repr(col)
@@ -99,6 +105,21 @@ class Cursor(object):
             self.description.append((name, typecode, None, None, None, None, None))
 
         self.rownumber = 0
+        self.rowcount = self.result.shape[0]
+
+    def executemany(self, q, parameters):
+        for p in parameters:
+            self.execute(q, p)
+
+    def _execute_extension(self, q, params):
+        q = q.strip().lower()
+        if q == '!update':
+            assert isinstance(params, dict)
+            self.connection.scope.update(params)
+            self.rowcount = 0
+
+        else:
+            raise RuntimeError('no extension for %s implemented' % q)
 
     def fetchone(self):
         if self.rownumber > self.result.shape[0]:
@@ -110,7 +131,26 @@ class Cursor(object):
         return row
 
     def fetchmany(self, size=None):
-        raise NotImplementedError()
+        if size is None:
+            size = self.arraysize
+
+        start, end = self.rownumber, self.rownumber + size
+        self.rownumber += size
+
+        return [
+            tuple(row) for _, row in self.result.iloc[start:end].iterrows()
+        ]
 
     def fetchall(self):
-        raise NotImplementedError()
+        old_rownumber = self.rownumber
+        self.rownumber = self.rowcount
+
+        return [
+            tuple(row) for _, row in self.result.iloc[old_rownumber:].iterrows()
+        ]
+
+    def setinputsizes(self, sizes):
+        pass
+
+    def setoutputsize(self, size, column=None):
+        pass

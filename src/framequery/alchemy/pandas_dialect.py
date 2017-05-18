@@ -11,7 +11,8 @@ class PandasDialect(PGDialect):
         return dbapi
 
     def create_connect_args(self, url):
-        return (), {'model': 'pandas'}
+        # NOTE: make the scope part of the connect args to reuse it
+        return (), {'model': 'pandas', 'scope': {}}
 
     def noop(self, *args):
         pass
