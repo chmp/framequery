@@ -37,6 +37,9 @@ class Executor(object):
         with self.model.with_basepath(basepath) as model:
             return execute(q, self.scope, model=model)
 
+    def update(self, *args, **kwargs):
+        self.scope.update(*args, **kwargs)
+
 
 # TOOD: add option autodetect the required model
 def execute(q, scope, model='pandas', basepath='.'):

@@ -42,6 +42,13 @@ class PandasDialect(PGDialect):
 
         return executor
 
+    @classmethod
+    def engine_created(cls, engine):
+        with engine.connect() as conn:
+            engine.executor = conn.connection.executor
+
+        return engine
+
     def get_table_names(self, conn, schema=None, **kwargs):
         return sorted(conn.connection.executor.scope.keys())
 

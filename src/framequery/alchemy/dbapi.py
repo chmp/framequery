@@ -82,9 +82,6 @@ class Cursor(object):
         self.rowcount = self.description = self.result = None
 
     def execute(self, q, params=None):
-        if q.strip().startswith('!'):
-            return self._execute_extension(q, params)
-
         if params:
             raise ValueError('params (%s) not yet supported' % params)
 
@@ -110,16 +107,6 @@ class Cursor(object):
     def executemany(self, q, parameters):
         for p in parameters:
             self.execute(q, p)
-
-    def _execute_extension(self, q, params):
-        q = q.strip().lower()
-        if q == '!update':
-            assert isinstance(params, dict)
-            self.connection.executor.scope.update(params)
-            self.rowcount = 0
-
-        else:
-            raise RuntimeError('no extension for %s implemented' % q)
 
     def fetchone(self):
         if self.rownumber > self.result.shape[0]:
