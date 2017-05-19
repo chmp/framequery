@@ -55,14 +55,13 @@ DATETIME = None
 ROWID = None
 
 
-def connect(**kwargs):
-    return Connection(**kwargs)
+def connect(executor):
+    return Connection(executor)
 
 
 class Connection(object):
-    def __init__(self, scope, **exec_kwargs):
-        self.scope = scope
-        self.exec_kwargs = exec_kwargs
+    def __init__(self, executor):
+        self.executor = executor
 
     def cursor(self):
         return Cursor(self)
@@ -91,7 +90,7 @@ class Cursor(object):
         if params:
             raise ValueError('params (%s) not yet supported' % params)
 
-        self.result = execute(q, self.connection.scope, **self.connection.exec_kwargs)
+        self.result = self.connection.executor.execute(q)
 
         if self.result is None:
             return
@@ -118,7 +117,7 @@ class Cursor(object):
         q = q.strip().lower()
         if q == '!update':
             assert isinstance(params, dict)
-            self.connection.scope.update(params)
+            self.connection.executor.scope.update(params)
             self.rowcount = 0
 
         else:

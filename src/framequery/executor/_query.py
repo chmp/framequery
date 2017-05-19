@@ -25,6 +25,19 @@ from ..util._record import walk
 _logger = logging.getLogger(__name__)
 
 
+class Executor(object):
+    def __init__(self, scope, model='pandas', basepath='.'):
+        self.scope = scope
+        self.model = get_model(model, basepath)
+
+    def execute(self, q, basepath=None):
+        if basepath is None:
+            basepath = self.model.basepath
+
+        with self.model.with_basepath(basepath) as model:
+            return execute(q, self.scope, model=model)
+
+
 # TOOD: add option autodetect the required model
 def execute(q, scope, model='pandas', basepath='.'):
     model = get_model(model, basepath=basepath)

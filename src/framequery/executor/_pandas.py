@@ -5,6 +5,7 @@ from ..parser import ast as a
 from ..util import _monadic as m, like, not_like
 
 import collections
+import contextlib
 import logging
 import operator
 import os.path
@@ -35,6 +36,17 @@ class PandasModel(object):
             'version': lambda: 'PostgreSQL 9.6.0',
             'current_schema': lambda: 'public',
         }
+
+    @contextlib.contextmanager
+    def with_basepath(self, basepath):
+        old_basepath = self.basepath
+
+        try:
+            self.basepath = basepath
+            yield self
+
+        finally:
+            self.basepath = old_basepath
 
     def dual(self):
         return pd.DataFrame({}, index=[0])

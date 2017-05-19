@@ -5,7 +5,7 @@ import json
 
 from sqlalchemy.dialects.postgresql.base import PGDialect
 
-from ..executor import execute
+from ..executor import Executor, execute
 from . import dbapi
 
 
@@ -25,22 +25,24 @@ class PandasDialect(PGDialect):
             context = {}
             basepath = os.path.abspath('.')
 
-        self.init_context(context, basepath)
-
-        # NOTE: make the scope part of the connect args to reuse it
-        return (), context
+        executor = self.build_executor(context, basepath)
+        return (executor,), {}
 
     @staticmethod
-    def init_context(context, basepath):
+    def build_executor(context, basepath):
         context.setdefault('model', 'pandas')
         context.setdefault('scope', {})
 
         basepath = context.get('basepath', basepath)
 
+        executor = Executor({}, model=context['model'], basepath=context.get('basepath', '.'))
+
         for q in context.pop('setup', []):
-            execute(q, scope=context['scope'], model=context['model'], basepath=basepath)
+            executor.execute(q, basepath=basepath)
+
+        return executor
 
     def get_table_names(self, conn, schema=None, **kwargs):
-        return sorted(conn.connection.scope.keys())
+        return sorted(conn.connection.executor.scope.keys())
 
     on_connect = do_rollback = lambda *args: None
