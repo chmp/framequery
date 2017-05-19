@@ -147,7 +147,7 @@ def format_debug(debug, indent=0):
     children = debug.get('children', [])
     where = debug.get('where', '<unknown>')
 
-    yield('{}{}: {} in {}'.format(' ' * indent,  status, message, where))
+    yield('{}{}: {} in {}'.format(' ' * indent, status, message, where))
 
     for d in children:
         for msg in format_debug(d, indent=indent + 1):
@@ -435,7 +435,7 @@ def string(quote='\'', escape='\\', find=lambda s, n, i: s.find(n, i)):
             idx = find(s, quote, idx + 1)
 
             if idx < 0:
-                return None, s, Status.fail(consumed=idx+1)
+                return None, s, Status.fail(consumed=idx + 1)
 
             if s[idx - 1] != escape:
                 break

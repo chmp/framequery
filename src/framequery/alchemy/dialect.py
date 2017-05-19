@@ -5,7 +5,7 @@ import json
 
 from sqlalchemy.dialects.postgresql.base import PGDialect
 
-from ..executor import Executor, execute
+from ..executor import Executor
 from . import dbapi
 
 

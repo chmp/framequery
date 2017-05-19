@@ -1,7 +1,5 @@
 from __future__ import print_function, division, absolute_import
 
-from framequery import execute
-
 
 paramstyle = 'pyformat'
 threadsafety = 1
