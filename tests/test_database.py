@@ -50,6 +50,7 @@ examples = [
 
 dask_xfail_examples = [
     r"""select * from json_each(cast('{"foo": "bar", "hello": "world"}' as json)) """,
+    r"""select * from json_each('{"foo": "bar", "hello": "world"}' :: json)""",
 ]
 
 examples = (

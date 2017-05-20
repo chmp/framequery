@@ -125,6 +125,7 @@ keywords = {
 }
 
 operators = {
+    '::',
     ',', '.', '(', ')',
     '*', '/', '%',
     '+', '-',
@@ -158,6 +159,16 @@ def value(value):
         m.sequence(svtok('('), value, svtok(')')),
         cast_expression, count_all, call_analytics_function, call_set_function, call,
         integer, string, name
+    )
+
+    value = m.any(
+        m.construct(
+            a.Cast,
+            m.keyword(value=value),
+            svtok('::'),
+            m.keyword(type=value),
+        ),
+        value,
     )
 
     value = unary_op(value, '+', '-')
@@ -360,6 +371,7 @@ constructors = {
 }
 
 constructors[a.Name] = name
+constructors[a.String] = string
 
 splitter = m.repeat(
     m.any(
