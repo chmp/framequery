@@ -10,12 +10,7 @@ import pytest
 
 ddl = [
     'drop table if exists test',
-    '''
-        create table test (
-            c1 int,
-            c2 int
-        )
-    '''
+    'create table test (c1 int, c2 int)'
 ]
 
 columns = [('c1', 'int'), ('c2', 'int')]
