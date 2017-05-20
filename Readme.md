@@ -27,7 +27,7 @@ sales = pd.read_csv('sales.csv')
 
 import framequery as fq
 
-sales_by_country = fq.select("""
+sales_by_country = fq.execute("""
     SELECT country, sum(sales)
 
     FROM sales
@@ -47,6 +47,12 @@ Note, that per default framequery uses pandas semantics in groupby and joins.
 This will result in behavior diffrent from SQL. To enable strict mode, pass
 `strict=True` as an argument to select. Then, additional steps will be performed
 to replicate the SQL behavior as close as possible.
+
+**TODO: highlight dask support**
+
+**TODO: highlight sqlalchemy support**
+
+**TODO: highlight table-valued functions and lateral joins (once available)**
 
 ## SQL Support
 
@@ -78,6 +84,9 @@ supported queries.
 ### Development
 
 - refactor code
+- aim for postgres compatibility
+- first-class dask support
+- sqlalchemy support
 
 ### 0.1.0
 
