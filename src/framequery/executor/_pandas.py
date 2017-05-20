@@ -28,6 +28,7 @@ class PandasModel(object):
             'current_schema': lambda: 'public',
             'upper': util.upper,
             'lower': util.lower,
+            'concat': util.concat,
         }
 
         self.table_functions = {
@@ -246,3 +247,8 @@ def eval_cast(eval_pandas, expr, df, model, name_generator):
         return value.astype(base_type)
 
     return value.map(base_type)
+
+
+@eval_pandas.rule(m.instanceof(a.Null))
+def eval_null(eval_pandas, expr, df, model, name_generator):
+    return None

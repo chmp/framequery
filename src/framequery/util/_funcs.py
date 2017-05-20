@@ -1,7 +1,9 @@
 from __future__ import print_function, division, absolute_import
 
 import collections
+import functools as ft
 import json
+import operator as op
 import os.path
 import re
 
@@ -44,8 +46,21 @@ def lower(s):
     return _str_funcs(s).lower()
 
 
+def concat(head, *tail):
+    strings = [head] + list(tail)
+    strings = [_fillna(s, '') for s in strings]
+    return ft.reduce(op.add, strings)
+
+
 def _str_funcs(s):
     return s if is_scalar(s) else pd.Series(s).str
+
+
+def _fillna(obj, missing):
+    if is_scalar(obj):
+        return obj if obj is not None else missing
+
+    return pd.Series(obj).fillna(missing)
 
 
 def lateral(func, *args):

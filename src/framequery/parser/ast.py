@@ -94,3 +94,7 @@ class DropTable(Record):
 
 class CreateTableAs(Record):
     __fields__ = ['name', 'query']
+
+
+class Null(Record):
+    pass

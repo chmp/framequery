@@ -118,7 +118,7 @@ name_format = r'\w+'
 
 keywords = {
     'select', 'as', 'from', 'cast', 'copy',
-    'not', 'and', 'or', 'like', 'in',
+    'not', 'and', 'or', 'like', 'in', 'null',
     'count', 'having', 'distinct', 'all',
     'order', 'from', 'by', 'group', 'show',
     'options', 'create', 'table', 'with', 'drop', 'to',
@@ -133,6 +133,8 @@ operators = {
     '+', '-', '&', '|', '^',
     '=', '!=', '>', '<', '>=', '<=', '<>', '!>', '!<',
 }
+
+null = m.construct(a.Null, svtok('null'))
 
 integer = m.construct(a.Integer, m.keyword(value=regex_token(integer_format)))
 
@@ -158,7 +160,7 @@ def value(value):
     value = m.any(
         m.sequence(svtok('('), value, svtok(')')),
         cast_expression, count_all, call_analytics_function, call_set_function, call,
-        integer, string, name
+        null, integer, string, name
     )
 
     value = m.any(

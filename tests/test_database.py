@@ -47,6 +47,7 @@ examples = [
     r'''select 'Foo' like '%OO' ''',
     r'''select upper('Foo') like '%OO' ''',
     r'''select 'Foo' like lower('%OO') ''',
+    r'''select concat('foo', null, 'bar')'''
 ]
 
 dask_xfail_examples = [
