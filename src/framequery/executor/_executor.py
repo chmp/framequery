@@ -12,8 +12,6 @@ from __future__ import print_function, division, absolute_import
 import itertools as it
 import logging
 
-import pandas as pd
-
 from ._util import (
     normalize_col_ref, Unique, UniqueNameGenerator, internal_column, column_get_table,
     eval_string_literal,
@@ -38,6 +36,9 @@ class Executor(object):
 
     def update(self, *args, **kwargs):
         self.scope.update(*args, **kwargs)
+
+    def compute(self, val):
+        return self.model.compute(val)
 
 
 # TOOD: add option autodetect the required model
@@ -94,17 +95,9 @@ def execute_ast_select(execute_ast, node, scope, model):
         aggregate = aggregate
         pre_aggregate = pre_aggregate + group_by
 
-        model.debug('pre-aggregate columns: {}', pre_aggregate)
         table = model.transform(table, pre_aggregate, name_generator)
-        model.debug('pre-aggregate result: {}', table)
-
-        model.debug('aggregate columns: {}', aggregate)
         table = model.aggregate(table, aggregate, group_by, name_generator)
-        model.debug('aggregate result: {)', table)
-
-        model.debug('post-aggregate columns: {}', post_aggregate)
         table = model.transform(table, post_aggregate, name_generator)
-        model.debug('post-aggregate result: {}', table)
 
     else:
         table = model.transform(table, columns, name_generator)
@@ -198,7 +191,7 @@ def sort(table, values, model):
         names += [normalize_col_ref(val.value.name, table.columns)]
         ascending += [val.order == 'asc']
 
-    return model.sort_values(table, names, ascending=False)
+    return model.sort_values(table, names, ascending=ascending)
 
 
 @execute_ast.rule(m.instanceof(a.FromClause))
@@ -250,7 +243,7 @@ def execute_show(_, node, scope, model):
         raise NotImplementedError('unknown option: %s' % node.args)
 
     value = config[node.args]
-    return pd.DataFrame({'value': [value]})
+    return model.dual().assign(value=value)
 
 
 @execute_ast.rule(m.instanceof(a.CopyFrom))

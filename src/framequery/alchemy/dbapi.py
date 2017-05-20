@@ -90,6 +90,8 @@ class Cursor(object):
         if self.result is None:
             return
 
+        self.result = self.connection.executor.compute(self.result)
+
         self.description = []
 
         typemap = {'object': object, 'float': float, 'int64': int}

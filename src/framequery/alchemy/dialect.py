@@ -9,7 +9,7 @@ from ..executor import Executor
 from . import dbapi
 
 
-class PandasDialect(PGDialect):
+class Dialect(PGDialect):
     @classmethod
     def dbapi(self):
         return dbapi
@@ -24,6 +24,8 @@ class PandasDialect(PGDialect):
         else:
             context = {}
             basepath = os.path.abspath('.')
+
+        context.update(url.query)
 
         executor = self.build_executor(context, basepath)
         return (executor,), {}

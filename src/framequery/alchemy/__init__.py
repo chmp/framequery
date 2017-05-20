@@ -1,5 +1,5 @@
 from __future__ import print_function, division, absolute_import
 
-from .dialect import PandasDialect
+from .dialect import Dialect
 
-__all__ = ['PandasDialect']
+__all__ = ['Dialect']

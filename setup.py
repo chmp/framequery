@@ -36,7 +36,7 @@ setup(
     ],
     entry_points={
           'sqlalchemy.dialects': [
-              'framequery = framequery.alchemy:PandasDialect',
+              'framequery = framequery.alchemy:Dialect',
           ]
     },
 )

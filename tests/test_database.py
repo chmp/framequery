@@ -87,13 +87,14 @@ examples = [
     r'''select 'Foo' like '%OO' ''',
     r'''select upper('Foo') like '%OO' ''',
     r'''select 'Foo' like lower('%OO') ''',
-    r'''select concat('foo', null, 'bar')'''
-]
+    r'''select concat('foo', null, 'bar')''',
 
-dask_xfail_examples = [
     r"""select * from json_each(cast('{"foo": "bar", "hello": "world"}' as json)) """,
     r"""select * from json_each('{"foo": "bar", "hello": "world"}' :: json)""",
 ]
+
+dask_xfail_examples = []
+
 
 examples = (
     [('pandas', q) for q in examples] +

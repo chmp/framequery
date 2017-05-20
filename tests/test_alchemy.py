@@ -2,35 +2,39 @@ from __future__ import print_function, division, absolute_import
 
 import os.path
 
+import pytest
+
 import pandas as pd
 from sqlalchemy import create_engine
 
 
-def test_create_engine_connect():
-    engine = create_engine('framequery://')
+@pytest.mark.parametrize('qs', ['', '?model=dask'])
+def test_create_engine_connect(qs):
+    engine = create_engine('framequery:///' + qs)
 
     with engine.connect():
         pass
 
 
 def test_add_dataframe_query():
-    engine = create_engine('framequery://')
+    engine = create_engine('framequery:///')
     engine.executor.update(foo=pd.DataFrame({'foo': [0, 1, 2]}))
 
     assert engine.execute('select * from foo').fetchall() == [(0,), (1,), (2,)]
 
 
 def test_add_dataframe_query__transaction():
-    engine = create_engine('framequery://')
+    engine = create_engine('framequery:///')
     engine.executor.update(foo=pd.DataFrame({'foo': [0, 1, 2]}))
 
     with engine.begin() as conn:
         assert conn.execute('select * from foo').fetchall() == [(0,), (1,), (2,)]
 
 
-def test_scope_files():
+@pytest.mark.parametrize('qs', ['', '?model=dask'])
+def test_scope_files(qs):
     fname = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data', 'scope.json'))
-    engine = create_engine('framequery:///' + fname)
+    engine = create_engine('framequery:///' + fname + qs)
 
     assert engine.table_names() == ['foo']
 
@@ -41,11 +45,15 @@ def test_scope_files():
         assert actual == [(0, 6), (1, 9), (2, 6)]
 
 
-def test_scope_load_and_save(tmpdir):
+@pytest.mark.parametrize('qs', [
+    '',
+    pytest.mark.xfail(reason='copy to not yet supported')('?model=dask'),
+])
+def test_scope_load_and_save(tmpdir, qs):
     source = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data', 'test.csv'))
     target = os.path.join(str(tmpdir), 'test.csv')
 
-    engine = create_engine('framequery://')
+    engine = create_engine('framequery:///' + qs)
 
     for q in [
         "COPY foo FROM '{}' WITH delimiter ';', format 'csv'  ".format(source),
@@ -62,7 +70,8 @@ def test_scope_load_and_save(tmpdir):
     assert actual == [(0, 6), (1, 9), (2, 6)]
 
 
-def test_scope_table_valued():
+@pytest.mark.parametrize('qs', ['', '?model=dask'])
+def test_scope_table_valued(qs):
     source = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data', 'test.csv'))
 
     q = '''
@@ -71,7 +80,7 @@ def test_scope_table_valued():
         group by g
     '''.format(source)
 
-    engine = create_engine('framequery://')
+    engine = create_engine('framequery:///' + qs)
     actual = engine.execute(q).fetchall()
     actual = sorted(actual)
 

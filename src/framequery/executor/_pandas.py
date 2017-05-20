@@ -44,6 +44,8 @@ class PandasModel(object):
             'json_array_elements': util.json_array_elements,
         }
 
+        self.lateral_functions = self.table_functions
+
     @contextlib.contextmanager
     def with_basepath(self, basepath):
         old_basepath = self.basepath
@@ -56,24 +58,8 @@ class PandasModel(object):
             self.basepath = old_basepath
 
     def dual(self):
+        """Return an empty single-row dataframe."""
         return pd.DataFrame({}, index=[0])
-
-    def debug(self, msg, *args, **kwargs):
-        if self._debug:
-            print(msg.format(*args, **kwargs))
-
-    def call(self, *args, **kwargs):
-        obj, method = args[:2]
-        args = args[2:]
-        return getattr(obj, method)(*args, **kwargs)
-
-    def __getattr__(self, name):
-        def caller(*args, **kwargs):
-            obj, = args[:1]
-            args = args[1:]
-            return self.call(obj, name, *args, **kwargs)
-
-        return caller
 
     def get_table(self, scope, name, alias=None):
         if alias is None:
@@ -141,12 +127,18 @@ class PandasModel(object):
         return df
 
     def copy_from(self, scope, name, filename, options):
+        try:
+            copy_from = self.table_functions['copy_from']
+
+        except KeyError:
+            raise NotImplementedError('%s does not support copy_from' % self)
+
         args = []
         for k, v, in options.items():
             args += [k, v]
 
         filename = os.path.join(self.basepath, filename)
-        scope[name] = util.copy_from(filename, *args)
+        scope[name] = copy_from(filename, *args)
 
     def copy_to(self, scope, name, filename, options):
         df = scope[name]
@@ -187,6 +179,12 @@ class PandasModel(object):
 
         left_on, right_on = as_pandas_join_condition(left.columns, right.columns, on)
         return left.merge(right, left_on=left_on, right_on=right_on, how=how)
+
+    def sort_values(self, table, names, ascending):
+        return table.sort_values(names, ascending=ascending)
+
+    def compute(self, val):
+        return val
 
 
 eval_pandas = m.RuleSet(name='eval_pandas')
