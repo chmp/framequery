@@ -17,15 +17,35 @@ def like(s, pattern):
     pattern = '^' + pattern + '$'
 
     # sqlite is case insenstive, is this always the case?
-    return pd.Series(s).str.contains(pattern, flags=re.IGNORECASE)
+    if is_scalar(s):
+        return re.match(pattern, s) is not None
+
+    else:
+        return s.str.conntains(pattern)
 
 
 def not_like(s, pattern):
     """Execute a SQL ``not like`` expression against a str-series."""
     res = like(s, pattern)
-    # handle inversion with missing numbers
-    res = (1 - res).astype(res.dtype)
-    return res
+
+    if is_scalar(s):
+        return not res
+
+    else:
+        # handle inversion with missing numbers
+        return (1 - res).astype(res.dtype)
+
+
+def upper(s):
+    return _str_funcs(s).upper()
+
+
+def lower(s):
+    return _str_funcs(s).lower()
+
+
+def _str_funcs(s):
+    return s if is_scalar(s) else pd.Series(s).str
 
 
 def lateral(func, *args):

@@ -41,6 +41,12 @@ examples = [
     'select test.* from test',
     'select test.c1, 2 * test.c2 from test',
     'select "c1", "test"."c2" from test',
+
+    # test case sensitivity
+    r'''select 'Foo' like '%oo' ''',
+    r'''select 'Foo' like '%OO' ''',
+    r'''select upper('Foo') like '%OO' ''',
+    r'''select 'Foo' like lower('%OO') ''',
 ]
 
 dask_xfail_examples = [
@@ -65,7 +71,7 @@ def test_select(setup, model, query):
 
     actual = fq.execute(query, scope, model=model)
 
-    expected = _norm_result(db.execute(query).fetchall())
+    expected = _norm_result(db.execute(query.replace('%', '%%')).fetchall())
     actual = _norm_result(row for _, row in actual.iterrows())
 
     pdt.assert_frame_equal(actual, expected, check_dtype=False)

@@ -26,6 +26,8 @@ class PandasModel(object):
         self.functions = {
             'version': lambda: 'PostgreSQL 9.6.0',
             'current_schema': lambda: 'public',
+            'upper': util.upper,
+            'lower': util.lower,
         }
 
         self.table_functions = {
@@ -219,10 +221,9 @@ def eval_pandas_binary_op(eval_pandas, expr, df, model, name_generator):
 
 @eval_pandas.rule(m.instanceof(a.Call))
 def eval_call(eval_pandas, expr, df, model, name_generator):
-    assert not expr.args
-
     func = model.functions[expr.func.lower()]
-    return func()
+    args = [eval_pandas(arg, df, model, name_generator) for arg in expr.args]
+    return func(*args)
 
 
 @eval_pandas.rule(m.instanceof(a.Cast))
