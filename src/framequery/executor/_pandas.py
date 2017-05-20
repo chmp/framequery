@@ -3,6 +3,9 @@ from __future__ import print_function, division, absolute_import
 from ._util import column_set_table, column_get_column, normalize_col_ref, eval_string_literal
 from ..parser import ast as a
 from ..util import _monadic as m, like, not_like
+from ..util._record import walk
+
+from .. import util
 
 import collections
 import contextlib
@@ -21,20 +24,15 @@ class PandasModel(object):
         self.eval = eval_pandas
         self.basepath = basepath
 
-        self.aggregates = {
-            'sum': lambda col: col.sum(),
-            'avg': lambda col: col.mean(),
-            'min': lambda col: col.min(),
-            'max': lambda col: col.max(),
-            'count': lambda col: col.count(),
-
-            # TODO: add first_value again
-            # 'first_value': self._first,
-        }
-
         self.functions = {
             'version': lambda: 'PostgreSQL 9.6.0',
             'current_schema': lambda: 'public',
+        }
+
+        self.table_functions = {
+            'copy_from': util.copy_from,
+            'json_each': util.json_each,
+            'json_array_elements': util.json_array_elements,
         }
 
     @contextlib.contextmanager
@@ -127,7 +125,12 @@ class PandasModel(object):
         return df
 
     def copy_from(self, scope, name, filename, options):
-        scope[name] = load_from(filename, self.basepath, options)
+        args = []
+        for k, v, in options.items():
+            args += [k, v]
+
+        filename = os.path.join(self.basepath, filename)
+        scope[name] = util.copy_from(filename, *args)
 
     def copy_to(self, scope, name, filename, options):
         df = scope[name]
@@ -147,29 +150,16 @@ class PandasModel(object):
             raise RuntimeError('unknown format %s' % format)
 
     def eval_table_valued(self, node, scope):
-        if not node.func.lower() == 'copy_from':
-            raise RuntimeError('unknown table valued function: %r' % node.func)
+        if any(isinstance(n, a.Name) for n in walk(node.args)):
+            raise ValueError('name not allowed in non-lateral joins')
 
-        args = [eval_string_literal(arg.value) for arg in node.args]
-        filename, options = args[0], args[1:]
-        options = dict(zip(options[:-1:2], options[1::2]))
+        func = node.func.lower()
+        if func not in self.table_functions:
+            raise RuntimeError('unknown table valued function: %r' % func)
 
-        return load_from(filename, self.basepath, options)
-
-
-def load_from(filename, basepath, options):
-    format = options.pop('format', 'csv')
-
-    if format == 'csv':
-        filename = os.path.join(basepath, filename)
-
-        if 'delimiter' in options:
-            options['sep'] = options.pop('delimiter')
-
-        return pd.read_csv(filename, **options)
-
-    else:
-        raise RuntimeError('unknown format %s' % format)
+        func = self.table_functions[func]
+        args = [eval_pandas(arg, None, self, None) for arg in node.args]
+        return func(*args)
 
 
 eval_pandas = m.RuleSet(name='eval_pandas')
