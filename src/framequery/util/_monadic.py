@@ -510,6 +510,9 @@ class construct(object):
 
         return [res], rest, Status.succeed(children=[debug], where='construct %s' % self.cls)
 
+    def __repr__(self):
+        return 'construct(%r, ...)' % self.cls
+
 
 def keyword(**kw):
     (name, matcher), = kw.items()

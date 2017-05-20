@@ -98,3 +98,7 @@ class CreateTableAs(Record):
 
 class Null(Record):
     pass
+
+
+class Join(Record):
+    __fields__ = ['how', 'left', 'right', 'on']

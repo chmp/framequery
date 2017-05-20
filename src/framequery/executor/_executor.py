@@ -225,6 +225,13 @@ def execute_ast_table_ref(execute_ast, node, scope, model):
     return model.get_table(scope, name, alias=node.alias)
 
 
+@execute_ast.rule(m.instanceof(a.Join))
+def execute_ast_join(execute_ast, node, scope, model):
+    left = execute_ast(node.left, scope, model)
+    right = execute_ast(node.right, scope, model)
+    return model.join(left, right, node.on, node.how)
+
+
 @execute_ast.rule(m.instanceof(a.Call))
 def execute_ast_all(excecute_ast, node, scope, model):
     # TODO: fix test for lateral joins, .e.g, in casts types are referenced as names

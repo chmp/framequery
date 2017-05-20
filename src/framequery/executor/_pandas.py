@@ -1,6 +1,12 @@
 from __future__ import print_function, division, absolute_import
 
-from ._util import column_set_table, column_get_column, normalize_col_ref, eval_string_literal
+from ._util import (
+    as_pandas_join_condition,
+    column_get_column,
+    column_set_table,
+    eval_string_literal,
+    normalize_col_ref,
+)
 from ..parser import ast as a
 from ..util import _monadic as m, like, not_like
 
@@ -18,8 +24,9 @@ _logger = logging.getLogger(__name__)
 
 
 class PandasModel(object):
-    def __init__(self, debug=False, basepath='.'):
+    def __init__(self, debug=False, basepath='.', strict=False):
         self._debug = debug
+        self.strict = strict
         self.eval = eval_pandas
         self.basepath = basepath
 
@@ -101,13 +108,20 @@ class PandasModel(object):
 
     # TODO: add execution hints to allow group-by-apply based aggregate?
     def aggregate(self, table, columns, group_by, name_generator):
+        if self.strict:
+            raise NotImplementedError('strict group-by not yet implemented')
+
         group_spec = [name_generator.get(col.alias) for col in group_by]
 
         agg_spec = {}
         rename_spec = []
 
+        func_impl = {'avg': 'mean'}
+
         for col in columns:
             function = col.value.func
+            function = func_impl.get(function, function)
+
             arg = name_generator.get(col.value.args[0].name)
             alias = name_generator.get(col.alias)
 
@@ -163,6 +177,16 @@ class PandasModel(object):
         func = self.table_functions[func]
         args = [eval_pandas(arg, None, self, None) for arg in node.args]
         return func(*args)
+
+    def join(self, left, right, on, how):
+        if self.strict:
+            raise NotImplementedError('strict join not yet implemented')
+
+        # TODO: re-add support for-non-equality joins, re-add support for strict joins
+        assert how in {'inner', 'outer', 'left', 'right'}
+
+        left_on, right_on = as_pandas_join_condition(left.columns, right.columns, on)
+        return left.merge(right, left_on=left_on, right_on=right_on, how=how)
 
 
 eval_pandas = m.RuleSet(name='eval_pandas')

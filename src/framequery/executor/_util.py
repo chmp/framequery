@@ -3,6 +3,7 @@ from __future__ import print_function, division, absolute_import
 import itertools as it
 from ..util._record import walk
 from ..util import _monadic as m
+from ..parser import ast as a
 
 
 def column_match(col, internal_col):
@@ -58,7 +59,7 @@ def column_from_parts(table, column):
     return '{}/@/{}'.format(table, column)
 
 
-def normalize_col_ref(ref, columns):
+def normalize_col_ref(ref, columns, optional=False):
     ref = split_quoted_name(ref)
     ref = ref[-2:]
 
@@ -75,6 +76,9 @@ def normalize_col_ref(ref, columns):
     ]
 
     if len(candidates) == 0:
+        if optional is True:
+            return None
+
         raise ValueError("column {} not found in {}".format(ref, columns))
 
     if len(candidates) > 1:
@@ -184,3 +188,60 @@ def eval_string_literal(value):
         raise ValueError('unquoted string')
 
     return str(value[1:-1])
+
+
+def as_pandas_join_condition(left_columns, right_columns, condition):
+    flat_condition = _flatten_join_condition(condition)
+
+    left = []
+    right = []
+
+    for aa, bb in flat_condition:
+        a_is_left, aa = _is_left(left_columns, right_columns, aa)
+        b_is_left, bb = _is_left(left_columns, right_columns, bb)
+
+        if a_is_left == b_is_left:
+            raise ValueError("cannot join a table to itslef ({}, {})".format(aa, bb))
+
+        if a_is_left:
+            left.append(aa)
+            right.append(bb)
+
+        else:
+            right.append(aa)
+            left.append(bb)
+
+    return left, right
+
+
+def _is_left(left_columns, right_columns, ref):
+    left_ref = normalize_col_ref(ref, left_columns, optional=True)
+    right_ref = normalize_col_ref(ref, right_columns, optional=True)
+
+    if (left_ref is None) == (right_ref is None):
+        raise ValueError('col ref {} is ambigious'.format(ref))
+
+    return (left_ref is not None), left_ref if left_ref is not None else right_ref
+
+
+def _flatten_join_condition(condition):
+    if not isinstance(condition, a.BinaryOp):
+        raise ValueError("can only handle equality joins")
+
+    if condition.op == 'AND':
+        return it.chain(
+            _flatten_join_condition(condition.left),
+            _flatten_join_condition(condition.right),
+        )
+
+    elif condition.op == '=':
+        if not (
+            isinstance(condition.left, a.Name) and
+            isinstance(condition.right, a.Name)
+        ):
+            raise ValueError("requires column references")
+
+        return [(condition.left.name, condition.right.name)]
+
+    else:
+        raise ValueError("can only handle equality joins")

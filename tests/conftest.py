@@ -8,7 +8,7 @@ import sqlalchemy
 from framequery.util._record import Record, diff
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def database():
     if 'FQ_TEST_DB' in os.environ:
         return sqlalchemy.create_engine(os.environ['FQ_TEST_DB'])

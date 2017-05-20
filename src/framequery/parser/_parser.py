@@ -95,6 +95,22 @@ def build_binary_tree(seq):
     return [_impl(seq[0])]
 
 
+def build_joins(seq):
+    current, joins = seq[0], seq[1:]
+
+    if not joins:
+        return [current]
+
+    for join in joins:
+        if isinstance(join, a.Join):
+            current = join.update(left=current)
+
+        else:
+            raise NotImplementedError('join %r not implemented' % join)
+
+    return [current]
+
+
 def binary_op(value, *ops):
     return m.transform(build_binary_tree, m.list_of(verbatim_token(*ops), value))
 
@@ -117,11 +133,35 @@ integer_format = r'\d+'
 name_format = r'\w+'
 
 keywords = {
-    'select', 'as', 'from', 'cast', 'copy',
-    'not', 'and', 'or', 'like', 'in', 'null',
-    'count', 'having', 'distinct', 'all',
-    'order', 'from', 'by', 'group', 'show',
-    'options', 'create', 'table', 'with', 'drop', 'to',
+    'and',
+    'all',
+    'as',
+    'by',
+    'cast',
+    'count',
+    'copy',
+    'create',
+    'distinct',
+    'drop',
+    'from',
+    'group',
+    'having',
+    'in',
+    'join',
+    'left',
+    'like',
+    'not',
+    'null',
+    'on',
+    'options',
+    'or',
+    'order',
+    'right',
+    'select',
+    'show',
+    'table',
+    'to',
+    'with',
 }
 
 operators = {
@@ -279,6 +319,24 @@ table_like = m.any(
     # first parse call, otherwise in both `test` and `test()`, `test` will be consumed
     call,
     table_ref,
+)
+
+table_like = m.transform(
+    build_joins,
+    m.sequence(
+        table_like,
+        m.repeat(
+            m.construct(
+                a.Join,
+                m.keyword(how=m.any(
+                    verbatim_token('inner', 'left', 'right'),
+                    m.literal('inner'),
+                )),
+                svtok('join'), m.keyword(right=table_like),
+                svtok('on'), m.keyword(on=value),
+            ),
+        )
+    )
 )
 
 from_clause = m.construct(
