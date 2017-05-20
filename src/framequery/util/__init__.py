@@ -4,6 +4,7 @@ from ._funcs import (
     like, not_like,
     lateral,
     json_each, json_array_elements, copy_from,
+    cast_json,
 )
 
 
@@ -11,4 +12,5 @@ __all__ = [
     'like', 'not_like',
     'lateral',
     'json_each', 'json_array_elements', 'copy_from',
+    'cast_json',
 ]

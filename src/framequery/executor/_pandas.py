@@ -3,7 +3,6 @@ from __future__ import print_function, division, absolute_import
 from ._util import column_set_table, column_get_column, normalize_col_ref, eval_string_literal
 from ..parser import ast as a
 from ..util import _monadic as m, like, not_like
-from ..util._record import walk
 
 from .. import util
 
@@ -150,8 +149,9 @@ class PandasModel(object):
             raise RuntimeError('unknown format %s' % format)
 
     def eval_table_valued(self, node, scope):
-        if any(isinstance(n, a.Name) for n in walk(node.args)):
-            raise ValueError('name not allowed in non-lateral joins')
+        # TODO: fix the test: cast types may be given as names
+        # if any(isinstance(n, a.Name) for n in walk(node.args)):
+        #    raise ValueError('name not allowed in non-lateral joins')
 
         func = node.func.lower()
         if func not in self.table_functions:
@@ -232,7 +232,16 @@ def eval_cast(eval_pandas, expr, df, model, name_generator):
     if m.match(expr.type, m.record(a.Call, func=m.eq('VARCHAR'))):
         base_type = str
 
+    elif m.match(expr.type, m.record(a.Name, name=m.pred(lambda v: v.lower() == 'json'))):
+        base_type = util.cast_json
+
     else:
         raise ValueError('unknown type: {}'.format(expr.type))
 
-    return value.astype(base_type) if isinstance(value, pd.Series) else base_type(value)
+    if not isinstance(value, pd.Series):
+        return base_type(value)
+
+    if base_type in {str, int, float, bool}:
+        return value.astype(base_type)
+
+    return value.map(base_type)

@@ -113,3 +113,9 @@ def test_parse_call():
 
 def test_parse_call_set_function():
     assert parse('min(foo)', a.CallSetFunction) == a.CallSetFunction('min', [a.Name('foo')])
+
+
+def test_parse_quoted_strings():
+    assert parse(r"'{\'foo\':\'bar\', \'hello\': \'world\'}'", a.String) == a.String(
+        r"'{\'foo\':\'bar\', \'hello\': \'world\'}'"
+    )

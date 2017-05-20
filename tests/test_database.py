@@ -1,8 +1,9 @@
 from __future__ import print_function, division, absolute_import
 
 import dask.dataframe as dd
-import numpy as np
 import pandas as pd
+import pandas.util.testing as pdt
+
 import framequery as fq
 
 import pytest
@@ -47,9 +48,15 @@ examples = [
     'select "c1", "test"."c2" from test',
 ]
 
+dask_xfail_examples = [
+    r"""select * from json_each(cast('{"foo": "bar", "hello": "world"}' as json)) """,
+]
+
 examples = (
     [('pandas', q) for q in examples] +
-    [('dask', q) for q in examples]
+    [('dask', q) for q in examples] +
+    [('pandas', q) for q in dask_xfail_examples] +
+    [pytest.mark.xfail()(('dask', q)) for q in dask_xfail_examples]
 )
 
 
@@ -62,7 +69,11 @@ def test_select(setup, model, query):
 
     actual = fq.execute(query, scope, model=model)
 
-    expected = sorted(list(row) for row in db.execute(query).fetchall())
-    actual = sorted(list(row) for _, row in actual.iterrows())
+    expected = _norm_result(db.execute(query).fetchall())
+    actual = _norm_result(row for _, row in actual.iterrows())
 
-    np.testing.assert_allclose(actual, expected)
+    pdt.assert_frame_equal(actual, expected, check_dtype=False)
+
+
+def _norm_result(iterable):
+    return pd.DataFrame(sorted(list(row) for row in iterable))

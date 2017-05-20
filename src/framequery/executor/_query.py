@@ -20,7 +20,6 @@ from ._util import (
 )
 from ..parser import ast as a, parse
 from ..util import _monadic as m
-from ..util._record import walk
 
 _logger = logging.getLogger(__name__)
 
@@ -228,8 +227,8 @@ def execute_ast_table_ref(execute_ast, node, scope, model):
 
 @execute_ast.rule(m.instanceof(a.Call))
 def execute_ast_all(excecute_ast, node, scope, model):
-    assert not any(isinstance(n, a.Name) for n in walk(node.args)), "lateral joins not yet implemented"
-
+    # TODO: fix test for lateral joins, .e.g, in casts types are referenced as names
+    # assert not any(isinstance(n, a.Name) for n in walk(node.args)), "lateral joins not yet implemented"
     return model.eval_table_valued(node, scope)
 
 
