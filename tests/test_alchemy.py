@@ -100,3 +100,15 @@ def test_escape_roundtrib(val):
     """test query binding + escaping"""
     engine = create_engine('framequery:///')
     assert engine.execute('select %s', util.escape(val)).scalar() == val
+
+
+@pytest.mark.parametrize('val', [
+    '3.5',
+    '4.',
+    '.001',
+    '5e2',
+    '1.925e-3',
+])
+def test_float_roundtrip(val):
+    engine = create_engine('framequery:///')
+    assert engine.execute('select ' + val).scalar() == float(val)

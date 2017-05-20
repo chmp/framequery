@@ -1,9 +1,11 @@
 from __future__ import print_function, division, absolute_import
 
+import re
+
 import pytest
 
-from framequery.parser import ast as a
-from framequery.parser import parse
+from framequery.parser import ast as a, parse
+from framequery.parser import _parser as p
 
 examples = [
     ('select * from test', a.Select([a.WildCard()], a.FromClause([a.TableRef('test')]))),
@@ -119,3 +121,14 @@ def test_parse_quoted_strings():
     assert parse(r"'{''foo'':''bar'', ''hello'': ''world''}'", a.String) == a.String(
         r"'{''foo'':''bar'', ''hello'': ''world''}'"
     )
+
+
+@pytest.mark.parametrize('s', [
+    '3.5',
+    '4.',
+    '.001',
+    '5e2',
+    '1.925e-3',
+])
+def test_float_format(s):
+    assert re.match(p.float_format, s).group(0) == s

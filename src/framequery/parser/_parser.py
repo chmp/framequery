@@ -129,7 +129,7 @@ def compound_token(*parts):
 
 
 integer_format = r'\d+'
-float_format = r'(\d+\.\d*|\.\d+)(e[+-]?\d+)?'
+float_format = r'(\d+\.\d*(e[+-]?\d+)?|\.\d+(e[+-]?\d+)?|\d+e[+-]?\d+)'
 name_format = r'[a-zA-Z_]\w*'
 
 keywords = {
