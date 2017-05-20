@@ -492,7 +492,7 @@ class construct(object):
     def __call__(self, seq):
         matches, rest, debug = self.matcher(seq)
         if matches is None:
-            return None, seq, Status.fail(children=[debug], where='construct')
+            return None, seq, Status.fail(children=[debug], where='construct %s' % self.cls)
 
         kw = {}
         for d in matches:
@@ -508,7 +508,7 @@ class construct(object):
         except Exception as exc:
             raise RuntimeError('error constructing %s: %s' % (self.cls, exc))
 
-        return [res], rest, Status.succeed(children=[debug], where='construct')
+        return [res], rest, Status.succeed(children=[debug], where='construct %s' % self.cls)
 
 
 def keyword(**kw):
