@@ -7,6 +7,9 @@ python:
 env:
   - FQ_TEST_DB=postgresql://postgres@localhost:5432/travis_ci_test
 
+addons:
+  postgresql: "9.6"
+
 services:
   - postgresql
 
