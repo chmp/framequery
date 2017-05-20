@@ -7,6 +7,8 @@ import pandas as pd
 import pandas.util.testing as pdt
 
 import framequery as fq
+import framequery.util as util
+
 
 import pytest
 
@@ -132,3 +134,15 @@ def _norm_value(v):
     if isinstance(v, decimal.Decimal):
         return float(v)
     return v
+
+
+@pytest.mark.parametrize('val', [
+    'foo',
+    "bar'baz",
+    1, 4,
+    -42.0,
+    None, False, True,
+])
+def test_escape_roundtrib(database, val):
+    """test the escape function"""
+    assert database.execute('select ' + util.escape(val)).scalar() == val

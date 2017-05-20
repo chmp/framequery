@@ -182,12 +182,14 @@ class UniqueNameGenerator(object):
         return UniqueNameGenerator(self.names, fixed=True)
 
 
-def eval_string_literal(value):
-    # TODO: remove escapes etc..
-    if value[:1] != "'":
+def eval_string_literal(value, quote="'"):
+    if value[:1] != quote:
         raise ValueError('unquoted string')
 
-    return str(value[1:-1])
+    value = value[1:-1]
+    value = value.replace(quote + quote, quote)
+
+    return str(value)
 
 
 def as_pandas_join_condition(left_columns, right_columns, condition):

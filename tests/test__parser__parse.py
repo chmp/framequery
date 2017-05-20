@@ -116,6 +116,6 @@ def test_parse_call_set_function():
 
 
 def test_parse_quoted_strings():
-    assert parse(r"'{\'foo\':\'bar\', \'hello\': \'world\'}'", a.String) == a.String(
-        r"'{\'foo\':\'bar\', \'hello\': \'world\'}'"
+    assert parse(r"'{''foo'':''bar'', ''hello'': ''world''}'", a.String) == a.String(
+        r"'{''foo'':''bar'', ''hello'': ''world''}'"
     )

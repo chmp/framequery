@@ -422,7 +422,8 @@ def regex(p):
 
 
 # NOTE: do not use str.find to avoid py2 incompatibility
-def string(quote='\'', escape='\\', find=lambda s, n, i: s.find(n, i)):
+def string(quote='\'', find=lambda s, n, i: s.find(n, i)):
+    """sql-escaped strings: quotes are escaped by repeating them"""
     def impl(s):
         if not s:
             return None, s, Status.fail(consumed=0)
@@ -437,7 +438,11 @@ def string(quote='\'', escape='\\', find=lambda s, n, i: s.find(n, i)):
             if idx < 0:
                 return None, s, Status.fail(consumed=idx + 1)
 
-            if s[idx - 1] != escape:
+            # if the next char is another quote, this is an escape quote
+            if s[idx + 1:idx + 2] == quote:
+                idx += 1
+
+            else:
                 break
 
         return [s[:idx + 1]], s[idx + 1:], Status.succeed(consumed=idx + 1)

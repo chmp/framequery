@@ -2,10 +2,11 @@ from __future__ import print_function, division, absolute_import
 
 import os.path
 
-import pytest
-
 import pandas as pd
+import pytest
 from sqlalchemy import create_engine
+
+from framequery import util
 
 
 @pytest.mark.parametrize('qs', ['', '?model=dask'])
@@ -85,3 +86,17 @@ def test_scope_table_valued(qs):
     actual = sorted(actual)
 
     assert actual == [(0, 6), (1, 9), (2, 6)]
+
+
+@pytest.mark.parametrize('val', [
+    'foo',
+    "bar'baz",
+    1,
+    4,
+    -42.0,
+    None, False, True,
+])
+def test_escape_roundtrib(val):
+    """test query binding + escaping"""
+    engine = create_engine('framequery:///')
+    assert engine.execute('select %s', util.escape(val)).scalar() == val

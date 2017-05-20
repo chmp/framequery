@@ -34,6 +34,14 @@ class WildCard(Record):
     __fields__ = ['table']
 
 
+class Bool(Record):
+    __fields__ = ['value']
+
+
+class Float(Record):
+    __fields__ = ['value']
+
+
 class Integer(Record):
     __fields__ = ['value']
 

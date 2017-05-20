@@ -8,7 +8,7 @@ examples = [
     ('select 1', ['select', '1']),
     ('select 1 as a, 2 as b', ['select', '1', 'as', 'a', ',', '2', 'as', 'b']),
     ("select 'foo bar' ", ['select', "'foo bar'"]),
-    (r"select 'foo\'bar' ", ['select', r"'foo\'bar'"]),
+    (r"select 'foo''bar' ", ['select', r"'foo''bar'"]),
     ('select a + b from public.test', ['select', 'a', '+', 'b', 'from', 'public', '.', 'test']),
     ('select a+b from public.test', ['select', 'a', '+', 'b', 'from', 'public', '.', 'test']),
     ('select a>=b from public.test', ['select', 'a', '>=', 'b', 'from', 'public', '.', 'test']),

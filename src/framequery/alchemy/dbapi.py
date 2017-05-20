@@ -83,7 +83,7 @@ class Cursor(object):
 
     def execute(self, q, params=None):
         if params:
-            raise ValueError('params (%s) not yet supported' % params)
+            q = q % params
 
         self.result = self.connection.executor.execute(q)
 
@@ -94,7 +94,16 @@ class Cursor(object):
 
         self.description = []
 
-        typemap = {'object': object, 'float': float, 'int64': int}
+        typemap = {
+            'object': object,
+            'float': float,
+            'float32': float,
+            'float64': float,
+            'int': int,
+            'int32': int,
+            'int64': int,
+            'bool': bool,
+        }
 
         for col in self.result.columns:
             name = repr(col)

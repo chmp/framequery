@@ -202,9 +202,40 @@ def eval_integer(_, expr, *__):
     return int(expr.value)
 
 
+@eval_pandas.rule(m.instanceof(a.Float))
+def eval_float(_, expr, *__):
+    return float(expr.value)
+
+
 @eval_pandas.rule(m.instanceof(a.String))
 def eval_string(_, expr, *__):
     return eval_string_literal(expr.value)
+
+
+@eval_pandas.rule(m.instanceof(a.Bool))
+def eval_bool(_, expr, *__):
+    if expr.value.lower() == 'true':
+        return True
+
+    elif expr.value.lower() == 'false':
+        return False
+
+    raise ValueError('not a bool: %s' % expr.value)
+
+
+@eval_pandas.rule(m.instanceof(a.UnaryOp))
+def eval_pandas_unary_op(eval_pandas, expr, df, model, name_generator):
+    operator_map = {
+        '-': operator.neg,
+    }
+
+    if expr.op not in operator_map:
+        raise ValueError('unknown unary operator %s' % expr.op)
+
+    op = operator_map[expr.op]
+    arg = eval_pandas(expr.arg, df, model, name_generator)
+
+    return op(arg)
 
 
 @eval_pandas.rule(m.instanceof(a.BinaryOp))

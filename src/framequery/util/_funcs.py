@@ -11,6 +11,31 @@ import pandas as pd
 from pandas.core.dtypes.api import is_scalar
 
 
+def escape(val):
+    if val is None:
+        return 'null'
+
+    elif isinstance(val, str):
+        return "'" + val.replace("'", "''") + "'"
+
+    elif isinstance(val, (int, bool, float)):
+        return json.dumps(val)
+
+    else:
+        raise NotImplementedError()
+
+
+def lateral(func, *args):
+    """Perform a lateral join (essentially a flat-map)"""
+    has_single_non_scalar = args and any(not is_scalar(a) for a in args)
+    if not has_single_non_scalar:
+        raise ValueError('can only computer lateral with at least a single non-scalar argument')
+
+    df = pd.DataFrame({idx: s for idx, s in enumerate(args)})
+    parts = [func(*row) for _, row in df.iterrows()]
+    return pd.concat(parts, axis=0, ignore_index=True)
+
+
 def like(s, pattern):
     """Execute a SQL ``like`` expression against a str-series."""
     pattern = re.escape(pattern)
@@ -61,17 +86,6 @@ def _fillna(obj, missing):
         return obj if obj is not None else missing
 
     return pd.Series(obj).fillna(missing)
-
-
-def lateral(func, *args):
-    """Perform a lateral join (essentially a flat-map)"""
-    has_single_non_scalar = args and any(not is_scalar(a) for a in args)
-    if not has_single_non_scalar:
-        raise ValueError('can only computer lateral with at least a single non-scalar argument')
-
-    df = pd.DataFrame({idx: s for idx, s in enumerate(args)})
-    parts = [func(*row) for _, row in df.iterrows()]
-    return pd.concat(parts, axis=0, ignore_index=True)
 
 
 def cast_json(obj):

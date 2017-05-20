@@ -11,7 +11,7 @@ def tokenize(query):
     parts, rest, d = splitter(query)
 
     if rest != '':
-        raise ValueError('extra tokens: {}, {}'.format(rest, d))
+        raise ValueError('extra tokens: {!r}, {}'.format(rest, d))
 
     return parts
 
@@ -65,6 +65,7 @@ def full_word(matcher):
 
 
 def base_string(quote="'"):
+    """parse the next token as a string. Note: quotes are kept."""
     def base_string_impl(seq):
         if not seq:
             return None, seq, m.Status.fail(where='base_string', message='no value')
@@ -72,8 +73,6 @@ def base_string(quote="'"):
         s = seq[0]
         if s[0] != quote or s[-1] != quote:
             return None, seq, m.Status.fail(where='base_string', message='%r is not a string' % seq)
-
-        # TODO: remove quotes
 
         return [s], seq[1:], m.Status.succeed()
 
@@ -130,7 +129,8 @@ def compound_token(*parts):
 
 
 integer_format = r'\d+'
-name_format = r'\w+'
+float_format = r'(\d+\.\d*|\.\d+)(e[+-]?\d+)?'
+name_format = r'[a-zA-Z_]\w*'
 
 keywords = {
     'and',
@@ -143,6 +143,7 @@ keywords = {
     'create',
     'distinct',
     'drop',
+    'false',
     'from',
     'group',
     'having',
@@ -158,6 +159,7 @@ keywords = {
     'order',
     'right',
     'select',
+    'true',
     'show',
     'table',
     'to',
@@ -177,6 +179,10 @@ operators = {
 null = m.construct(a.Null, svtok('null'))
 
 integer = m.construct(a.Integer, m.keyword(value=regex_token(integer_format)))
+
+float_ = m.construct(a.Float, m.keyword(value=regex_token(float_format)))
+
+bool_ = m.construct(a.Bool, m.keyword(value=verbatim_token('true', 'false')))
 
 string = m.construct(a.String, m.keyword(value=base_string()))
 
@@ -200,7 +206,7 @@ def value(value):
     value = m.any(
         m.sequence(svtok('('), value, svtok(')')),
         cast_expression, count_all, call_analytics_function, call_set_function, call,
-        null, integer, string, name
+        null, integer, string, bool_, name, float_
     )
 
     value = m.any(
@@ -436,12 +442,13 @@ constructors[a.String] = string
 splitter = m.repeat(
     m.any(
         # NOTE: do not use str.lower, due to py2 compat
+        m.regex(float_format),
+        m.regex(integer_format),
         full_word(m.map_verbatim(lambda s: s.lower(), *keywords)),
         m.map_verbatim(lambda s: s.lower(), *operators),
         m.regex(name_format),
         m.ignore(m.regex(r'\s+')),
-        m.regex(integer_format),
-        m.string('\''),
+        m.string("'"),
         m.string('"')
     )
 )
