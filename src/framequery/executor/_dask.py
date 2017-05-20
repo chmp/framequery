@@ -20,6 +20,9 @@ class DaskModel(PandasModel):
             meta=meta, empty_result=meta,
         )
 
+    def dual(self):
+        return dd.from_pandas(super(DaskModel, self).dual(), npartitions=1)
+
     def transform_partitions(self, df, columns, name_generator, empty_result):
         if not len(df):
             return empty_result
