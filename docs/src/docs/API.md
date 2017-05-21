@@ -16,6 +16,6 @@
 
 .. automodule:: framequery.parser.ast
 
-.. autoclass:: framequery.parser.ast.Select
+.. autoclass:: framequery.parser.ast.Select(columns, from_clause, where_clause, group_by_clause, having_clause, order_by_clause, limit_clause, quantifier, cte)
 
-.. autoclass:: framequery.parser.ast.SubQuery
+.. autoclass:: framequery.parser.ast.SubQuery(query, alias)

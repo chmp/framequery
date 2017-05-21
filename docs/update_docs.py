@@ -114,21 +114,30 @@ def automodule(line):
 
 def autoobject(line):
     _, what = line.split('::')
-    obj = import_object(what)
 
-    if inspect.isfunction(obj):
-        signature = format_signature(what, obj)
-
-    elif inspect.isclass(obj):
-        signature = format_signature(what, obj.__init__, skip=1)
+    if '(' in what:
+        signature = what
+        what, _1, _2 = what.partition('(')
 
     else:
-        signature = ''
+        signature = None
+
+    obj = import_object(what)
+
+    if signature is None:
+        if inspect.isfunction(obj):
+            signature = format_signature(what, obj)
+
+        elif inspect.isclass(obj):
+            signature = format_signature(what, obj.__init__, skip=1)
+
+        else:
+            signature = ''
 
     yield '## {}'.format(what)
 
     if signature:
-        yield signature
+        yield '`{}`'.format(signature)
 
     yield ''
     yield render_docstring(obj)
@@ -152,7 +161,7 @@ def format_signature(label, func, skip=0):
         ['**{}'.format(arg) for arg in keywords]
     )
 
-    return '`{}({})`'.format(label, ', '.join(args))
+    return '{}({})'.format(label.strip(), ', '.join(args))
 
 
 def literalinclude(line, source):

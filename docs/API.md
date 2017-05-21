@@ -1,7 +1,7 @@
 # framequery API
 
 ##  framequery.execute
-` framequery.execute(q, scope, model, scope=None, model='pandas', basepath='.')`
+`framequery.execute(q, scope, model, scope=None, model='pandas', basepath='.')`
 
 Execute queries against the provided scope.
 
@@ -22,7 +22,7 @@ models, the basepath can be set via their `__init__` arguments.
 
 
 ##  framequery.Executor
-` framequery.Executor(scope, model, basepath, scope=None, model='pandas', basepath='.')`
+`framequery.Executor(scope, model, basepath, scope=None, model='pandas', basepath='.')`
 
 A persistent executor - to allow reusing scopes and models.
 
@@ -36,7 +36,7 @@ is created.
 
 
 ##  framequery.DaskModel
-` framequery.DaskModel(**kwargs)`
+`framequery.DaskModel(**kwargs)`
 
 A framequery model for `dask.dataframe.DataFrame` objects.
 
@@ -48,7 +48,7 @@ The former will be converted into later automatically, as needed.
 
 
 ##  framequery.PandasModel
-` framequery.PandasModel(basepath, strict, basepath='.', strict=False)`
+`framequery.PandasModel(basepath, strict, basepath='.', strict=False)`
 
 A framequery model for `pandas.DataFrame` objects.
 
@@ -60,7 +60,7 @@ are interpreted.
 
 
 ##  framequery.parser.parse
-` framequery.parser.parse(query, what=None)`
+`framequery.parser.parse(query, what=None)`
 
 Parse a query into an `framequery.ast` object.
 
@@ -71,14 +71,14 @@ Parse a query into an `framequery.ast` object.
 
 
 ##  framequery.parser.tokenize
-` framequery.parser.tokenize()`
+`framequery.parser.tokenize()`
 
 Tokenize the query string.
 
 
 
 ##  framequery.alchemy.get_executor
-` framequery.alchemy.get_executor()`
+`framequery.alchemy.get_executor()`
 
 Extract the executor from a framequery sqlalchemy engine or connection.
 
@@ -97,7 +97,7 @@ Module of ast classes.
 
 
 ##  framequery.parser.ast.Select
-` framequery.parser.ast.Select(*args, **kwargs)`
+` framequery.parser.ast.Select(columns, from_clause, where_clause, group_by_clause, having_clause, order_by_clause, limit_clause, quantifier, cte)`
 
 The ast node of a select statement.
 
@@ -109,7 +109,7 @@ The ast node of a select statement.
 
 
 ##  framequery.parser.ast.SubQuery
-` framequery.parser.ast.SubQuery(*args, **kwargs)`
+` framequery.parser.ast.SubQuery(query, alias)`
 
 A subquery or CTE.
 
