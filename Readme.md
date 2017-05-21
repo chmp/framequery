@@ -41,7 +41,6 @@ For a details usage see the [usage guide](docs/Usage.md) and the
 
 ## Changelog
 
-```
 ### Development
 
 - refactored code
@@ -53,11 +52,9 @@ For a details usage see the [usage guide](docs/Usage.md) and the
 
 - initial release
 
-```
 
 ## License
 
-```
 >  The MIT License (MIT)
 >  Copyright (c) 2016-2017 Christopher Prohm
 >
@@ -78,5 +75,3 @@ For a details usage see the [usage guide](docs/Usage.md) and the
 >  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 >  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 >  DEALINGS IN THE SOFTWARE.
-
-```

@@ -83,7 +83,10 @@ def relwalk(absroot, relroot='.'):
 def transform(content, source):
     lines = []
     for line in content.splitlines():
-        if line.startswith('.. autofunction::'):
+        if line.startswith('.. include::'):
+            lines += include(line, source)
+
+        elif line.startswith('.. autofunction::'):
             lines += autofunction(line)
 
         elif line.startswith('.. autoclass::'):
@@ -178,6 +181,19 @@ def literalinclude(line, source):
     yield '```' + type_map.get(ext.lower(), '')
     yield content
     yield '```'
+
+
+def include(line, source):
+    _, what = line.split('::')
+    what = what.strip()
+
+    what = os.path.abspath(os.path.join(os.path.dirname(source), what))
+
+    with open(what, 'r') as fobj:
+        content = fobj.read()
+
+    yield content
+
 
 
 def render_docstring(obj):

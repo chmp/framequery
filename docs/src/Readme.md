@@ -23,8 +23,8 @@ For a details usage see the [usage guide](docs/Usage.md) and the
 
 ## Changelog
 
-.. literalinclude:: ../../Changes.md
+.. include:: ../../Changes.md
 
 ## License
 
-.. literalinclude:: ../../License.md
+.. include:: ../../License.md
