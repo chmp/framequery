@@ -41,6 +41,15 @@ class DaskModel(PandasModel):
             meta=meta, empty_result=meta,
         )
 
+    def get_special_table(self, scope, name, alias):
+        return dd.from_pandas(
+            super(DaskModel, self).get_special_table(scope, name, alias),
+            npartitions=1,
+        )
+
+    def filter_table(self, table, expr, name_generator):
+        raise NotImplementedError('dask does not yet support where')
+
     def dual(self):
         return dd.from_pandas(super(DaskModel, self).dual(), npartitions=1)
 

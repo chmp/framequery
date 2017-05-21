@@ -151,6 +151,9 @@ def execute_ast_select(execute_ast, node, scope, model):
     if any(isinstance(n, a.CallSetFunction) for n in walk(columns)) and not node.group_by_clause:
         node = node.update(group_by_clause=[a.Bool('true')])
 
+    if node.where_clause is not None:
+        table = model.filter_table(table, node.where_clause, name_generator)
+
     if node.group_by_clause is not None:
         group_by = normalize_group_by(table.columns, columns, node.group_by_clause)
 
@@ -168,8 +171,14 @@ def execute_ast_select(execute_ast, node, scope, model):
     else:
         table = model.transform(table, columns, name_generator)
 
+    if node.having_clause is not None:
+        raise NotImplementedError('having is not yet implemented')
+
     if node.order_by_clause is not None:
         table = sort(table, node.order_by_clause, model)
+
+    if node.limit_clause is not None:
+        raise NotImplementedError('limit is not yet implemented')
 
     return table
 

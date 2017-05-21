@@ -56,6 +56,8 @@ class PandasModel(Model):
 
         self.lateral_functions = self.table_functions
 
+        self.special_tables = {'pg_namespace'}
+
     @contextlib.contextmanager
     def with_basepath(self, basepath):
         old_basepath = self.basepath
@@ -72,11 +74,33 @@ class PandasModel(Model):
         return pd.DataFrame({}, index=[0])
 
     def get_table(self, scope, name, alias=None):
+        if name in self.special_tables:
+            return self.get_special_table(scope, name, alias)
+
         if alias is None:
             alias = name
 
         table = scope[name]
         return self.add_table_to_columns(table, alias)
+
+    def get_special_table(self, scope, name, alias):
+        if alias is None:
+            alias = name
+
+        if name == 'pg_namespace':
+            result = pd.DataFrame()
+            result['nspname'] = ['public', 'pg_catalog', 'information_schema']
+            result['nspowner'] = [0, 0, 0]
+            result['nspacl'] = pd.Series([None, None, None], dtype=object)
+
+            return result
+
+        else:
+            raise ValueError('unknown special table %s')
+
+    def filter_table(self, table, expr, name_generator):
+        sel = self.evaluate(table, expr, name_generator)
+        return table[sel]
 
     @staticmethod
     def add_table_to_columns(df, table_name):

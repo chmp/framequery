@@ -172,6 +172,7 @@ keywords = {
     'show',
     'table',
     'to',
+    'where',
     'with',
 }
 
