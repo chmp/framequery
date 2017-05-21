@@ -106,7 +106,7 @@ class Cursor(object):
         }
 
         for col in self.result.columns:
-            name = repr(col)
+            name = str(col)
             typecode = self.result.dtypes[col]
             typecode = typemap[typecode.name]
 
@@ -120,7 +120,7 @@ class Cursor(object):
             self.execute(q, p)
 
     def fetchone(self):
-        if self.rownumber > self.result.shape[0]:
+        if self.rownumber >= self.result.shape[0]:
             return None
 
         row = tuple(self.result.iloc[self.rownumber])

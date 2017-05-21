@@ -4,6 +4,7 @@ import os.path
 import json
 
 from sqlalchemy.dialects.postgresql.base import PGDialect
+from sqlalchemy.engine import Engine
 
 from ..executor import Executor
 from . import dbapi
@@ -54,6 +55,15 @@ class Dialect(PGDialect):
         return engine
 
     def get_table_names(self, conn, schema=None, **kwargs):
-        return sorted(conn.connection.executor.scope.keys())
+        # TODO: handle information schema and pg_catalog schema
+        executor = self.get_exectuor(conn)
+        return sorted(executor.scope.keys())
+
+    @classmethod
+    def get_exectuor(cls, obj):
+        if isinstance(obj, Engine):
+            return obj.executor
+
+        return obj.engine.executor
 
     on_connect = do_rollback = lambda *args: None
