@@ -8,6 +8,7 @@ from . import ast as a
 
 
 def tokenize(query):
+    """Tokenize the query string."""
     parts, rest, d = splitter(query)
 
     if rest != '':
@@ -17,6 +18,14 @@ def tokenize(query):
 
 
 def parse(query, what=None):
+    """Parse a query into an ``framequery.ast`` object.
+
+    :param str query:
+        the query to parse
+
+    :returns:
+        an AST object or raises an exception if the query could not be parsed.
+    """
     if what is not None:
         used_parser = constructors[what]
 

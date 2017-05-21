@@ -42,6 +42,8 @@ class Dialect(PGDialect):
         for q in context.pop('setup', []):
             executor.execute(q, basepath=basepath)
 
+        # TODO: add custom table functions to the executor
+
         return executor
 
     @classmethod

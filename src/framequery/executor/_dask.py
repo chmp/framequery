@@ -13,20 +13,16 @@ class DaskModel(PandasModel):
     def __init__(self, **kwargs):
         super(DaskModel, self).__init__(**kwargs)
 
-        table_function = self.table_functions
-
-        to_dd = {'json_each', 'json_array_elements'}
+        self.lateral_functions = dict(self.lateral_functions)
 
         self.table_functions = {
-            k: to_dd_table_function(table_function[k])
-            for k in to_dd
+            k: to_dd_table_function(self.table_functions[k])
+            for k in {'json_each', 'json_array_elements'}
         }
 
         self.table_functions.update(
             copy_from=copy_from,
         )
-
-        self.lateral_functions = dict(table_function)
 
     def transform(self, table, columns, name_generator):
         name_generator = name_generator.fix(all_unique(columns))

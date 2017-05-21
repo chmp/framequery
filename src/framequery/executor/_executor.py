@@ -25,7 +25,23 @@ _logger = logging.getLogger(__name__)
 
 
 class Executor(object):
-    def __init__(self, scope, model='pandas', basepath='.'):
+    """A persistent executor - to allow reusing scopes and models.
+
+    :param scope:
+        a mapping of table-names to dataframes. If not given, an empty scope
+        is created.
+
+    :param model:
+        the model to use, see :func:`framequery.execute`.
+
+    :param str basepath:
+        the basepath of the model.
+
+    """
+    def __init__(self, scope=None, model='pandas', basepath='.'):
+        if scope is None:
+            scope = scope
+
         self.scope = scope
         self.model = get_model(model, basepath)
 
@@ -54,6 +70,29 @@ class Executor(object):
 
 # TOOD: add option autodetect the required model
 def execute(q, scope=None, model='pandas', basepath='.'):
+    """Execute queries against the provided scope.
+
+    :param dict scope:
+
+        a mapping of table names to dataframes. If not provided the globals and
+        locals of the calling scope are used.
+
+    :param Union[str,Model] model:
+
+        the datamodel to use. Currently ``"pandas"`` and ``"dask"`` are
+        supported as string values. For better customization create the model
+        instances independently and pass them as arguments.
+
+        See :class:`framequery.PandasModel` and :class:`framequery.DaskModel`
+        for further information.
+
+    :param str basepath:
+
+        the basepath of ``copy from`` and ``copy to`` operations. This argument
+        is only when constructing the models. For independently constructed
+        models, the basepath can be set via their ``__init__`` arguments.
+
+    """
     if scope is None:
         frame = inspect.currentframe()
         assert frame.f_back is not None
@@ -70,6 +109,10 @@ def execute(q, scope=None, model='pandas', basepath='.'):
         result = model.remove_table_from_columns(result)
 
     return result
+
+
+class Model(object):
+    pass
 
 
 def get_model(model, basepath='.'):

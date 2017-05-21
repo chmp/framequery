@@ -1,5 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
+from ._executor import Model
 from ._util import (
     as_pandas_join_condition,
     column_get_column,
@@ -23,7 +24,7 @@ import pandas as pd
 _logger = logging.getLogger(__name__)
 
 
-class PandasModel(object):
+class PandasModel(Model):
     def __init__(self, debug=False, basepath='.', strict=False):
         self._debug = debug
         self.strict = strict
