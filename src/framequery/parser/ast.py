@@ -6,11 +6,22 @@ from framequery.util._record import Record
 
 
 class Select(Record):
+    """The ast node of a select statement.
+
+    :ivar Sequence[Column] columns:
+        the list of selected columns
+
+    :ivar Sequence[SubQuery] cte:
+        a list of comment tables, each given a
+        :class:`framequery.parser.ast.SubQuery`.
+
+    """
     __fields__ = [
         'columns', 'from_clause', 'where_clause', 'group_by_clause',
         'having_clause', 'order_by_clause', 'limit_clause', 'quantifier',
+        'cte',
     ]
-    __types__ = [tuple, None, None, tuple, tuple, tuple, None, None]
+    __types__ = [tuple, None, None, tuple, tuple, tuple, None, None, tuple]
 
 
 class FromClause(Record):
@@ -22,6 +33,13 @@ class TableRef(Record):
 
 
 class SubQuery(Record):
+    """A subquery or CTE.
+
+    :ivar Select query:
+
+    :ivar Name alias:
+
+    """
     __fields__ = ['query', 'alias']
 
 

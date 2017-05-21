@@ -144,6 +144,12 @@ execute_ast = m.RuleSet(name='execute_ast')
 def execute_ast_select(execute_ast, node, scope, model):
     name_generator = UniqueNameGenerator()
 
+    if node.cte is not None:
+        scope = scope.copy()
+
+        for cte in node.cte:
+            scope[cte.alias.name] = execute_ast(cte, scope, model)
+
     if node.from_clause is None:
         table = model.dual()
 

@@ -12,6 +12,10 @@
 
 .. autofunction:: framequery.parser.tokenize
 
+.. autofunction:: framequery.alchemy.get_executor
+
 .. automodule:: framequery.parser.ast
 
-.. autofunction:: framequery.alchemy.get_executor
+.. autoclass:: framequery.parser.ast.Select
+
+.. autoclass:: framequery.parser.ast.SubQuery

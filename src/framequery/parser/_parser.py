@@ -378,8 +378,7 @@ from_clause = m.construct(
     m.keyword(tables=m.list_of(m.ignore(svtok(',')), table_like))
 )
 
-select = m.construct(
-    a.Select,
+base_select = m.sequence(
     svtok('select'),
     m.optional(m.keyword(quantifier=verbatim_token('distinct', 'all'))),
     m.keyword(columns=m.list_of(svtok(','), m.any(
@@ -399,6 +398,21 @@ select = m.construct(
     m.optional(m.keyword(order_by_clause=m.sequence(
         svtok('order'), svtok('by'), m.list_of(svtok(','), order_by_item),
     )))
+)
+
+select = m.construct(
+    a.Select,
+    m.optional(m.keyword(cte=m.sequence(
+        svtok('with'),
+        m.list_of(svtok(','), m.construct(
+            a.SubQuery,
+            m.keyword(alias=name),
+            svtok('as'), svtok('('),
+            m.keyword(query=m.construct(a.Select, base_select)),
+            svtok(')')
+        ))
+    ))),
+    base_select,
 )
 
 name_value_pair = m.construct(

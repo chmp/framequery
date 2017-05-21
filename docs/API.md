@@ -77,12 +77,6 @@ Tokenize the query string.
 
 
 
-##  framequery.parser.ast
-
-Module of ast classes.
-
-
-
 ##  framequery.alchemy.get_executor
 ` framequery.alchemy.get_executor()`
 
@@ -94,3 +88,29 @@ Usage:
 executor = get_executor(engine)
 ```
 
+
+
+##  framequery.parser.ast
+
+Module of ast classes.
+
+
+
+##  framequery.parser.ast.Select
+` framequery.parser.ast.Select(*args, **kwargs)`
+
+The ast node of a select statement.
+
+**ivar Sequence[Column] columns** the list of selected columns
+
+**ivar Sequence[SubQuery] cte** a list of comment tables, each given a
+[framequery.parser.ast.SubQuery](#framequeryparserastsubquery).
+
+
+
+##  framequery.parser.ast.SubQuery
+` framequery.parser.ast.SubQuery(*args, **kwargs)`
+
+A subquery or CTE.
+
+**ivar Select query** **ivar Name alias** 
