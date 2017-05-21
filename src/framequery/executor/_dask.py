@@ -3,18 +3,22 @@ from __future__ import print_function, division, absolute_import
 import functools as ft
 import os.path
 
+import dask.dataframe as dd
+import pandas as pd
+
 from ._util import all_unique
 from ._pandas import PandasModel
 
 from ..util import dask_sort_values
 
-import dask.dataframe as dd
-
 
 class DaskModel(PandasModel):
     """A framequery model for ``dask.dataframe.DataFrame`` objects.
 
-    Any keyword arguments are passed to :class:`framequery.PandasModel`.
+    For a list of keyword arguments see :class:`framequery.PandasModel`.
+
+    The dask executor supports scopes with both pandas and dask dataframes.
+    The former will be converted into later automatically, as needed.
     """
     def __init__(self, **kwargs):
         super(DaskModel, self).__init__(**kwargs)
@@ -42,6 +46,16 @@ class DaskModel(PandasModel):
             # NOTE: pass empty_result as kw to prevent aligning it
             meta=meta, empty_result=meta,
         )
+
+    def get_table(self, scope, name, alias=None):
+        if name in self.special_tables:
+            return self.get_special_table(scope, name, alias)
+
+        table = super(DaskModel, self).get_table(scope, name, alias)
+        if isinstance(table, pd.DataFrame):
+            return dd.from_pandas(table, npartitions=20)
+
+        return table
 
     def get_special_table(self, scope, name, alias):
         return dd.from_pandas(
