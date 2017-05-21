@@ -21,6 +21,10 @@ class TableRef(Record):
     __fields__ = ['name', 'schema', 'alias']
 
 
+class SubQuery(Record):
+    __fields__ = ['query', 'alias']
+
+
 class Column(Record):
     __fields__ = ['value', 'alias']
 

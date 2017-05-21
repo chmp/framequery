@@ -331,11 +331,28 @@ table_ref = m.construct(
     )
 )
 
+
+@m.define
+def subquery(_):
+    return m.construct(
+        a.SubQuery,
+        svtok('('), m.keyword(query=select), svtok(')'),
+        m.optional(
+            m.sequence(
+                m.optional(svtok('as')),
+                m.keyword(alias=name),
+            )
+        )
+    )
+
+
 table_like = m.any(
     # first parse call, otherwise in both `test` and `test()`, `test` will be consumed
     call,
+    subquery,
     table_ref,
 )
+
 
 table_like = m.transform(
     build_joins,

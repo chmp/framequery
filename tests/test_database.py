@@ -72,6 +72,7 @@ examples = [
     'select count(*) from test group by 1 = 1',
     'select count(*) from test',
     'select test.c1, 2 * test.c2 from test',
+    'select c1, count(1) as cnt, sum(c2) from (select c1, 2 * c2 as c2 from test) sq group by c1',
     '''
         select c2, c4
         from test

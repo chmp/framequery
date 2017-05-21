@@ -299,6 +299,15 @@ def execute_ast_table_ref(execute_ast, node, scope, model):
     return model.get_table(scope, name, alias=node.alias)
 
 
+@execute_ast.rule(m.instanceof(a.SubQuery))
+def execute_ast_subquery(execute_ast, node, scope, model):
+    if not node.alias:
+        raise RuntimeError('subqueries need to be named')
+
+    table = execute_ast(node.query, scope, model)
+    return model.add_table_to_columns(table, node.alias.name)
+
+
 @execute_ast.rule(m.instanceof(a.Join))
 def execute_ast_join(execute_ast, node, scope, model):
     left = execute_ast(node.left, scope, model)
