@@ -1,13 +1,9 @@
 """Support a small subset of sphinx features in plain markdown files.
-
-TODO:
-
-- add index support to allow cross references.
 """
-
 from __future__ import print_function, division, absolute_import
 
 import importlib
+import inspect
 import logging
 import os
 import os.path
@@ -33,6 +29,16 @@ def main():
 
         source = os.path.abspath(os.path.join(src_dir, fname))
         target = os.path.abspath(os.path.join(docs_dir, fname))
+
+        is_up_todate = (
+            os.path.exists(target) and
+            os.path.getmtime(target) > os.path.getmtime(__file__) and
+            os.path.getmtime(target) > os.path.getmtime(source)
+        )
+
+        if is_up_todate:
+            _logger.info('%s is up to date', target)
+            continue
 
         _logger.info('transform %s -> %s', source, target)
 
@@ -99,22 +105,59 @@ def transform(content, source):
 
 
 def autofunction(line):
-    _, what = line.split('::')
-    obj = import_object(what)
-
-    yield '## {}'.format(what)
-    yield ''
-    yield render_docstring(obj)
-
+    return autoobject(line)
 
 def autoclass(line):
     # TODO: document members
-    return autofunction(line)
+    return autoobject(line)
 
 
 def automodule(line):
     # TODO: document members
-    return autofunction(line)
+    return autoobject(line)
+
+
+def autoobject(line):
+    _, what = line.split('::')
+    obj = import_object(what)
+
+    if inspect.isfunction(obj):
+        signature = format_signature(what, obj)
+
+    elif inspect.isclass(obj):
+        signature = format_signature(what, obj.__init__, skip=1)
+
+    else:
+        signature = ''
+
+    yield '## {}'.format(what)
+
+    if signature:
+        yield signature
+
+    yield ''
+    yield render_docstring(obj)
+
+
+def format_signature(label, func, skip=0):
+    args = inspect.getfullargspec(func)
+    args, varargs, keywords, defaults = args[:4]
+
+    args = args[skip:]
+    if not defaults:
+        defaults = []
+
+    varargs = [] if varargs is None else [varargs]
+    keywords = [] if keywords is None else [keywords]
+
+    args = (
+        ['{}'.format(arg) for arg in args[:len(defaults)]] +
+        ['{}={!r}'.format(arg, default) for arg, default in zip(args[-len(defaults):], defaults)] +
+        ['*{}'.format(arg) for arg in varargs] +
+        ['**{}'.format(arg) for arg in keywords]
+    )
+
+    return '`{}({})`'.format(label, ', '.join(args))
 
 
 def literalinclude(line, source):
@@ -198,7 +241,7 @@ class MarkdownWriter(Writer):
 def unindent(doc):
     def impl():
         lines = doc.splitlines()
-        indent = find_indet(lines)
+        indent = find_indent(lines)
 
         if lines:
             yield lines[0]
@@ -209,7 +252,7 @@ def unindent(doc):
     return '\n'.join(impl())
 
 
-def find_indet(lines):
+def find_indent(lines):
     for line in lines[1:]:
         if not line.strip():
             continue
