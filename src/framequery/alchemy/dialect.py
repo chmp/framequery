@@ -63,7 +63,13 @@ class Dialect(PGDialect):
 
 
 def get_executor(obj):
-    """Extract the executor from a framequery sqlalchemy engine."""
+    """Extract the executor from a framequery sqlalchemy engine or connection.
+
+    Usage::
+
+        executor = get_executor(engine)
+
+    """
     if isinstance(obj, Engine):
         return obj.executor
 

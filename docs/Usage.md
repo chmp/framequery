@@ -1,9 +1,46 @@
 # framequery Usage
 
+Framequery can both be used on [its own](#standalone-usage) and in combination
+with [sqlalchemy](#sqlalchemy-support). Framequery also supports both pure 
+pandas and dask dataframes.
+
 ## Standalone usage
 
+To execute queries against dataframes in the current scope, use the 
+[`framequery.execute`](API.md#framequeryexecute) function:
+
 ```python
-from framequery import execute
+import framequery as fq
+
+df = pd.read_csv('test.csv')
+result_df = fq.execute('select * from df')
+```
+
+To switch between pandas and dask modes, pass either `model='pandas'` or 
+`model='dask'`. The dask model can query both pandas and dask dataframes, but
+requires extra dependencies and introduces additional overhead for simple 
+workloads. Per default framequery uses the pandas only model, to enable the
+dask model use:
+ 
+```python
+result_df = fq.execute('select * from df', model='dask')
+```
+
+While framequery queries the surrounding scope per default, the scope can also
+be passed explicitly as a dict mapping table names to dataframes. For example:
+ 
+```python
+scope = {'table': df}
+ 
+result_df = fq.execute('select * from table', scope=scope)
+```
+
+It is possible to further customize execution by creating a dedicated 
+[`framequery.Executor`](API.md#framequeryexecutor) object:
+
+```python
+executor = fq.Executor()
+result_df = executor.execute('select * from table')
 ```
 
 ## sqlalchemy support
@@ -21,8 +58,10 @@ query string. For example, use  `framequery:///?model=dask` to create a
 framequery engine with `dask` support:
 
 ```python
-engine = create_engine(
+engine = create_engine('framequery:///?model=dask')
 ```
+
+**TODO describe spec files, once stable**
 
 To access the executor of an engine, use the 
 [`framequery.alchemy.get_executor`](API.md#framequeryalchemyget_executor) 
@@ -52,10 +91,3 @@ objects:
 engine.execute('select sum(c1) from table').fetchall()
 engine.execute(select([func.count(table.c.c1)]).fetchall()
 ```
-
-## Dask vs. pandas models
-
-Mention that the dask model can work with pandas dataframes. Explain the 
-different performance characteristics, due to the distribution overhead 
-involved and how the dask model is per default lazy and may recompute certain
-values.

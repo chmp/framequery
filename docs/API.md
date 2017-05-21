@@ -86,5 +86,11 @@ Module of ast classes.
 ##  framequery.alchemy.get_executor
 ` framequery.alchemy.get_executor()`
 
-Extract the executor from a framequery sqlalchemy engine.
+Extract the executor from a framequery sqlalchemy engine or connection.
+
+Usage:
+
+```
+executor = get_executor(engine)
+```
 

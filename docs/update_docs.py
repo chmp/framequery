@@ -30,15 +30,7 @@ def main():
         source = os.path.abspath(os.path.join(src_dir, fname))
         target = os.path.abspath(os.path.join(docs_dir, fname))
 
-        is_up_todate = (
-            os.path.exists(target) and
-            os.path.getmtime(target) > os.path.getmtime(__file__) and
-            os.path.getmtime(target) > os.path.getmtime(source)
-        )
-
-        if is_up_todate:
-            _logger.info('%s is up to date', target)
-            continue
+        # NOTE: always generate docs, to include newest docstrings
 
         _logger.info('transform %s -> %s', source, target)
 

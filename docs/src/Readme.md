@@ -13,8 +13,9 @@ framequery is also integrated with [sqlalchemy][].
 
 ## Getting started
 
-Install framequery with `pip install framequery` and use `framequery.execute` 
-to run queries against dataframes in your scope:
+Install framequery with `pip install framequery` and use 
+[`framequery.execute`](docs/API.md#framequeryexecute) to run queries against
+dataframes in your scope:
 
 .. literalinclude:: ../../examples/readme_example.py
 
