@@ -40,7 +40,10 @@ is created.
 
 A framequery model for `dask.dataframe.DataFrame` objects.
 
-Any keyword arguments are passed to [framequery.PandasModel](#framequery.PandasModel).
+For a list of keyword arguments see [framequery.PandasModel](#framequery.PandasModel).
+
+The dask executor supports scopes with both pandas and dask dataframes.
+The former will be converted into later automatically, as needed.
 
 
 
@@ -77,4 +80,11 @@ Tokenize the query string.
 ##  framequery.parser.ast
 
 Module of ast classes.
+
+
+
+##  framequery.alchemy.get_executor
+` framequery.alchemy.get_executor()`
+
+Extract the executor from a framequery sqlalchemy engine.
 

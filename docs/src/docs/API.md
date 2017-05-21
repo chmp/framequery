@@ -13,3 +13,5 @@
 .. autofunction:: framequery.parser.tokenize
 
 .. automodule:: framequery.parser.ast
+
+.. autofunction:: framequery.alchemy.get_executor

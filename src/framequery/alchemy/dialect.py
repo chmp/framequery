@@ -56,14 +56,15 @@ class Dialect(PGDialect):
 
     def get_table_names(self, conn, schema=None, **kwargs):
         # TODO: handle information schema and pg_catalog schema
-        executor = self.get_exectuor(conn)
+        executor = get_executor(conn)
         return sorted(executor.scope.keys())
 
-    @classmethod
-    def get_exectuor(cls, obj):
-        if isinstance(obj, Engine):
-            return obj.executor
-
-        return obj.engine.executor
-
     on_connect = do_rollback = lambda *args: None
+
+
+def get_executor(obj):
+    """Extract the executor from a framequery sqlalchemy engine."""
+    if isinstance(obj, Engine):
+        return obj.executor
+
+    return obj.engine.executor
