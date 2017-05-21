@@ -55,15 +55,14 @@ examples = [
             [0, 3, 4],
             [2, 3, 6]
         ], columns=['', 'a', 'b'])
-    )
-]
-
-examples_dask_fail = [
+    ),
     (
         'select * from example order by a desc',
         lambda: scope['example'].copy().sort_values('a', ascending=False),
     ),
 ]
+
+examples_dask_fail = []
 
 examples = (
     [('pandas',) + spec for spec in examples + examples_dask_fail] +
@@ -88,6 +87,9 @@ def test_example(query, expected, model):
 
     # set empty columns in expected to the ones in actual
     expected.columns = [e or a for a, e in zip(actual.columns, expected.columns)]
+
+    actual = actual.reset_index(drop=True)
+    expected = actual.reset_index(drop=True)
 
     pdt.assert_frame_equal(actual, expected, check_dtype=False)
 

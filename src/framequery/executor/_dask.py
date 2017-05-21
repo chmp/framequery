@@ -6,6 +6,8 @@ import os.path
 from ._util import all_unique
 from ._pandas import PandasModel
 
+from ..util import dask_sort_values
+
 import dask.dataframe as dd
 
 
@@ -60,7 +62,7 @@ class DaskModel(PandasModel):
         return super(DaskModel, self).transform(df, columns, name_generator)
 
     def sort_values(self, table, names, ascending=False):
-        raise NotImplementedError('dask does not yet support sorting')
+        return dask_sort_values(table, names, ascending)
 
     def select_rename(self, df, spec):
         return dd.map_partitions(super(DaskModel, self).select_rename, df, spec)
