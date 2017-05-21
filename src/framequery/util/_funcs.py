@@ -48,7 +48,7 @@ def like(s, pattern):
         return re.match(pattern, s) is not None
 
     else:
-        return s.str.conntains(pattern)
+        return s.str.contains(pattern)
 
 
 def not_like(s, pattern):
