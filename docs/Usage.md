@@ -25,7 +25,7 @@ engine = create_engine(
 ```
 
 To access the executor of an engine, use the 
-[`framequery.alchemy.get_executor`](Api.md#framequery.alchemy.get_executor) 
+[`framequery.alchemy.get_executor`](API.md#framequeryalchemyget_executor) 
 function. The returned executor can then be used to add custom functions:
 
 ```python
@@ -42,7 +42,7 @@ executor = get_executor(engine)
 executor.update(new_table=df)
 ```
 
-See the [`framquery.Executor`](Api.md#framequery.executor) docs for a detailed
+See the [`framquery.Executor`](API.md#framequeryexecutor) docs for a detailed
 description of availabel functionality.
 
 The constructed engine supports both being queries via text and sqlalchemy

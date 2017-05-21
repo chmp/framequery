@@ -195,7 +195,6 @@ def include(line, source):
     yield content
 
 
-
 def render_docstring(obj):
     doc = obj.__doc__ or '<undocumented>'
     doc = unindent(doc)
@@ -251,7 +250,10 @@ class MarkdownWriter(Writer):
     _translate_field_list = _translate_field = _translate_field_body = _translate_children
 
     def _translate_TitledReference(self, node):
-        yield '[{0}](#{0})'.format(node.attributes['title'], node.attributes['reference'])
+        yield '[{0}](#{1})'.format(
+            node.attributes['title'],
+            node.attributes['reference'].replace('.', '').lower(),
+        )
 
 
 def unindent(doc):

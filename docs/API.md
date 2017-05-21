@@ -12,7 +12,7 @@ locals of the calling scope are used.
 supported as string values. For better customization create the model
 instances independently and pass them as arguments.
 
-See [framequery.PandasModel](#framequery.PandasModel) and [framequery.DaskModel](#framequery.DaskModel)
+See [framequery.PandasModel](#framequerypandasmodel) and [framequery.DaskModel](#framequerydaskmodel)
 for further information.
 
 **param str basepath** the basepath of `copy from` and `copy to` operations. This argument
@@ -29,7 +29,7 @@ A persistent executor - to allow reusing scopes and models.
 **param scope** a mapping of table-names to dataframes. If not given, an empty scope
 is created.
 
-**param model** the model to use, see [framequery.execute](#framequery.execute).
+**param model** the model to use, see [framequery.execute](#framequeryexecute).
 
 **param str basepath** the basepath of the model.
 
@@ -40,7 +40,7 @@ is created.
 
 A framequery model for `dask.dataframe.DataFrame` objects.
 
-For a list of keyword arguments see [framequery.PandasModel](#framequery.PandasModel).
+For a list of keyword arguments see [framequery.PandasModel](#framequerypandasmodel).
 
 The dask executor supports scopes with both pandas and dask dataframes.
 The former will be converted into later automatically, as needed.

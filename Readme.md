@@ -47,6 +47,7 @@ For a details usage see the [usage guide](docs/Usage.md) and the
 - aim for postgres compatibility
 - first-class dask support
 - sqlalchemy support
+- sort_values / order-by for dask
 
 ### 0.1.0
 
