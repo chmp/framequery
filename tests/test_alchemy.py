@@ -5,6 +5,8 @@ import os.path
 import pandas as pd
 import pytest
 from sqlalchemy import create_engine
+from sqlalchemy.engine import reflection
+
 
 from framequery import util
 
@@ -112,3 +114,19 @@ def test_escape_roundtrib(val):
 def test_float_roundtrip(val):
     engine = create_engine('framequery:///')
     assert engine.execute('select ' + val).scalar() == float(val)
+
+
+def test_get_namespaces():
+    q = "select nspname from pg_namespace WHERE nspname not like 'pg_%' order by nspname"
+    engine = create_engine('framequery:///')
+    actual = sorted(name for name, in engine.execute(q).fetchall())
+
+    assert actual == ['information_schema', 'public']
+
+
+def test_get_table_names():
+    engine = create_engine('framequery:///')
+    assert engine.table_names(schema='public') == []
+
+    insp = reflection.Inspector.from_engine(engine)
+    assert insp.get_table_names() == []
