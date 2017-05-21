@@ -1,3 +1,5 @@
+"""Module of ast classes.
+"""
 from __future__ import print_function, division, absolute_import
 
 from framequery.util._record import Record

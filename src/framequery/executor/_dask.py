@@ -10,6 +10,10 @@ import dask.dataframe as dd
 
 
 class DaskModel(PandasModel):
+    """A framequery model for ``dask.dataframe.DataFrame`` objects.
+
+    Any keyword arguments are passed to :class:`framequery.PandasModel`.
+    """
     def __init__(self, **kwargs):
         super(DaskModel, self).__init__(**kwargs)
 

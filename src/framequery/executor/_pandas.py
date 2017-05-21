@@ -25,8 +25,17 @@ _logger = logging.getLogger(__name__)
 
 
 class PandasModel(Model):
-    def __init__(self, debug=False, basepath='.', strict=False):
-        self._debug = debug
+    """A framequery model for ``pandas.DataFrame`` objects.
+
+    :param str basepath:
+        the path relative to which any ``copy from`` and ``copy to`` statements
+        are interpreted.
+
+    :param bool strict:
+        if True, mimic SQL behavior in group-by and join.
+
+    """
+    def __init__(self, basepath='.', strict=False):
         self.strict = strict
         self.eval = eval_pandas
         self.basepath = basepath

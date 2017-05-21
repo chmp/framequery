@@ -1,6 +1,7 @@
 # framequery API
 
 ##  framequery.execute
+` framequery.execute(q, scope, model, scope=None, model='pandas', basepath='.')`
 
 Execute queries against the provided scope.
 
@@ -21,6 +22,7 @@ models, the basepath can be set via their `__init__` arguments.
 
 
 ##  framequery.Executor
+` framequery.Executor(scope, model, basepath, scope=None, model='pandas', basepath='.')`
 
 A persistent executor - to allow reusing scopes and models.
 
@@ -34,18 +36,28 @@ is created.
 
 
 ##  framequery.DaskModel
+` framequery.DaskModel(**kwargs)`
 
-<undocumented>
+A framequery model for `dask.dataframe.DataFrame` objects.
+
+Any keyword arguments are passed to [framequery.PandasModel](#framequery.PandasModel).
 
 
 
 ##  framequery.PandasModel
+` framequery.PandasModel(basepath, strict, basepath='.', strict=False)`
 
-<undocumented>
+A framequery model for `pandas.DataFrame` objects.
+
+**param str basepath** the path relative to which any `copy from` and `copy to` statements
+are interpreted.
+
+**param bool strict** if True, mimic SQL behavior in group-by and join.
 
 
 
 ##  framequery.parser.parse
+` framequery.parser.parse(query, what=None)`
 
 Parse a query into an `framequery.ast` object.
 
@@ -56,6 +68,7 @@ Parse a query into an `framequery.ast` object.
 
 
 ##  framequery.parser.tokenize
+` framequery.parser.tokenize()`
 
 Tokenize the query string.
 
@@ -63,5 +76,5 @@ Tokenize the query string.
 
 ##  framequery.parser.ast
 
-<undocumented>
+Module of ast classes.
 
