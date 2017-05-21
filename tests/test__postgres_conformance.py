@@ -1,3 +1,4 @@
+"""Tests to ensure that framequery and postgres understand the same SQL"""
 from __future__ import print_function, division, absolute_import
 
 import decimal

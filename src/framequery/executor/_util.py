@@ -59,6 +59,22 @@ def column_from_parts(table, column):
     return '{}/@/{}'.format(table, column)
 
 
+def to_internal_col(ref):
+    if isinstance(ref, Unique):
+        return ref
+
+    ref = split_quoted_name(ref)
+    ref = ref[-2:]
+
+    if len(ref) == 2:
+        table, column = ref
+        return column_from_parts(table, column)
+
+    else:
+        column, = ref
+        return column
+
+
 def normalize_col_ref(ref, columns, optional=False):
     ref = split_quoted_name(ref)
     ref = ref[-2:]

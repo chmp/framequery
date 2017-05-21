@@ -1,5 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
+from .. import util
 
 paramstyle = 'pyformat'
 threadsafety = 1
@@ -83,6 +84,7 @@ class Cursor(object):
 
     def execute(self, q, params=None):
         if params:
+            params = util.escape_parameters(params)
             q = q % params
 
         self.result = self.connection.executor.execute(q)

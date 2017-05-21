@@ -14,8 +14,14 @@ import itertools as it
 import logging
 
 from ._util import (
-    normalize_col_ref, Unique, UniqueNameGenerator, internal_column, column_get_table,
+    Unique,
+    UniqueNameGenerator,
+
+    column_get_table,
     eval_string_literal,
+    internal_column,
+    normalize_col_ref,
+    to_internal_col,
 )
 from ..parser import ast as a, parse
 from ..util import _monadic as m
@@ -239,7 +245,8 @@ def normalize_group_by(table_columns, columns, group_by):
             m.record(a.Name, m.capture(internal_column(table_columns))),
         ),
         m.map_capture(
-            lambda name: a.Column(aliases[name], alias=name),
+            # note call to to_internal_col is required to handle table.column refs
+            lambda name: a.Column(aliases[name], alias=to_internal_col(name)),
             m.record(a.Name, m.capture(m.verb(*aliases))),
         ),
         m.map_capture(
@@ -447,4 +454,4 @@ def get_alias(col_node):
         m.record(a.Column, value=m.record(a.Name, m.capture(m.wildcard)), alias=m.eq(None)),
         m.capture(m.lit(Unique())),
     ))
-    return alias
+    return to_internal_col(alias)

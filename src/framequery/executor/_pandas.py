@@ -3,6 +3,7 @@ from __future__ import print_function, division, absolute_import
 from ._executor import Model
 from ._util import (
     as_pandas_join_condition,
+    column_from_parts,
     column_get_column,
     column_set_table,
     eval_string_literal,
@@ -89,9 +90,9 @@ class PandasModel(Model):
 
         if name == 'pg_namespace':
             result = pd.DataFrame()
-            result['nspname'] = ['public', 'pg_catalog', 'information_schema']
-            result['nspowner'] = [0, 0, 0]
-            result['nspacl'] = pd.Series([None, None, None], dtype=object)
+            result[column_from_parts('pg_namespace', 'nspname')] = ['public', 'pg_catalog', 'information_schema']
+            result[column_from_parts('pg_namespace', 'nspowner')] = [0, 0, 0]
+            result[column_from_parts('pg_namespace', 'nspacl')] = pd.Series([None, None, None], dtype=object)
 
             return result
 

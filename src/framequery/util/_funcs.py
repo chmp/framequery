@@ -11,6 +11,17 @@ import pandas as pd
 from pandas.core.dtypes.api import is_scalar
 
 
+def escape_parameters(params):
+    if isinstance(params, dict):
+        return {k: escape(v) for k, v in params.items()}
+
+    elif isinstance(params, tuple):
+        return tuple(escape(v) for v in params)
+
+    else:
+        raise NotImplementedError('cannot escape parameters of type %s' % type(params))
+
+
 def escape(val):
     if val is None:
         return 'null'

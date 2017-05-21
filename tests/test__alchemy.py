@@ -7,8 +7,17 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.engine import reflection
 
+from sqlalchemy import MetaData, Table, String, Column
+from sqlalchemy.sql import select, not_
 
 from framequery import util
+
+
+metadata = MetaData()
+pg_namespace = Table(
+    'pg_namespace', metadata,
+    Column('nspname', String())
+)
 
 
 @pytest.mark.parametrize('qs', ['', '?model=dask'])
@@ -98,10 +107,24 @@ def test_scope_table_valued(qs):
     -42.0,
     None, False, True,
 ])
-def test_escape_roundtrib(val):
+def test_manual_escape_roundtrib(val):
     """test query binding + escaping"""
     engine = create_engine('framequery:///')
-    assert engine.execute('select %s', util.escape(val)).scalar() == val
+    assert engine.execute('select %s' % util.escape(val)).scalar() == val
+
+
+@pytest.mark.parametrize('val', [
+    'foo',
+    "bar'baz",
+    1,
+    4,
+    -42.0,
+    None, False, True,
+])
+def test_automatic_escape_roundtrib(val):
+    """test query binding + escaping"""
+    engine = create_engine('framequery:///')
+    assert engine.execute('select %s', val).scalar() == val
 
 
 @pytest.mark.parametrize('val', [
@@ -116,12 +139,19 @@ def test_float_roundtrip(val):
     assert engine.execute('select ' + val).scalar() == float(val)
 
 
-def test_get_namespaces():
-    q = "select nspname from pg_namespace WHERE nspname not like 'pg_%' order by nspname"
+@pytest.mark.parametrize('q', [
+    "select nspname from pg_namespace WHERE nspname not like 'pg_%' order by nspname",
+    (
+        select([pg_namespace.c.nspname])
+        .where(not_(pg_namespace.c.nspname.like('pg_%')))
+        .order_by(pg_namespace.c.nspname)
+    )
+])
+def test_get_namespaces(q):
     engine = create_engine('framequery:///')
-    actual = sorted(name for name, in engine.execute(q).fetchall())
+    actual = list(name for name, in engine.execute(q).fetchall())
 
-    assert actual == ['information_schema', 'public']
+    assert actual == ['public', 'information_schema']
 
 
 def test_get_table_names():
