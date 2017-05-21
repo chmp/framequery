@@ -65,15 +65,18 @@ def normalize_col_ref(ref, columns, optional=False):
 
     if len(ref) == 2:
         table, column = ref
-        return column_from_parts(table=table, column=column)
+        candidate = column_from_parts(table=table, column=column)
 
-    ref_column = ref[0]
+        candidates = [candidate] if candidate in columns else []
 
-    candidates = [
-        candidate
-        for candidate in columns
-        if column_get_column(candidate) == ref_column
-    ]
+    else:
+        column, = ref
+
+        candidates = [
+            candidate
+            for candidate in columns
+            if column_get_column(candidate) == column
+        ]
 
     if len(candidates) == 0:
         if optional is True:
