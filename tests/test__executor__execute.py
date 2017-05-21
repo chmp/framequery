@@ -90,3 +90,39 @@ def test_example(query, expected, model):
     expected.columns = [e or a for a, e in zip(actual.columns, expected.columns)]
 
     pdt.assert_frame_equal(actual, expected, check_dtype=False)
+
+
+def test_readme_example():
+    stores = pd.DataFrame({
+        'country': [0, 0, 1, 1],
+        'id': [1, 2, 3, 4],
+    })
+
+    sales = pd.DataFrame({
+        'store_id': [1, 2, 3, 4],
+        'sales': [5, 6, 7, 8]
+    })
+
+    # usage to prevent flake8 message
+    print("shapes: ", stores.shape, sales.shape)
+
+    import framequery as fq
+
+    sales_by_country = fq.execute("""
+        SELECT country, sum(sales) as sales
+
+        FROM sales
+
+        JOIN stores
+        ON sales.store_id = stores.id
+
+        GROUP BY country
+    """)
+
+    pdt.assert_frame_equal(
+        sales_by_country,
+        pd.DataFrame({
+            'country': [0, 1],
+            'sales': [11, 15],
+        }),
+    )

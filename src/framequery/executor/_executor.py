@@ -9,6 +9,7 @@ The most general query involves the following transformations:
 """
 from __future__ import print_function, division, absolute_import
 
+import inspect
 import itertools as it
 import logging
 
@@ -52,7 +53,14 @@ class Executor(object):
 
 
 # TOOD: add option autodetect the required model
-def execute(q, scope, model='pandas', basepath='.'):
+def execute(q, scope=None, model='pandas', basepath='.'):
+    if scope is None:
+        frame = inspect.currentframe()
+        assert frame.f_back is not None
+
+        scope = dict(frame.f_back.f_globals)
+        scope.update(frame.f_back.f_locals)
+
     model = get_model(model, basepath=basepath)
 
     ast = parse(q)
