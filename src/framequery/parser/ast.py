@@ -8,6 +8,7 @@ class Select(Record):
         'columns', 'from_clause', 'where_clause', 'group_by_clause',
         'having_clause', 'order_by_clause', 'limit_clause', 'quantifier',
     ]
+    __types__ = [tuple, None, None, tuple, tuple, tuple, None, None]
 
 
 class FromClause(Record):
@@ -60,6 +61,7 @@ class UnaryOp(Record):
 
 class Call(Record):
     __fields__ = ['func', 'args']
+    __types__ = [str, tuple]
 
 
 class CallSetFunction(Record):

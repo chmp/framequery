@@ -265,10 +265,10 @@ call_set_function = m.construct(
 )
 
 count_all = m.construct(
-    a.Call,
+    a.CallSetFunction,
     m.keyword(func=verbatim_token('count')),
     svtok('('),
-    m.keyword(args=m.transform(lambda t: [t], verbatim_token('*'))),
+    m.keyword(args=m.transform(lambda t: [[a.WildCard()]], verbatim_token('*'))),
     svtok(')'),
 )
 

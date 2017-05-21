@@ -46,7 +46,7 @@ examples = [
     ('select foo not in bar', a.Select([a.Column(a.BinaryOp('not in', a.Name('foo'), a.Name('bar')))])),
     ('select not foo = bar', a.Select([a.Column(a.UnaryOp('not', a.BinaryOp('=', a.Name('foo'), a.Name('bar'))))])),
 
-    ('select count(*)', a.Select([a.Column(a.Call('count', ['*']))])),
+    ('select count(*)', a.Select([a.Column(a.CallSetFunction('count', [a.WildCard()]))])),
 
     ('select sum(foo) over()', a.Select([
         a.Column(

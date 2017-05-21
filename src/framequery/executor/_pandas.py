@@ -105,13 +105,13 @@ class PandasModel(object):
         func_impl = {'avg': 'mean'}
 
         for col in columns:
-            function = col.value.func
+            assert col.value.quantifier is None
+
+            function = col.value.func.lower()
             function = func_impl.get(function, function)
 
             arg = name_generator.get(col.value.args[0].name)
             alias = name_generator.get(col.alias)
-
-            assert col.value.quantifier is None
 
             agg_spec.setdefault(arg, []).append(function)
             rename_spec.append((alias, (arg, function)))

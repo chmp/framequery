@@ -19,10 +19,10 @@ class Record(object):
         types = dict(zip(self.__fields__, self.__types__))
 
         for key in self.__fields__:
-            type = types.get(key, lambda x: x)
+            type = types.get(key)
 
             val = kwargs.get(key)
-            if val is not None:
+            if val is not None and type is not None:
                 val = type(val)
 
             setattr(self, key, val)
@@ -69,8 +69,8 @@ def diff(a, b):
     elif not isinstance(a, Record):
         return [] if a == b else ['error %r != %r' % (a, b)]
 
-    ac, ak = a.key()
-    bc, bk = b.key()
+    ak = dict(a.items())
+    bk = dict(b.items())
 
     keys = set(ak) | set(bk)
 

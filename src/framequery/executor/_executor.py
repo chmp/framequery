@@ -18,6 +18,7 @@ from ._util import (
 )
 from ..parser import ast as a, parse
 from ..util import _monadic as m
+from ..util._record import walk
 
 _logger = logging.getLogger(__name__)
 
@@ -39,6 +40,15 @@ class Executor(object):
 
     def compute(self, val):
         return self.model.compute(val)
+
+    def add_function(self, name, func):
+        self.model.functions[name] = func
+
+    def add_table_function(self, name, func):
+        self.model.table_functions[name] = func
+
+    def add_lateral_function(self, name, func):
+        self.model.lateral_functions[name] = func
 
 
 # TOOD: add option autodetect the required model
@@ -84,6 +94,11 @@ def execute_ast_select(execute_ast, node, scope, model):
         table = execute_ast(node.from_clause, scope, model)
 
     columns = normalize_columns(table.columns, node.columns)
+
+    # hack for non group-by aggregates, introduce an artificial column
+    # TODO: use DataFrame.agg in pandas
+    if any(isinstance(n, a.CallSetFunction) for n in walk(columns)) and not node.group_by_clause:
+        node = node.update(group_by_clause=[a.Bool('true')])
 
     if node.group_by_clause is not None:
         group_by = normalize_group_by(table.columns, columns, node.group_by_clause)
@@ -151,6 +166,12 @@ def normalize_group_by(table_columns, columns, group_by):
         return []
 
     aliases = {col.alias: col.value for col in columns if col.alias is not None}
+
+    # replace integers by the corresponding one-based column
+    group_by = [
+        col if not isinstance(col, a.Integer) else columns[int(col.value) - 1].value
+        for col in group_by
+    ]
 
     matcher = m.any(
         m.map_capture(
@@ -308,6 +329,10 @@ def aggregate_split_name(aggregate_split, node, group_by):
 
 @aggregate_split.rule(m.instanceof(a.CallSetFunction))
 def aggregate_split_call_set_function(aggregate_split, node, group_by):
+    # replace count(*) by count(1)
+    if node.func.lower() == 'count' and node.args == (a.WildCard(),):
+        node = a.CallSetFunction('count', (a.Integer('1'),))
+
     ids = [Unique() for _ in node.args]
     self_id = Unique()
     deferred_args = [a.Name(id) for id in ids]

@@ -137,3 +137,12 @@ def json_array_elements(obj):
     return pd.DataFrame({
         'value': [val for val in obj]
     })
+
+
+def generate_series(start, stop, step=1):
+    """Similar to python's range, but with the end-point included.
+
+    See: [series generating functions](https://www.postgresql.org/docs/9.6/static/functions-srf.html).
+    """
+    values = [] if None in {start, stop, step} else list(range(start, stop + step, step))
+    return pd.DataFrame({'generate_series': values})
