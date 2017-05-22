@@ -41,6 +41,7 @@ class SubQuery(Record):
 
     """
     __fields__ = ['query', 'alias']
+    __types__ = [None, str]
 
 
 class Column(Record):
@@ -136,3 +137,12 @@ class Null(Record):
 
 class Join(Record):
     __fields__ = ['how', 'left', 'right', 'on']
+
+
+class Lateral(Record):
+    __fields__ = ['table', 'to']
+
+
+class TableFunction(Record):
+    __fields__ = ['func', 'args', 'alias']
+    __types__ = [str, tuple, str]

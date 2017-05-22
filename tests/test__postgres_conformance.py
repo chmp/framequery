@@ -110,7 +110,15 @@ examples = [
     r"""select * from json_each('{"foo": "bar", "hello": "world"}' :: json)""",
 ]
 
-dask_xfail_examples = []
+dask_xfail_examples = [
+    r"""
+        select b.key
+        from
+            json_array_elements('[{"foo": "bar"}]' :: json),
+            lateral json_each(value) as b
+        order by key
+    """,
+]
 
 
 examples = (

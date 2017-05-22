@@ -193,10 +193,7 @@ class PandasModel(Model):
             raise RuntimeError('unknown format %s' % format)
 
     def eval_table_valued(self, node, scope):
-        # TODO: fix the test: cast types may be given as names
-        # if any(isinstance(n, a.Name) for n in walk(node.args)):
-        #    raise ValueError('name not allowed in non-lateral joins')
-
+        # TODO: rename the table
         func = node.func.lower()
         if func not in self.table_functions:
             raise RuntimeError('unknown table valued function: %r' % func)
@@ -214,6 +211,37 @@ class PandasModel(Model):
 
         left_on, right_on = as_pandas_join_condition(left.columns, right.columns, on)
         return left.merge(right, left_on=left_on, right_on=right_on, how=how)
+
+    def lateral(self, table, name_generator, func, args, alias):
+        if func not in self.lateral_functions:
+            raise ValueError('unknown lateral function %s' % func)
+
+        alias = name_generator.get(alias)
+        func = self.lateral_functions[func]
+        args = [self.evaluate(table, arg, name_generator) for arg in args]
+
+        combined = [table[col] for col in table.columns] + args
+        df = pd.DataFrame({idx: s for idx, s in enumerate(combined)})
+
+        num_origin_column = len(table.columns)
+
+        parts = []
+
+        for _, row in df.iterrows():
+            child_df = func(*row.iloc[num_origin_column:])
+            child_df = self.add_table_to_columns(child_df, alias)
+
+            all_columns = list(table.columns) + list(child_df.columns)
+
+            # copy the values of the original table
+            for k, v in zip(table.columns, row.iloc[:num_origin_column]):
+                child_df[k] = v
+
+            print(list(child_df.columns))
+            print(all_columns)
+            parts.append(child_df[all_columns])
+
+        return pd.concat(parts, axis=0, ignore_index=True)
 
     def sort_values(self, table, names, ascending):
         return table.sort_values(names, ascending=ascending)

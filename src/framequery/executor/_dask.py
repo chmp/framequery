@@ -87,6 +87,10 @@ class DaskModel(PandasModel):
     def compute(self, val):
         return val.compute()
 
+    def lateral(self, table, name_generator, func, args, alias):
+        # TODO: figure out how to generate the meta data
+        raise NotImplementedError()
+
 
 def to_dd_table_function(pd_func, npartitions=20):
     @ft.wraps(pd_func)

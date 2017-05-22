@@ -148,7 +148,7 @@ def execute_ast_select(execute_ast, node, scope, model):
         scope = scope.copy()
 
         for cte in node.cte:
-            scope[cte.alias.name] = execute_ast(cte, scope, model)
+            scope[cte.alias] = execute_ast(cte, scope, model)
 
     if node.from_clause is None:
         table = model.dual()
@@ -290,15 +290,18 @@ def sort(table, values, model):
 
 @execute_ast.rule(m.instanceof(a.FromClause))
 def execute_ast_from_clause(execute_ast, node, scope, model):
-    tables = [execute_ast(table, scope, model) for table in node.tables]
+    current = node.tables[0]
 
-    if len(tables) == 0:
-        raise NotImplementedError('no dual support')
+    for other in node.tables[1:]:
+        if isinstance(other, a.Lateral):
+            current = other.update(to=current)
 
-    elif len(tables) > 1:
-        raise NotImplementedError('no cross join support')
+        else:
+            # TODO: fix test for lateral joins, .e.g, in casts types are referenced as names
+            # TODO: implement moving where conditions into joins
+            raise NotImplementedError('currently no support for cross-joins')
 
-    return tables[0]
+    return execute_ast(current, scope, model)
 
 
 @execute_ast.rule(m.instanceof(a.TableRef))
@@ -318,7 +321,7 @@ def execute_ast_subquery(execute_ast, node, scope, model):
         raise RuntimeError('subqueries need to be named')
 
     table = execute_ast(node.query, scope, model)
-    return model.add_table_to_columns(table, node.alias.name)
+    return model.add_table_to_columns(table, node.alias)
 
 
 @execute_ast.rule(m.instanceof(a.Join))
@@ -328,11 +331,23 @@ def execute_ast_join(execute_ast, node, scope, model):
     return model.join(left, right, node.on, node.how)
 
 
-@execute_ast.rule(m.instanceof(a.Call))
+@execute_ast.rule(m.instanceof(a.TableFunction))
 def execute_ast_all(excecute_ast, node, scope, model):
-    # TODO: fix test for lateral joins, .e.g, in casts types are referenced as names
-    # assert not any(isinstance(n, a.Name) for n in walk(node.args)), "lateral joins not yet implemented"
     return model.eval_table_valued(node, scope)
+
+
+@execute_ast.rule(m.instanceof(a.Lateral))
+def execute_lateral(execute_ast, node, scope, model):
+    if not isinstance(node.table, a.TableFunction):
+        raise NotImplementedError('cannot perform lateral joins on %s' % type(node.table))
+
+    alias = Unique() if node.table.alias is None else node.table.alias
+
+    table = execute_ast(node.to, scope, model)
+    return model.lateral(
+        table, UniqueNameGenerator(),
+        node.table.func, node.table.args, alias,
+    )
 
 
 @execute_ast.rule(m.instanceof(a.Show))

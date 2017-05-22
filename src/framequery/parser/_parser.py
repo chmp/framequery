@@ -337,18 +337,26 @@ def subquery(_):
     return m.construct(
         a.SubQuery,
         svtok('('), m.keyword(query=select), svtok(')'),
-        m.optional(
-            m.sequence(
-                m.optional(svtok('as')),
-                m.keyword(alias=name),
-            )
-        )
+        m.optional(m.keyword(alias=alias)),
     )
 
 
+table_function = m.construct(
+    a.TableFunction,
+    m.keyword(func=base_name),
+    svtok('('),
+    m.any(
+        m.keyword(args=m.list_of(svtok(','), value)),
+        m.keyword(args=m.literal([]))
+    ),
+    svtok(')'),
+    m.optional(m.keyword(alias=alias)),
+)
+
+
 table_like = m.any(
-    # first parse call, otherwise in both `test` and `test()`, `test` will be consumed
-    call,
+    # first parse table function, otherwise in both `test` and `test()`, `test` will be consumed
+    table_function,
     subquery,
     table_ref,
 )
@@ -357,7 +365,10 @@ table_like = m.any(
 table_like = m.transform(
     build_joins,
     m.sequence(
-        table_like,
+        m.any(
+            m.sequence(svtok('lateral'), m.construct(a.Lateral, m.keyword(table=table_like))),
+            table_like,
+        ),
         m.repeat(
             m.construct(
                 a.Join,
@@ -406,7 +417,7 @@ select = m.construct(
         svtok('with'),
         m.list_of(svtok(','), m.construct(
             a.SubQuery,
-            m.keyword(alias=name),
+            m.keyword(alias=base_name),
             svtok('as'), svtok('('),
             m.keyword(query=m.construct(a.Select, base_select)),
             svtok(')')
