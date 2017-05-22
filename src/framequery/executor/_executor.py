@@ -24,7 +24,7 @@ from ._util import (
     to_internal_col,
 )
 from ..parser import ast as a, parse
-from ..util import _monadic as m
+from ..util import _monadic as m, make_meta
 from ..util._record import walk
 
 _logger = logging.getLogger(__name__)
@@ -70,8 +70,25 @@ class Executor(object):
     def add_table_function(self, name, func):
         self.model.table_functions[name] = func
 
-    def add_lateral_function(self, name, func):
+    def add_lateral_function(self, name, func, meta=None):
+        """Add a table-function that supports lateral joins.
+
+        :param str name:
+            the name of the function.
+
+        :param callable func:
+            the function. It should take any number of positional arguments and
+            return a dataframe.
+
+        :param Optional[List[Tuple[str,type] meta:
+            an optional meta data list of name-type-pairs. The dask excecutor
+            requires meta data information to handle lateral joins.
+
+        """
         self.model.lateral_functions[name] = func
+
+        if meta is None:
+            self.model.lateral_meta[name] = make_meta(meta)
 
 
 # TOOD: add option autodetect the required model

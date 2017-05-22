@@ -10,7 +10,7 @@ from ._util import (
     normalize_col_ref,
 )
 from ..parser import ast as a
-from ..util import _monadic as m, like, not_like
+from ..util import _monadic as m, like, not_like, make_meta
 
 from .. import util
 
@@ -56,6 +56,16 @@ class PandasModel(Model):
         }
 
         self.lateral_functions = self.table_functions
+
+        self.lateral_meta = {
+            'json_each': make_meta([
+                ('key', object),
+                ('value', object),
+            ]),
+            'json_array_elements': make_meta([
+                ('value', object),
+            ])
+        }
 
         self.special_tables = {'pg_namespace'}
 

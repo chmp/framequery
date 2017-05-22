@@ -12,6 +12,7 @@ from ._funcs import (
     json_array_elements,
     like,
     lower,
+    make_meta,
     not_like,
     upper,
 )
@@ -29,6 +30,7 @@ __all__ = [
     'json_each',
     'like',
     'lower',
+    'make_meta',
     'not_like',
     'upper',
 ]

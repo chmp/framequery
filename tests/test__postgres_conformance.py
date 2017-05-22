@@ -108,9 +108,6 @@ examples = [
 
     r"""select * from json_each(cast('{"foo": "bar", "hello": "world"}' as json)) """,
     r"""select * from json_each('{"foo": "bar", "hello": "world"}' :: json)""",
-]
-
-dask_xfail_examples = [
     r"""
         select b.key
         from
@@ -118,6 +115,9 @@ dask_xfail_examples = [
             lateral json_each(value) as b
         order by key
     """,
+]
+
+dask_xfail_examples = [
 ]
 
 

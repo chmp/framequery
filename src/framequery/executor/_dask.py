@@ -88,8 +88,33 @@ class DaskModel(PandasModel):
         return val.compute()
 
     def lateral(self, table, name_generator, func, args, alias):
-        # TODO: figure out how to generate the meta data
-        raise NotImplementedError()
+        func = func.lower()
+        if func not in self.lateral_functions:
+            raise ValueError('unknown lateral function %s' % func)
+
+        if func not in self.lateral_meta:
+            raise ValueError('unknown meta for lateral function %s' % func)
+
+        alias = name_generator.get(alias)
+        name_generator = name_generator.fix(all_unique(args))
+
+        meta = pd.concat([
+            table._meta,
+            self.add_table_to_columns(self.lateral_meta[func], alias),
+        ], axis=1)
+
+        return dd.map_partitions(
+            self.lateral_partitions, table, name_generator, func, args, alias,
+
+            # NOTE: pass empty_result as kw to prevent aligning it
+            meta=meta, empty_result=meta,
+        )
+
+    def lateral_partitions(self, table, name_generator, func, args, alias, empty_result):
+        if not len(table):
+            return empty_result
+
+        return super(DaskModel, self).lateral(table, name_generator, func, args, alias)
 
 
 def to_dd_table_function(pd_func, npartitions=20):

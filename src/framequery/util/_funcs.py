@@ -146,3 +146,11 @@ def generate_series(start, stop, step=1):
     """
     values = [] if None in {start, stop, step} else list(range(start, stop + step, step))
     return pd.DataFrame({'generate_series': values})
+
+
+def make_meta(items):
+    d = collections.OrderedDict()
+    for k, t in items:
+        d[k] = pd.Series([], dtype=t)
+
+    return pd.DataFrame(d, index=[])
