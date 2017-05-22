@@ -63,6 +63,21 @@ def not_like(s, pattern):
         return (1 - res).astype(res.dtype)
 
 
+def trim(what, characters, s):
+    s = _str_funcs(s)
+
+    if what == 'leading':
+        return s.lstrip(characters)
+
+    elif what == 'trailing':
+        return s.rstrip(characters)
+
+    elif what == 'both':
+        return s.strip(characters)
+
+    raise ValueError('unknown trim mode %s' % what)
+
+
 def upper(s):
     return _str_funcs(s).upper()
 

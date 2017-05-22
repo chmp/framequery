@@ -115,10 +115,10 @@ examples = [
             lateral json_each(value) as b
         order by key
     """,
+    """select trim(both 'xyz' from 'yxTomxx')""",
 ]
 
-dask_xfail_examples = [
-]
+dask_xfail_examples = []
 
 
 examples = (

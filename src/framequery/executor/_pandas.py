@@ -47,6 +47,7 @@ class PandasModel(Model):
             'upper': util.upper,
             'lower': util.lower,
             'concat': util.concat,
+            'trim': util.trim,
         }
 
         self.table_functions = {

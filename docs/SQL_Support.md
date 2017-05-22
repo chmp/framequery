@@ -25,3 +25,11 @@ The following limitations do exist:
 
 See the tests, in particular `tests/test_framequery.py`, for examples of
 supported queries.
+
+
+## Supported functions
+
+- `concat(*strings)`
+- `lower(string)`
+- `trim(...)`
+- `upper(string)`

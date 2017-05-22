@@ -27,7 +27,7 @@ def parse(query, what=None):
         an AST object or raises an exception if the query could not be parsed.
     """
     if what is not None:
-        used_parser = constructors[what]
+        used_parser = constructors[what] if what in constructors else what
 
     else:
         used_parser = parser
@@ -145,6 +145,7 @@ keywords = {
     'and',
     'all',
     'as',
+    'both',
     'by',
     'cast',
     'count',
@@ -158,6 +159,7 @@ keywords = {
     'having',
     'in',
     'join',
+    'leading',
     'left',
     'like',
     'not',
@@ -168,6 +170,7 @@ keywords = {
     'order',
     'right',
     'select',
+    'trailing',
     'true',
     'show',
     'table',
@@ -215,7 +218,7 @@ name = m.transform(
 def value(value):
     value = m.any(
         m.sequence(svtok('('), value, svtok(')')),
-        cast_expression, count_all, call_analytics_function, call_set_function, call,
+        cast_expression, count_all, call_analytics_function, call_set_function, special_calls, call,
         null, integer, string, bool_, name, float_
     )
 
@@ -291,6 +294,23 @@ call = m.construct(
         m.keyword(args=m.literal([]))
     ),
     svtok(')'),
+)
+
+special_calls = m.construct(
+    a.Call,
+    m.any(
+        m.sequence(
+            m.keyword(func=verbatim_token('trim')),
+            svtok('('),
+            m.keyword(args=m.transform(lambda v: [v], m.sequence(
+                m.map(lambda v: a.String("'" + v + "'"),
+                      m.any(verbatim_token('both', 'leading', 'trailing'), m.literal('both'))),
+                m.any(string, m.literal(a.String("' '"))),
+                svtok('from'), value,
+            ))),
+            svtok(')'),
+        )
+    )
 )
 
 order_by_item = m.construct(

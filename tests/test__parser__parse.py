@@ -132,3 +132,17 @@ def test_parse_quoted_strings():
 ])
 def test_float_format(s):
     assert re.match(p.float_format, s).group(0) == s
+
+
+def test_parse_trim():
+    assert parse("trim(from 'foo')", p.special_calls) == a.Call(
+        'trim', [a.String("'both'"), a.String("' '"), a.String("'foo'")]
+    )
+
+    assert parse("trim(leading from 'foo')", p.special_calls) == a.Call(
+        'trim', [a.String("'leading'"), a.String("' '"), a.String("'foo'")]
+    )
+
+    assert parse("trim('xyz' from 'foo')", p.special_calls) == a.Call(
+        'trim', [a.String("'both'"), a.String("'xyz'"), a.String("'foo'")]
+    )
