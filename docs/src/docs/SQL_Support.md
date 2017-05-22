@@ -9,6 +9,7 @@ The following operations are supported:
 - Inner joins with in-equality conditions (currently with high performance
   costs)
 - Cross joins (currently, with high performance costs)
+- lateral joins
 - Subqueries
 - Common table expressions
 - Numeric expressions

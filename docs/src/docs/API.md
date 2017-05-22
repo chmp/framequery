@@ -4,6 +4,8 @@
 
 .. autoclass:: framequery.Executor
 
+.. automethod:: framequery.Executor.add_lateral_function
+
 .. autoclass:: framequery.DaskModel
 
 .. autoclass:: framequery.PandasModel

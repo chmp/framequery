@@ -35,6 +35,21 @@ is created.
 
 
 
+##  framequery.Executor.add_lateral_function
+`framequery.Executor.add_lateral_function(name, meta=None)`
+
+Add a table-function that supports lateral joins.
+
+**param str name** the name of the function.
+
+**param callable func** the function. It should take any number of positional arguments and
+return a dataframe.
+
+**param Optional[List[Tuple[str,type] meta** an optional meta data list of name-type-pairs. The dask excecutor
+requires meta data information to handle lateral joins.
+
+
+
 ##  framequery.DaskModel
 `framequery.DaskModel(**kwargs)`
 

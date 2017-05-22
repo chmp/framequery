@@ -58,7 +58,8 @@ For a details usage see the [usage guide](docs/Usage.md) and the
 ## License
 
 >  The MIT License (MIT)
->  Copyright (c) 2016-2017 Christopher Prohm
+>
+>  Copyright (c) 2016 - 2017 Christopher Prohm
 >
 >  Permission is hereby granted, free of charge, to any person obtaining a copy
 >  of this software and associated documentation files (the "Software"), to

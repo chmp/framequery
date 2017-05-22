@@ -84,6 +84,9 @@ def transform(content, source):
         elif line.startswith('.. autoclass::'):
             lines += autoclass(line)
 
+        elif line.startswith('.. automethod::'):
+            lines += automethod(line)
+
         elif line.startswith('.. automodule::'):
             lines += automodule(line)
 
@@ -102,17 +105,20 @@ def transform(content, source):
 def autofunction(line):
     return autoobject(line)
 
+
+def automethod(line):
+    return autoobject(line, depth=2, skip_args=1)
+
+
 def autoclass(line):
-    # TODO: document members
     return autoobject(line)
 
 
 def automodule(line):
-    # TODO: document members
-    return autoobject(line)
+    return autoobject(line, depth=0)
 
 
-def autoobject(line):
+def autoobject(line, depth=1, skip_args=0):
     _, what = line.split('::')
 
     if '(' in what:
@@ -122,14 +128,14 @@ def autoobject(line):
     else:
         signature = None
 
-    obj = import_object(what)
+    obj = import_object(what, depth=depth)
 
     if signature is None:
         if inspect.isfunction(obj):
-            signature = format_signature(what, obj)
+            signature = format_signature(what, obj, skip=skip_args)
 
         elif inspect.isclass(obj):
-            signature = format_signature(what, obj.__init__, skip=1)
+            signature = format_signature(what, obj.__init__, skip=1 + skip_args)
 
         else:
             signature = ''
@@ -281,13 +287,23 @@ def find_indent(lines):
     return 0
 
 
-def import_object(what):
-    mod, _, what = what.rpartition('.')
-    mod = mod.strip()
-    what = what.strip()
+def import_object(what, depth=1):
+    parts = what.split('.')
 
-    mod = importlib.import_module(mod)
-    return getattr(mod, what)
+    if depth > 0:
+        mod = '.'.join(parts[:-depth]).strip()
+        what = parts[-depth:]
+
+    else:
+        mod = '.'.join(parts).strip()
+        what = []
+
+    obj = importlib.import_module(mod)
+
+    for p in what:
+        obj = getattr(obj, p)
+
+    return obj
 
 
 if __name__ == "__main__":
