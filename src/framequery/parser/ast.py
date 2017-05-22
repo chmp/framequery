@@ -75,6 +75,12 @@ class Integer(Record):
 class String(Record):
     __fields__ = ['value']
 
+    @classmethod
+    def make(cls, s):
+        if "'" in s:
+            raise NotImplementedError('escaping not yet implemented')
+        return cls("'" + s + "'")
+
 
 class BinaryOp(Record):
     __fields__ = ['op', 'left', 'right']

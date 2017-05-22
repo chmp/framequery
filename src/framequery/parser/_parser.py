@@ -137,6 +137,15 @@ def compound_token(*parts):
     )
 
 
+def make_special_call(name, *args):
+    return m.sequence(
+        m.keyword(func=verbatim_token(name)),
+        svtok('('),
+        m.keyword(args=m.transform(lambda v: [v], m.sequence(*args))),
+        svtok(')'),
+    )
+
+
 integer_format = r'\d+'
 float_format = r'(\d+\.\d*(e[+-]?\d+)?|\.\d+(e[+-]?\d+)?|\d+e[+-]?\d+)'
 name_format = r'[a-zA-Z_]\w*'
@@ -296,20 +305,20 @@ call = m.construct(
     svtok(')'),
 )
 
+
 special_calls = m.construct(
     a.Call,
     m.any(
-        m.sequence(
-            m.keyword(func=verbatim_token('trim')),
-            svtok('('),
-            m.keyword(args=m.transform(lambda v: [v], m.sequence(
-                m.map(lambda v: a.String("'" + v + "'"),
-                      m.any(verbatim_token('both', 'leading', 'trailing'), m.literal('both'))),
-                m.any(string, m.literal(a.String("' '"))),
-                svtok('from'), value,
-            ))),
-            svtok(')'),
-        )
+        make_special_call(
+            'trim',
+            m.any(
+                m.map(a.String.make, verbatim_token('both', 'leading', 'trailing')),
+                m.literal(a.String("'both'")),
+            ),
+            m.any(string, m.literal(a.String("' '"))),
+            svtok('from'),
+            value,
+        ),
     )
 )
 
