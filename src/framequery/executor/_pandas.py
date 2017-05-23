@@ -44,10 +44,11 @@ class PandasModel(Model):
         self.functions = {
             'version': lambda: 'PostgreSQL 9.6.0',
             'current_schema': lambda: 'public',
-            'upper': util.upper,
-            'lower': util.lower,
             'concat': util.concat,
+            'lower': util.lower,
+            'position': util.position,
             'trim': util.trim,
+            'upper': util.upper,
         }
 
         self.table_functions = {
@@ -349,7 +350,12 @@ def eval_pandas_binary_op(eval_pandas, expr, df, model, name_generator):
 
 @eval_pandas.rule(m.instanceof(a.Call))
 def eval_call(eval_pandas, expr, df, model, name_generator):
-    func = model.functions[expr.func.lower()]
+    func = expr.func.lower()
+
+    if func not in model.functions:
+        raise ValueError('unknown function %s' % func)
+
+    func = model.functions[func]
     args = [eval_pandas(arg, df, model, name_generator) for arg in expr.args]
     return func(*args)
 

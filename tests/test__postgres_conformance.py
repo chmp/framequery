@@ -116,6 +116,7 @@ examples = [
         order by key
     """,
     """select trim(both 'xyz' from 'yxTomxx')""",
+    """select position('f' in 'foo'), position('b' in 'foo')""",
 ]
 
 dask_xfail_examples = []

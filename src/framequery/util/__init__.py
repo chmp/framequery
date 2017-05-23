@@ -14,6 +14,7 @@ from ._funcs import (
     lower,
     make_meta,
     not_like,
+    position,
     trim,
     upper,
 )
@@ -33,6 +34,7 @@ __all__ = [
     'lower',
     'make_meta',
     'not_like',
+    'position',
     'trim',
     'upper',
 ]

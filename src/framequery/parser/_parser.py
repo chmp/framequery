@@ -319,6 +319,7 @@ special_calls = m.construct(
             svtok('from'),
             value,
         ),
+        make_special_call('position', string, svtok('in'), string),
     )
 )
 

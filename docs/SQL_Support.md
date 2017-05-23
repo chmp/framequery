@@ -31,5 +31,6 @@ supported queries.
 
 - `concat(*strings)`
 - `lower(string)`
-- `trim(...)`
+- `position(... in ...)`
+- `trim(... from ...)`
 - `upper(string)`

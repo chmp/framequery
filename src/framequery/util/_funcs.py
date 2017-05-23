@@ -78,6 +78,10 @@ def trim(what, characters, s):
     raise ValueError('unknown trim mode %s' % what)
 
 
+def position(needle, haystack):
+    return _str_funcs(haystack).find(needle) + 1
+
+
 def upper(s):
     return _str_funcs(s).upper()
 
