@@ -121,6 +121,9 @@ examples = [
     'select * from test limit 3',
     'select * from test limit 3 offset 2',
     'select * from test offset 3',
+
+    'select distinct c1 from test',
+    'select all c1 from test',
 ]
 
 dask_xfail_examples = []

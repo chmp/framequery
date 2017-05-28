@@ -270,6 +270,9 @@ class PandasModel(Model):
 
         return table.iloc[offset:offset + limit]
 
+    def drop_duplicates(self, tables):
+        return tables.drop_duplicates()
+
 
 eval_pandas = m.RuleSet(name='eval_pandas')
 

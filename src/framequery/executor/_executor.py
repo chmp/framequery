@@ -212,6 +212,12 @@ def execute_ast_select(execute_ast, node, scope, model):
 
         table = model.limit_offset(table, limit, offset)
 
+    if node.quantifier == 'distinct':
+        table = model.drop_duplicates(table)
+
+    elif node.quantifier is not None and node.quantifier != 'all':
+        raise ValueError('unknown quantifier {!r}'.format(node.quantifier))
+
     return table
 
 

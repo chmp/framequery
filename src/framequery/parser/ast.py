@@ -21,7 +21,7 @@ class Select(Record):
         'having_clause', 'order_by_clause', 'limit_clause', 'offset_clause', 'quantifier',
         'cte',
     ]
-    __types__ = [tuple, None, None, tuple, tuple, tuple, None, None, tuple]
+    __types__ = [tuple, None, None, tuple, tuple, tuple, None, None, None, tuple]
 
 
 class FromClause(Record):
