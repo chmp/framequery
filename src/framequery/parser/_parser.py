@@ -200,6 +200,7 @@ operators = {
     ',', '.', '(', ')',
     '*', '/', '%',
     '+', '-',
+    '#', '~', '<<', '>>',
     '||',
     '+', '-', '&', '|', '^',
     '=', '!=', '>', '<', '>=', '<=', '<>', '!>', '!<',
@@ -254,6 +255,8 @@ def value(value):
     value = binary_op(value, '*', '/', '%')
     value = binary_op(value, '||')
     value = binary_op(value, '+', '-', '&', '|', '^')
+    value = binary_op(value, '#', '<<', '>>')
+    value = unary_op(value, '~')
     value = binary_op(value, '=', '!=', '>', '<', '>=', '<=', '<>', '!>', '!<')
     value = unary_op(value, 'not')
     value = binary_op(value, 'and')

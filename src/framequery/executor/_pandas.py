@@ -313,7 +313,10 @@ def eval_bool(_, expr, *__):
 @eval_pandas.rule(m.instanceof(a.UnaryOp))
 def eval_pandas_unary_op(eval_pandas, expr, df, model, name_generator):
     operator_map = {
+        '+': operator.pos,
         '-': operator.neg,
+        '~': operator.invert,
+        'not': operator.invert,
     }
 
     if expr.op not in operator_map:
@@ -335,6 +338,13 @@ def eval_pandas_binary_op(eval_pandas, expr, df, model, name_generator):
         '/': operator.truediv,
         '+': operator.add,
         '-': operator.sub,
+        '%': operator.mod,
+        '^': operator.pow,
+        '&': operator.and_,
+        '|': operator.or_,
+        '#': operator.xor,
+        '<<': operator.lshift,
+        '>>': operator.rshift,
         '||': operator.add,  # TODO: add type test for string?
         'and': operator.and_,
         'or': operator.or_,
@@ -344,6 +354,7 @@ def eval_pandas_binary_op(eval_pandas, expr, df, model, name_generator):
         '>=': operator.ge,
         '=': operator.eq,
         '!=': operator.ne,
+        '<>': operator.ne,
         'like': like,
         'not like': not_like,
         'in': lambda a, b: a.isin(b),

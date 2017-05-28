@@ -118,6 +118,26 @@ examples = [
     """select trim(both 'xyz' from 'yxTomxx')""",
     """select position('f' in 'foo'), position('b' in 'foo')""",
     """select 'Post' || 'greSQL' """,
+
+    """select true and false, true or false, true and not false """,
+
+    """select 0 <> 1, 0 < 1, 1 > 2, 1 <= 2, 3 >= 4, 3 = 3, 4 != 4 """,
+
+    '''
+         select
+             2 + 3, 2 - 3, 2 * 3, 4 / 2,
+             5 % 4, 2.0 ^ 3.0, 91 & 15,
+             32 | 3, 17 # 5, ~1, 1 << 4,
+             8 >> 2
+    ''',
+
+    # '''
+    #     select
+
+    #         |/ 25.0, ||/ 27.0,
+    #         5 !, !! 5, @ -5.0,
+    # ''',
+
     'select * from test limit 3',
     'select * from test limit 3 offset 2',
     'select * from test offset 3',
