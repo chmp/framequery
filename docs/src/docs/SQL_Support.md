@@ -26,7 +26,7 @@ The following limitations do exist:
 
 |Name | Supported|
 |-----|----------|
-|[||](https://www.postgresql.org/docs/9.6/static/functions-string.html)|✓|
+|[&#x7C;&#x7C;](https://www.postgresql.org/docs/9.6/static/functions-string.html)|✓|
 |[ascii](https://www.postgresql.org/docs/9.6/static/functions-string.html)|x|
 |[bit_length](https://www.postgresql.org/docs/9.6/static/functions-string.html)|x|
 |[btrim](https://www.postgresql.org/docs/9.6/static/functions-string.html)|x|
