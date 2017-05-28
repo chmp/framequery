@@ -152,3 +152,11 @@ class Lateral(Record):
 class TableFunction(Record):
     __fields__ = ['func', 'args', 'alias']
     __types__ = [str, tuple, str]
+
+
+class CaseExpression(Record):
+    __fields__ = ['cases', 'else_']
+
+
+class Case(Record):
+    __fields__ = ['condition', 'result']

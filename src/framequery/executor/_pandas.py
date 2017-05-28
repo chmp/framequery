@@ -397,3 +397,27 @@ def eval_cast(eval_pandas, expr, df, model, name_generator):
 @eval_pandas.rule(m.instanceof(a.Null))
 def eval_null(eval_pandas, expr, df, model, name_generator):
     return None
+
+
+@eval_pandas.rule(m.instanceof(a.CaseExpression))
+def eval_case_expression(eval_pandas, expr, df, model, name_generator):
+    rest_sel = pd.Series(True, index=df.index)
+
+    parts = []
+    for case in expr.cases:
+        sel = eval_pandas(case.condition, df.loc[rest_sel], model, name_generator)
+        matched = df.loc[rest_sel & sel]
+
+        result = eval_pandas(case.result, matched, model, name_generator)
+        parts += [pd.Series(result, index=matched.index)]
+
+        rest_sel = rest_sel & (~sel)
+
+    matched = df.loc[rest_sel]
+    result = eval_pandas(expr.else_, matched, model, name_generator) if expr.else_ else None
+    parts += [pd.Series(result, index=matched.index)]
+
+    result = pd.concat(parts, axis=0, ignore_index=False)
+    result = result.loc[df.index]
+
+    return result

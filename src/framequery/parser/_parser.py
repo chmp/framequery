@@ -156,12 +156,15 @@ keywords = {
     'as',
     'both',
     'by',
+    'case',
     'cast',
     'count',
     'copy',
     'create',
     'distinct',
     'drop',
+    'else',
+    'end',
     'false',
     'from',
     'group',
@@ -181,11 +184,13 @@ keywords = {
     'order',
     'right',
     'select',
+    'then',
     'trailing',
     'true',
     'show',
     'table',
     'to',
+    'when',
     'where',
     'with',
 }
@@ -229,7 +234,9 @@ name = m.transform(
 def value(value):
     value = m.any(
         m.sequence(svtok('('), value, svtok(')')),
-        cast_expression, count_all, call_analytics_function, call_set_function, special_calls, call,
+        case_expression, simplified_case_expression,
+        cast_expression, count_all, call_analytics_function, call_set_function,
+        special_calls, call,
         null, integer, string, bool_, name, float_
     )
 
@@ -265,6 +272,40 @@ def value(value):
 
     return value
 
+
+case_expression = m.construct(
+    a.CaseExpression,
+    svtok('case'),
+    m.keyword(cases=m.transform(lambda l: [l], m.repeat(m.construct(
+        a.Case,
+        svtok('when'), m.keyword(condition=value),
+        svtok('then'), m.keyword(result=value),
+    )))),
+    m.optional(m.keyword(else_=m.sequence(svtok('else'), value))),
+    svtok('end'),
+)
+
+simplified_case_expression = m.construct(
+    lambda base, cases, else_: a.CaseExpression(
+        cases=[
+            a.Case(
+                condition=a.BinaryOp('=', base, case.condition),
+                result=case.result,
+            )
+            for case in cases
+        ],
+        else_=else_,
+    ),
+    svtok('case'),
+    m.keyword(base=value),
+    m.keyword(cases=m.transform(lambda l: [l], m.repeat(m.construct(
+        a.Case,
+        svtok('when'), m.keyword(condition=value),
+        svtok('then'), m.keyword(result=value),
+    )))),
+    m.optional(m.keyword(else_=m.sequence(svtok('else'), value))),
+    svtok('end'),
+)
 
 cast_expression = m.construct(
     a.Cast,

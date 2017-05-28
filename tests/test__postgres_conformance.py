@@ -117,13 +117,30 @@ examples = [
     """,
     """select trim(both 'xyz' from 'yxTomxx')""",
     """select position('f' in 'foo'), position('b' in 'foo')""",
-
+    """select 'Post' || 'greSQL' """,
     'select * from test limit 3',
     'select * from test limit 3 offset 2',
     'select * from test offset 3',
 
     'select distinct c1 from test',
     'select all c1 from test',
+    '''
+        SELECT c2,
+           CASE WHEN c2 = 1 THEN 'one'
+                WHEN c2 = 2 THEN 'two'
+                ELSE 'other'
+           END
+        FROM test
+    ''',
+    '''
+        SELECT c2,
+           CASE c2
+               WHEN 1 THEN 'one'
+               WHEN 2 THEN 'two'
+               ELSE 'other'
+           END
+        FROM test
+    ''',
 ]
 
 dask_xfail_examples = []
