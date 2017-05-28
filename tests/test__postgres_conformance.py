@@ -117,6 +117,10 @@ examples = [
     """,
     """select trim(both 'xyz' from 'yxTomxx')""",
     """select position('f' in 'foo'), position('b' in 'foo')""",
+
+    'select * from test limit 3',
+    'select * from test limit 3 offset 2',
+    'select * from test offset 3',
 ]
 
 dask_xfail_examples = []
@@ -142,6 +146,8 @@ def test_select(setup, model, query):
     expected = _norm_result(db.execute(query.replace('%', '%%')).fetchall())
     actual = _norm_result(row for _, row in actual.iterrows())
 
+    print(expected)
+    print(actual)
     pdt.assert_frame_equal(actual, expected, check_dtype=False, check_less_precise=True)
 
 

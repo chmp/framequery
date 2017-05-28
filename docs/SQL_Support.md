@@ -4,10 +4,8 @@
 
 The following operations are supported:
 
-- Select using where, group-by, having, order-by, limit
+- Select using where, group-by, having, order-by, limit, offset
 - Inner and outer joins using equality conditions
-- Inner joins with in-equality conditions (currently with high performance
-  costs)
 - Cross joins (currently, with high performance costs)
 - lateral joins
 - Subqueries
@@ -16,16 +14,11 @@ The following operations are supported:
 
 The following limitations do exist:
 
-- no support for non-numeric expressions
-- no support for outer joins with inequality conditions
+- no support for in-equality joins
 - no support for over-clauses
 - no support for non select statements (update, insert, ...)
 - many, many more, SQL is crazy complex. The topics listed explicitly, however,
   are on the agenda to be fixed.
-
-See the tests, in particular `tests/test_framequery.py`, for examples of
-supported queries.
-
 
 ## Supported functions
 

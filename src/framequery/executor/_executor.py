@@ -206,8 +206,11 @@ def execute_ast_select(execute_ast, node, scope, model):
     if node.order_by_clause is not None:
         table = sort(table, node.order_by_clause, model)
 
-    if node.limit_clause is not None:
-        raise NotImplementedError('limit is not yet implemented')
+    if node.limit_clause is not None or node.offset_clause is not None:
+        limit = int(node.limit_clause.value) if node.limit_clause is not None else None
+        offset = int(node.offset_clause.value) if node.offset_clause is not None else None
+
+        table = model.limit_offset(table, limit, offset)
 
     return table
 

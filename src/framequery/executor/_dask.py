@@ -9,7 +9,7 @@ import pandas as pd
 from ._util import all_unique
 from ._pandas import PandasModel
 
-from ..util import dask_sort_values
+from ..util import dask_sort_values, dask_offset_limit
 
 
 class DaskModel(PandasModel):
@@ -115,6 +115,9 @@ class DaskModel(PandasModel):
             return empty_result
 
         return super(DaskModel, self).lateral(table, name_generator, func, args, alias)
+
+    def limit_offset(self, table, limit=None, offset=None):
+        return dask_offset_limit(table, limit=limit, offset=offset)
 
 
 def to_dd_table_function(pd_func, npartitions=20):

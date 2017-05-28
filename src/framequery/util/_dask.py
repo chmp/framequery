@@ -1,8 +1,10 @@
+"""Helpers to implement missing dask functionality."""
 from __future__ import print_function, division, absolute_import
 
 import itertools as it
 import functools as ft
 
+import dask
 import dask.dataframe as dd
 from dask.base import tokenize
 
@@ -61,3 +63,41 @@ def lower_half(ab):
 
 def upper_half(ab):
     return ab.iloc[ab.shape[0] // 2:]
+
+
+def dask_offset_limit(df, offset, limit):
+    """Perform a limit-offset operation against a dataframe."""
+    parts = df.to_delayed()
+
+    lens = [dask.delayed(len)(part) for part in parts]
+    lens = dask.delayed(as_list)(*lens)
+    parts = [
+        dask.delayed(select_subset)(idx, part, lens, offset, limit, df._meta)
+        for idx, part in enumerate(parts)
+    ]
+
+    return dd.from_delayed(parts, meta=df._meta)
+
+
+def select_subset(idx, part, lens, offset, limit, empty_df):
+    if offset is None:
+        offset = 0
+
+    if limit is None:
+        limit = sum(lens)
+
+    part_start = sum(l for l in lens[:idx])
+    part_end = part_start + len(part)
+
+    if part_end <= offset or part_start > (offset + limit):
+        return empty_df
+
+    start_in_part = max(0, offset - part_start)
+    end_in_part = max(0, offset + limit - part_start)
+    return part.iloc[start_in_part:end_in_part]
+
+
+def as_list(*vals):
+    return list(vals)
+
+

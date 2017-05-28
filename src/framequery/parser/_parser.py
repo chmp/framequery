@@ -171,8 +171,10 @@ keywords = {
     'leading',
     'left',
     'like',
+    'limit',
     'not',
     'null',
+    'offset',
     'on',
     'options',
     'or',
@@ -438,6 +440,12 @@ base_select = m.sequence(
     m.optional(m.keyword(having_clause=m.sequence(svtok('having'), value))),
     m.optional(m.keyword(order_by_clause=m.sequence(
         svtok('order'), svtok('by'), m.list_of(svtok(','), order_by_item),
+    ))),
+    m.optional(m.keyword(limit_clause=m.sequence(
+        svtok('limit'), m.any(integer, m.lit('all')),
+    ))),
+    m.optional(m.keyword(offset_clause=m.sequence(
+        svtok('offset'), integer
     )))
 )
 

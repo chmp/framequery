@@ -18,7 +18,7 @@ class Select(Record):
     """
     __fields__ = [
         'columns', 'from_clause', 'where_clause', 'group_by_clause',
-        'having_clause', 'order_by_clause', 'limit_clause', 'quantifier',
+        'having_clause', 'order_by_clause', 'limit_clause', 'offset_clause', 'quantifier',
         'cte',
     ]
     __types__ = [tuple, None, None, tuple, tuple, tuple, None, None, tuple]

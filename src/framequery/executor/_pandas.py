@@ -261,6 +261,15 @@ class PandasModel(Model):
     def compute(self, val):
         return val
 
+    def limit_offset(self, table, limit=None, offset=None):
+        if limit is None:
+            limit = table.shape[0]
+
+        if offset is None:
+            offset = 0
+
+        return table.iloc[offset:offset + limit]
+
 
 eval_pandas = m.RuleSet(name='eval_pandas')
 
