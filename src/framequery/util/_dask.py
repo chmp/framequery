@@ -99,5 +99,3 @@ def select_subset(idx, part, lens, offset, limit, empty_df):
 
 def as_list(*vals):
     return list(vals)
-
-
