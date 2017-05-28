@@ -1,125 +1,65 @@
 [![Build Status](https://api.travis-ci.org/chmp/framequery.svg?branch=master)](https://travis-ci.org/chmp/framequery)
 
-# framequery - SQL on dataframes
+# framequery - SQL on dataframes 
 
-- [Usage](#usage)
-- [SQL support](#sql-support)
-- [Changelog](#changelog)
-- [Internals](#internal)
-- [Running tests](#running-tests)
-- [License](#license)
+framequery allows to query dataframes with SQL. Currently it targets both 
+[pandas][] and [dask][], while aiming for [PostgreSQL][postgres] compatibility.
+framequery is also integrated with [sqlalchemy][].
 
-## Usage
+[dask]: dask.pydata.org
+[pandas]: pandas.pydata.org
+[postgres]: https://www.postgresql.org/
+[sqlalchemy]: http://www.sqlalchemy.org/
 
-Install framequery via:
+## Getting started
 
-```bash
-pip install framequery
-```
-
-Use `framequery.select` to execute queries against dataframes in your scope:
+Install framequery with `pip install framequery` and use 
+[`framequery.execute`](docs/API.md#framequeryexecute) to run queries against
+dataframes in your scope:
 
 ```python
+import framequery as fq
 import pandas as pd
 
-stores = pd.read_csv('stores.csv')
-sales = pd.read_csv('sales.csv')
+stores = pd.read_csv('data/stores.csv')
+sales = pd.read_csv('data/sales.csv')
 
-import framequery as fq
-
-sales_by_country = fq.select("""
-    SELECT country, sum(sales)
+sales_by_country = fq.execute("""
+    SELECT country, sum(sales) as total_sales
 
     FROM sales
-
     JOIN stores
     ON sales.store_id = stores.id
 
     GROUP BY country
 """)
+
+print(sales_by_country)
 ```
 
-By passing the `scope` parameters, the dataframes to use can be specified
-explicitly. The example would read
-`fq.select(..., scope={'stores': stores, 'sales': sales})`.
-
-Note, that per default framequery uses pandas semantics in groupby and joins.
-This will result in behavior diffrent from SQL. To enable strict mode, pass
-`strict=True` as an argument to select. Then, additional steps will be performed
-to replicate the SQL behavior as close as possible.
-
-## SQL Support
-
-The following operations are supported:
-
-- Select using where, group-by, having, order-by, limit
-- Inner and outer joins using equality conditions
-- Inner joins with in-equality conditions (currently with high performance
-  costs)
-- Cross joins (currently, with high performance costs)
-- Subqueries
-- Common table expressions
-- Numeric expressions
-
-The following limitations do exist:
-
-- no support for non-numeric expressions
-- no support for outer joins with inequality conditions
-- no support for over-clauses
-- no support for non select statements (update, insert, ...)
-- many, many more, SQL is crazy complex. The topics listed explicitly, however,
-  are on the agenda to be fixed.
-
-See the tests, in particular `tests/test_framequery.py`, for examples of
-supported queries.
+For a details usage see the [usage guide](docs/Usage.md) and the 
+[API reference](docs/API.md).
 
 ## Changelog
 
 ### Development
 
-- initial support for analytic functions (`SUM`, `AVG`).
-- add strict mode, mirror SQL behavior for GROUP-BYs and JOINs.
-- initial dask support.
+- refactored code
+- aim for postgres compatibility
+- first-class dask support
+- sqlalchemy support
+- sort_values / order-by for dask
 
 ### 0.1.0
 
 - initial release
 
-## Internals
-
-`framequery` executes SQL statements via a multi-step process:
-
-1. The query is parsed and an SQL AST assembled.
-2. The AST is compiled into a DAG of dataframe transformations.
-3. The generated DAG is interpreted on the supplied dataframes.
-
-The AST classes can be found inside `framequery._parser`, whereas the DAG
-classes are found inside `framequery._dag`.
-
-## Running tests
-
-Inside the project root, execute
-
-```bash
-pip install tox
-tox
-```
-
-framequery also ships with a number of confromance tests that compare the
-behavior of a regular SQL database (sqlite per default) with framequery. They
-can be run with
-
-```bash
-pip install tox
-tox -c tox.confromance.ini
-```
-
-To run all tests, use `tox -c tox.all.ini`.
 
 ## License
 
 >  The MIT License (MIT)
->  Copyright (c) 2016 Christopher Prohm
+>
+>  Copyright (c) 2016 - 2017 Christopher Prohm
 >
 >  Permission is hereby granted, free of charge, to any person obtaining a copy
 >  of this software and associated documentation files (the "Software"), to

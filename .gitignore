@@ -3,15 +3,16 @@ __pycache__/
 *.txt
 *.pyc
 
-
-/.tox
+/.idea/
 /.eggs
-*.egg-info/
+/.tox
 /build/
 /dist/
 
-*.ignore
+*.egg-info/
 
+*.ignore
+/old/
 
 # dask runtime files
 /log
