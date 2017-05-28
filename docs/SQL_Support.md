@@ -46,7 +46,7 @@ The following limitations do exist:
 
 |Name | Supported|
 |-----|----------|
-|[+,-,*,/,%,^,&,|,#,<<,>>,~](https://www.postgresql.org/docs/9.6/static/functions-math.html)|✓|
+|[+,-,*,/,%,^,&,&#x7C;,#,<<,>>,~](https://www.postgresql.org/docs/9.6/static/functions-math.html)|✓|
 |[&#x7C;/,&#x7C;&#x7C;/,!,!!,@](https://www.postgresql.org/docs/9.6/static/functions-math.html)|x|
 |[abs](https://www.postgresql.org/docs/9.6/static/functions-math.html)|x|
 |[cbrt](https://www.postgresql.org/docs/9.6/static/functions-math.html)|x|
