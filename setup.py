@@ -33,10 +33,16 @@ setup(
 
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
+
+        'Topic :: Scientific/Engineering',
     ],
     entry_points={
           'sqlalchemy.dialects': [
               'framequery = framequery.alchemy:Dialect',
           ]
     },
+    extras_require={
+        'dask': ['dask[dataframe]'],
+        'sqlalchemy': ['sqlalchemy'],
+    }
 )
