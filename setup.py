@@ -23,8 +23,8 @@ setup(
     package_dir={'': 'src'},
     url="https://github.com/chmp/framequery",
     setup_requires=['pytest-runner'],
-    install_requires=['funcparserlib', 'pandas', 'six', 'sqlparse'],
-    tests_require=['pytest'],
+    install_requires=['pandas', 'six'],
+    tests_require=['pytest', 'sqlalchemy', 'psycopg2'],
     classifiers=[
         'Development Status :: 4 - Beta',
 
