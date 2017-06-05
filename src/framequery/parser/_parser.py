@@ -576,6 +576,8 @@ constructors['value'] = value
 
 splitter = m.repeat(
     m.any(
+        # strip any comments
+        m.ignore(m.regex(r'--.*\n')),
         # NOTE: do not use str.lower, due to py2 compat
         m.regex(float_format),
         m.regex(integer_format),
@@ -584,6 +586,6 @@ splitter = m.repeat(
         m.regex(name_format),
         m.ignore(m.regex(r'\s+')),
         m.string("'"),
-        m.string('"')
+        m.string('"'),
     )
 )

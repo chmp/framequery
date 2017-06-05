@@ -85,14 +85,19 @@ examples = [
     'select count(*) from test',
     'select test.c1, 2 * test.c2 from test',
     'select c1, count(1) as cnt, sum(c2) from (select c1, 2 * c2 as c2 from test) sq group by c1',
-    '''
+    '''-- simple join
         select c2, c4
         from test
         join other
         on c1 = c3
     ''',
-    # joins as filters
-    '''
+    '''-- joins as filters (left filter)
+        select c2, c4
+        from test
+        join other
+        on c1 = c3 and c1 = 0
+    ''',
+    '''-- joins as filters (right filter)
         select c2, c4
         from test
         join other

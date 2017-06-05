@@ -407,7 +407,7 @@ def list_of(sep, item):
 
 
 def regex(p):
-    p = re.compile(p)
+    p = re.compile(p, re.MULTILINE)
 
     def impl(s):
         m = p.match(s)
