@@ -124,9 +124,10 @@ def execute(q, scope=None, model='pandas', basepath='.'):
         scope.update(frame.f_back.f_locals)
 
     model = get_model(model, basepath=basepath)
+    name_generator = UniqueNameGenerator()
 
     ast = parse(q)
-    result = execute_ast(ast, scope, model)
+    result = execute_ast(ast, scope, model, name_generator)
 
     if result is not None:
         result = model.remove_table_from_columns(result)
@@ -158,20 +159,18 @@ execute_ast = m.RuleSet(name='execute_ast')
 
 
 @execute_ast.rule(m.instanceof(a.Select))
-def execute_ast_select(execute_ast, node, scope, model):
-    name_generator = UniqueNameGenerator()
-
+def execute_ast_select(execute_ast, node, scope, model, name_generator):
     if node.cte is not None:
         scope = scope.copy()
 
         for cte in node.cte:
-            scope[cte.alias] = execute_ast(cte, scope, model)
+            scope[cte.alias] = execute_ast(cte, scope, model, name_generator)
 
     if node.from_clause is None:
         table = model.dual()
 
     else:
-        table = execute_ast(node.from_clause, scope, model)
+        table = execute_ast(node.from_clause, scope, model, name_generator)
 
     columns = normalize_columns(table.columns, node.columns)
 
@@ -315,7 +314,7 @@ def sort(table, values, model):
 
 
 @execute_ast.rule(m.instanceof(a.FromClause))
-def execute_ast_from_clause(execute_ast, node, scope, model):
+def execute_ast_from_clause(execute_ast, node, scope, model, name_generator):
     current = node.tables[0]
 
     for other in node.tables[1:]:
@@ -327,11 +326,11 @@ def execute_ast_from_clause(execute_ast, node, scope, model):
             # TODO: implement moving where conditions into joins
             raise NotImplementedError('currently no support for cross-joins')
 
-    return execute_ast(current, scope, model)
+    return execute_ast(current, scope, model, name_generator)
 
 
 @execute_ast.rule(m.instanceof(a.TableRef))
-def execute_ast_table_ref(execute_ast, node, scope, model):
+def execute_ast_table_ref(execute_ast, node, scope, model, name_generator):
     if node.schema:
         name = '{}.{}'.format(node.schema, node.name)
 
@@ -342,42 +341,42 @@ def execute_ast_table_ref(execute_ast, node, scope, model):
 
 
 @execute_ast.rule(m.instanceof(a.SubQuery))
-def execute_ast_subquery(execute_ast, node, scope, model):
+def execute_ast_subquery(execute_ast, node, scope, model, name_generator):
     if not node.alias:
         raise RuntimeError('subqueries need to be named')
 
-    table = execute_ast(node.query, scope, model)
+    table = execute_ast(node.query, scope, model, name_generator)
     return model.add_table_to_columns(table, node.alias)
 
 
 @execute_ast.rule(m.instanceof(a.Join))
-def execute_ast_join(execute_ast, node, scope, model):
-    left = execute_ast(node.left, scope, model)
-    right = execute_ast(node.right, scope, model)
-    return model.join(left, right, node.on, node.how)
+def execute_ast_join(execute_ast, node, scope, model, name_generator):
+    left = execute_ast(node.left, scope, model, name_generator)
+    right = execute_ast(node.right, scope, model, name_generator)
+    return model.join(left, right, node.on, node.how, name_generator)
 
 
 @execute_ast.rule(m.instanceof(a.TableFunction))
-def execute_ast_all(excecute_ast, node, scope, model):
+def execute_ast_all(excecute_ast, node, scope, model, _):
     return model.eval_table_valued(node, scope)
 
 
 @execute_ast.rule(m.instanceof(a.Lateral))
-def execute_lateral(execute_ast, node, scope, model):
+def execute_lateral(execute_ast, node, scope, model, name_generator):
     if not isinstance(node.table, a.TableFunction):
         raise NotImplementedError('cannot perform lateral joins on %s' % type(node.table))
 
     alias = Unique() if node.table.alias is None else node.table.alias
 
-    table = execute_ast(node.to, scope, model)
+    table = execute_ast(node.to, scope, model, name_generator)
     return model.lateral(
-        table, UniqueNameGenerator(),
+        table, name_generator,
         node.table.func, node.table.args, alias,
     )
 
 
 @execute_ast.rule(m.instanceof(a.Show))
-def execute_show(_, node, scope, model):
+def execute_show(_, node, scope, model, name_generator):
     config = {
         ('transaction', 'isolation', 'level'): 'read only',
         ('standard_conforming_strings',): 'on'
@@ -391,7 +390,7 @@ def execute_show(_, node, scope, model):
 
 
 @execute_ast.rule(m.instanceof(a.CopyFrom))
-def execute_copy_from(_, node, scope, model):
+def execute_copy_from(_, node, scope, model, name_generator):
     # TODO: parse the options properly
     options = {
         name.name: eval_string_literal(value.value)
@@ -402,7 +401,7 @@ def execute_copy_from(_, node, scope, model):
 
 
 @execute_ast.rule(m.instanceof(a.CopyTo))
-def execute_copy_to(_, node, scope, model):
+def execute_copy_to(_, node, scope, model, name_generator):
     # TODO: parse the options properly
     options = {
         name.name: eval_string_literal(value.value)
@@ -413,15 +412,15 @@ def execute_copy_to(_, node, scope, model):
 
 
 @execute_ast.rule(m.instanceof(a.DropTable))
-def execute_drop_table(_, node, scope, __):
+def execute_drop_table(_, node, scope, __, ___):
     for name in node.names:
         del scope[name.name]
 
 
 @execute_ast.rule(m.instanceof(a.CreateTableAs))
-def execute_create_table_as(execute_ast, node, scope, model):
+def execute_create_table_as(execute_ast, node, scope, model, name_generator):
     _logger.info('create table %s', node.name.name)
-    scope[node.name.name] = execute_ast(node.query, scope, model)
+    scope[node.name.name] = execute_ast(node.query, scope, model, name_generator)
 
 
 @m.RuleSet.make(name='aggregate_split')

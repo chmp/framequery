@@ -5,6 +5,12 @@ from ..util._record import walk
 from ..util import _monadic as m
 from ..parser import ast as a
 
+try:
+    from enum import Enum as origin_base
+
+except ImportError:
+    origin_base = object
+
 
 def column_match(col, internal_col):
     col_table, col = _split_table_column(col, '.')
@@ -165,6 +171,9 @@ class Unique(object):
     def __hash__(self):
         return hash(id(self))
 
+    def __repr__(self):
+        return '<Unique %s>' % id(self)
+
 
 def all_unique(obj):
     return [child for child in walk(obj) if isinstance(child, Unique)]
@@ -266,3 +275,172 @@ def _flatten_join_condition(condition):
 
     else:
         raise ValueError("can only handle equality joins")
+
+
+def prepare_join(op, left_columns, right_columns):
+    """Prepare a join condition for execution.
+
+    Return a tuple of 
+
+    - ``left_transforms``: a list of transformations to be applied to the left table
+    - ``left_filter``: a filter expression to be applied to the left table
+    - ``right_transforms``: a list of transformations to be applied to the right table
+    - ``right_filter``: a filter expression to be applied to the right table
+    - ``new_eq`` a single equality condition, possibly depending on transformed columns
+    - ``neq``: a single non-equality condition. If non empty, an equality condition that creates a cross-join is added. 
+        Possibly none.
+
+    """
+    eq = []
+    neq = []
+
+    left_filter = []
+    right_filter = []
+
+    # split any expressions joined by ands into equality or other expressions
+    for op in flatten_ands(op):
+        origin = determine_origin(op, left_columns, right_columns)
+
+        if origin in {Origin.left, Origin.right}:
+            by_origin(origin, left_filter, right_filter).append(op)
+
+        elif isinstance(op, a.BinaryOp) and op.op == '=':
+            eq.append(op)
+
+        else:
+            neq.append(op)
+
+    if neq:
+        eq.append(a.BinaryOp(op='=', left=a.Integer('1'), right=a.Integer('1')))
+
+    # generate transforms for equality expressions
+    new_eq = []
+
+    left_transforms = []
+    right_transforms = []
+
+    for expr in eq:
+        left_origin = determine_origin(expr.left, left_columns, right_columns)
+        right_origin = determine_origin(expr.right, left_columns, right_columns)
+
+        if Origin.ambigious in {left_origin, right_origin}:
+            raise ValueError('ambigious join')
+
+        # note only both values can be unkown. Other case is removed above.
+        if left_origin is Origin.unknown and right_origin is Origin.unknown:
+            left = Unique()
+            right = Unique()
+            left_transforms.append(a.Column(expr.left, left))
+            right_transforms.append(a.Column(expr.right, right))
+
+            new_eq.append(expr.update(left=left, right=right))
+
+        else:
+            if not isinstance(expr.left, a.Name):
+                unique = Unique()
+                by_origin(left_origin, left_transforms, right_transforms).append(a.Column(expr.left, unique))
+                expr = expr.update(left=unique)
+
+            if not isinstance(expr.right, a.Name):
+                unique = Unique()
+                by_origin(right_origin, left_transforms, right_transforms).append(a.Column(expr.right, unique))
+                expr = expr.update(right=unique)
+
+            new_eq.append(expr)
+
+    return (
+        left_transforms, and_join(left_filter),
+        right_transforms, and_join(right_filter),
+        and_join(new_eq), and_join(neq),
+    )
+
+
+def by_origin(origin, left, right):
+    if origin is Origin.left:
+        return left
+
+    elif origin is Origin.right:
+        return right
+
+    else:
+        raise ValueError()
+
+
+def and_join(values):
+    if not values:
+        return None
+
+    if len(values) == 1:
+        return values[0]
+
+    head, tail = values[0], values[1:]
+
+    return a.BinaryOp(op='and', left=head, right=and_join(tail))
+
+
+def flatten_ands(op):
+    if isinstance(op, a.BinaryOp) and op.op != 'and':
+        return [op]
+
+    return flatten_ands(op.left) + flatten_ands(op.right)
+
+
+def determine_origin(expr, left_columns, right_columns):
+    if isinstance(expr, a.BinaryOp):
+        return (
+            determine_origin(expr.left, left_columns, right_columns) &
+            determine_origin(expr.right, left_columns, right_columns)
+        )
+
+    elif isinstance(expr, a.UnaryOp):
+        return determine_origin(expr.arg, left_columns, right_columns)
+
+    elif isinstance(expr, a.Name):
+        left = normalize_col_ref(expr.name, left_columns, optional=True)
+        right = normalize_col_ref(expr.name, right_columns, optional=True)
+
+        if left is None and right is None:
+            return Origin.unknown
+
+        elif left is None and right is not None:
+            return Origin.right
+
+        elif left is not None and right is None:
+            return Origin.left
+
+        else:
+            return Origin.ambigious
+
+    elif isinstance(expr, (a.Integer, a.String, a.Bool, a.Float)):
+        return Origin.unknown
+
+    else:
+        raise NotImplementedError('unknown expression: %r' % type(expr))
+
+
+class Origin(int, origin_base):
+    unknown = 0
+    left = 1
+    right = 2
+    ambigious = 3
+
+    def __and__(self, other):
+        other = Origin(other)
+
+        if other == self.ambigious or self == self.ambigious:
+            return self.ambigious
+
+        if other == self.unknown:
+            return self
+
+        if self == self.unknown:
+            return other
+
+        if self != other:
+            return self.ambigious
+
+        return self
+
+    def __rand__(self, other):
+        cls = type(self)
+        return cls.__and__(cls(other), self)

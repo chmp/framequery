@@ -8,6 +8,7 @@ from ._util import (
     column_set_table,
     eval_string_literal,
     normalize_col_ref,
+    prepare_join,
 )
 from ..parser import ast as a
 from ..util import _monadic as m, like, not_like, make_meta
@@ -214,14 +215,26 @@ class PandasModel(Model):
         args = [eval_pandas(arg, None, self, None) for arg in node.args]
         return func(*args)
 
-    def join(self, left, right, on, how):
+    def join(self, left, right, on, how, name_generator):
         if self.strict:
             raise NotImplementedError('strict join not yet implemented')
 
         # TODO: re-add support for-non-equality joins, re-add support for strict joins
         assert how in {'inner', 'outer', 'left', 'right'}
 
-        left_on, right_on = as_pandas_join_condition(left.columns, right.columns, on)
+        ltransforms, lfilter, rtransforms, rfilter, eq, neq = prepare_join(on, left.columns, right.columns)
+
+        assert not ltransforms
+        assert not rtransforms
+        assert not neq
+
+        if lfilter:
+            left = self.filter_table(left, lfilter, name_generator)
+
+        if rfilter:
+            right = self.filter_table(right, rfilter, name_generator)
+
+        left_on, right_on = as_pandas_join_condition(left.columns, right.columns, eq)
         return left.merge(right, left_on=left_on, right_on=right_on, how=how)
 
     def lateral(self, table, name_generator, func, args, alias):

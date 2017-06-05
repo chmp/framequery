@@ -91,6 +91,13 @@ examples = [
         join other
         on c1 = c3
     ''',
+    # joins as filters
+    '''
+        select c2, c4
+        from test
+        join other
+        on c1 = c3 and c1 = 0
+    ''',
     '''
         select sum(c2), avg(c4)
         from test
@@ -162,6 +169,7 @@ examples = [
            END
         FROM test
     ''',
+    '''select false and true or true''',
 ]
 
 dask_xfail_examples = []
