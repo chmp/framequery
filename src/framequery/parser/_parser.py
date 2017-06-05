@@ -572,6 +572,7 @@ constructors = {
 
 constructors[a.Name] = name
 constructors[a.String] = string
+constructors['value'] = value
 
 splitter = m.repeat(
     m.any(
