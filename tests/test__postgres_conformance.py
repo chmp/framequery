@@ -69,6 +69,7 @@ examples = [
     'select c1, count(1) as cnt, sum(c2) from test group by c1',
     'select c1, count(1) as cnt, sum(c2) from test group by 1',
     'select c1 as a, c2 as b, c1 + c2 from test',
+    'select c1 as a, c2 as b, c1 + c2 from test where c1 = 0',
     '''
         with temp as (
             select

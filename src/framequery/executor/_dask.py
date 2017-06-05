@@ -64,7 +64,8 @@ class DaskModel(PandasModel):
         )
 
     def filter_table(self, table, expr, name_generator):
-        raise NotImplementedError('dask does not yet support where')
+        name_generator = name_generator.fix(all_unique(expr))
+        return dd.map_partitions(super(DaskModel, self).filter_table, table, expr, name_generator)
 
     def dual(self):
         return dd.from_pandas(super(DaskModel, self).dual(), npartitions=1)
