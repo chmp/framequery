@@ -9,7 +9,7 @@ import pandas as pd
 from ._util import all_unique
 from ._pandas import PandasModel
 
-from ..util import dask_sort_values, dask_offset_limit
+from ..util import dask_add_rowid, dask_offset_limit, dask_sort_values
 
 
 class DaskModel(PandasModel):
@@ -71,6 +71,9 @@ class DaskModel(PandasModel):
             return empty_result
 
         return super(DaskModel, self).add_columns(df, columns, name_generator)
+
+    def add_rowid(self, table, column, name_generator):
+        return dask_add_rowid(table, name_generator.get(column))
 
     def get_table(self, scope, name, alias=None):
         if name in self.special_tables:

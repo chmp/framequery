@@ -5,8 +5,7 @@
 The following operations are supported:
 
 - select using where, group-by, having, order-by, limit, offset
-- inner and outer joins using equality conditions
-- inner joins using in-equality conditions
+- inner and outer joins using arbitrary join conditions
 - cross joins (currently, with high performance costs)
 - lateral joins
 - subqueries
@@ -15,7 +14,6 @@ The following operations are supported:
 
 The following limitations do exist:
 
-- no support for outer in-equality joins
 - no support for over-clauses
 - no support for non select statements (update, insert, ...)
 - no support for set operations on queries (`UNION`, `INTERSECT`, `EXCEPT`)

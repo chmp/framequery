@@ -1,6 +1,6 @@
 from __future__ import print_function, division, absolute_import
 
-from ._dask import dask_sort_values, dask_offset_limit
+from ._dask import dask_add_rowid, dask_offset_limit, dask_sort_values
 from ._funcs import (
     cast_json,
     concat,
@@ -24,8 +24,9 @@ __all__ = [
     'cast_json',
     'concat',
     'copy_from',
-    'dask_sort_values',
+    'dask_add_rowid',
     'dask_offset_limit',
+    'dask_sort_values',
     'escape',
     'escape_parameters',
     'generate_series',

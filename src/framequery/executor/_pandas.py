@@ -2,6 +2,8 @@ from __future__ import print_function, division, absolute_import
 
 from ._executor import Model
 from ._util import (
+    Unique,
+
     as_pandas_join_condition,
     column_from_parts,
     column_get_column,
@@ -21,6 +23,7 @@ import logging
 import operator
 import os.path
 
+import numpy as np
 import pandas as pd
 
 _logger = logging.getLogger(__name__)
@@ -147,6 +150,10 @@ class PandasModel(Model):
 
         return table
 
+    def add_rowid(self, table, column, name_generator):
+        column = name_generator.get(column)
+        return table.assign(**{column: np.arange(table.shape[0])})
+
     # TODO: add execution hints to allow group-by-apply based aggregate?
     def aggregate(self, table, columns, group_by, name_generator):
         if self.strict:
@@ -224,6 +231,8 @@ class PandasModel(Model):
 
     def join(self, left, right, on, how, name_generator):
         ltransforms, lfilter, rtransforms, rfilter, eq, neq = prepare_join(on, left.columns, right.columns)
+        left_rowid = Unique()
+        right_rowid = Unique()
 
         if self.strict:
             raise NotImplementedError('strict join not yet implemented')
@@ -231,8 +240,8 @@ class PandasModel(Model):
         if how not in {'inner', 'outer', 'left', 'right'}:
             raise ValueError('only inner, outer, left, right joins supported')
 
-        if neq and how != 'inner':
-            raise ValueError('only inner non-equality joins are supported')
+        # remove temporaries
+        columns = list(left.columns) + list(right.columns)
 
         if lfilter:
             left = self.filter_table(left, lfilter, name_generator)
@@ -246,14 +255,37 @@ class PandasModel(Model):
         if rtransforms:
             right = self.add_columns(right, rtransforms, name_generator)
 
+        if neq and how != 'inner':
+            left = self.add_rowid(left, left_rowid, name_generator)
+            right = self.add_rowid(right, right_rowid, name_generator)
+
         left_on, right_on = as_pandas_join_condition(left.columns, right.columns, eq, name_generator)
         result = left.merge(right, left_on=left_on, right_on=right_on, how=how)
 
-        if neq:
+        if neq and how == 'inner':
             # NOTE: the required cross-join is already implemented in prepare_join(...)
             result = self.filter_table(result, neq, name_generator)
 
-        return result
+        elif neq:
+            left_rowid = name_generator.get(left_rowid)
+            right_rowid = name_generator.get(right_rowid)
+
+            skeleton = self.filter_table(result, neq, name_generator)
+
+            if how == 'outer':
+                result = (
+                    skeleton[[left_rowid, right_rowid]]
+                    .merge(left, how='right', on=left_rowid)
+                    .merge(right, how='right', on=right_rowid)
+                )
+
+            elif how == 'left':
+                result = left.merge(skeleton[[left_rowid] + list(right.columns)], how='left', on=left_rowid)
+
+            elif how == 'right':
+                result = skeleton[[right_rowid] + list(left.columns)].merge(right, how='right', on=right_rowid)
+
+        return result[columns]
 
     def lateral(self, table, name_generator, func, args, alias):
         if func not in self.lateral_functions:

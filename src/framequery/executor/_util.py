@@ -199,7 +199,7 @@ class UniqueNameGenerator(object):
         if obj not in self.names:
             if self.ids is None:
                 raise RuntimeError('cannot request unknown unique from a fixed generator')
-            self.names[obj] = 'unique-{}'.format(next(self.ids))
+            self.names[obj] = 'unique_{}'.format(next(self.ids))
 
         return self.names[obj]
 

@@ -8,6 +8,7 @@ import dask
 import dask.dataframe as dd
 from dask.base import tokenize
 
+import numpy as np
 import pandas as pd
 
 
@@ -99,3 +100,21 @@ def select_subset(idx, part, lens, offset, limit, empty_df):
 
 def as_list(*vals):
     return list(vals)
+
+
+def dask_add_rowid(df, col_name):
+    parts = df.to_delayed()
+
+    parts = [
+        dask.delayed(_add_rowid)(part, col_name, len(parts), idx)
+        for idx, part in enumerate(parts)
+    ]
+
+    meta = df._meta.copy()
+    meta[col_name] = pd.Series([], dtype=int)
+
+    return dd.from_delayed(parts, meta=meta, divisions=df.divisions)
+
+
+def _add_rowid(df, col_name, n_partitions, partition_idx):
+    return df.assign(**{col_name: partition_idx + np.arange(df.shape[0]) * n_partitions})

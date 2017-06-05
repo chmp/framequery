@@ -122,6 +122,18 @@ examples = [
         on c1 <= c3
     ''',
     '''
+        select *
+        from test
+        left join other
+        on c1 < c3
+    ''',
+    '''
+        select *
+        from other
+        right join test
+        on c1 < c3
+    ''',
+    '''
         select c2, c4
         from test
         left join other
@@ -221,18 +233,19 @@ def test_select(setup, model, query):
     expected = _norm_result(db.execute(query.replace('%', '%%')).fetchall())
     actual = _norm_result(row for _, row in actual.iterrows())
 
-    print(expected)
-    print(actual)
+    print('expected', expected, 'actual', actual, sep='\n')
     pdt.assert_frame_equal(actual, expected, check_dtype=False, check_less_precise=True)
 
 
 def _norm_result(iterable):
-    data = sorted(
-        list(_norm_value(v) for v in row)
-        for row in iterable
+    return (
+        pd.DataFrame(
+            list(_norm_value(v) for v in row)
+            for row in iterable
+        )
+        .pipe(lambda df: df.sort_values(list(df.columns)))
+        .reset_index(drop=True)
     )
-
-    return pd.DataFrame(data)
 
 
 def _norm_value(v):
