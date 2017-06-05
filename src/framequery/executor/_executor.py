@@ -322,9 +322,14 @@ def execute_ast_from_clause(execute_ast, node, scope, model, name_generator):
             current = other.update(to=current)
 
         else:
-            # TODO: fix test for lateral joins, .e.g, in casts types are referenced as names
-            # TODO: implement moving where conditions into joins
-            raise NotImplementedError('currently no support for cross-joins')
+            # TODO: add support for optimizing based on where conditions
+            _logger.warning('cross joins are currently inefficient even with filters')
+            current = a.Join(
+                how='inner',
+                left=current,
+                right=other,
+                on=a.BinaryOp('=', a.Integer('1'), a.Integer('1')),
+            )
 
     return execute_ast(current, scope, model, name_generator)
 

@@ -19,7 +19,7 @@ The following limitations do exist:
 - no support for over-clauses
 - no support for non select statements (update, insert, ...)
 - no support for set operations on queries (`UNION`, `INTERSECT`, `EXCEPT`)
-- no support for subquery expressions (`operator (select ...)`) 
+- no support for subquery expressions (`operator (select ...)`)
 - many, many more, SQL is crazy complex. The topics listed explicitly, however,
   are on the agenda to be fixed.
 

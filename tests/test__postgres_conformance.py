@@ -110,6 +110,11 @@ examples = [
         join other
         on c1 = (c3 + 1) % 2
     ''',
+    '''-- cross-join with filter
+        select c2, c4
+        from test, other
+        where c1 = (c3 + 1) % 2
+    ''',
     '''-- join with inequality
         select c2, c4
         from test
