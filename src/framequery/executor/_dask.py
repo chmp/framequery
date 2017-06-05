@@ -47,6 +47,32 @@ class DaskModel(PandasModel):
             meta=meta, empty_result=meta,
         )
 
+    def transform_partitions(self, df, columns, name_generator, empty_result):
+        if not len(df):
+            return empty_result
+
+        return super(DaskModel, self).transform(df, columns, name_generator)
+
+    def add_columns(self, table, columns, name_generator):
+        name_generator = name_generator.fix(all_unique(columns))
+
+        meta = super(DaskModel, self).add_columns(table._meta_nonempty, columns, name_generator)
+        meta = meta.iloc[:0]
+
+        return dd.map_partitions(
+            self.add_columns_partitions, table, columns, name_generator,
+
+            # NOTE: pass empty_result as kw to prevent aligning it
+            meta=meta, empty_result=meta,
+        )
+
+    def add_columns_partitions(self, df, columns, name_generator, empty_result):
+        if not len(df):
+            return empty_result
+
+        return super(DaskModel, self).add_columns(df, columns, name_generator)
+
+
     def get_table(self, scope, name, alias=None):
         if name in self.special_tables:
             return self.get_special_table(scope, name, alias)
@@ -69,12 +95,6 @@ class DaskModel(PandasModel):
 
     def dual(self):
         return dd.from_pandas(super(DaskModel, self).dual(), npartitions=1)
-
-    def transform_partitions(self, df, columns, name_generator, empty_result):
-        if not len(df):
-            return empty_result
-
-        return super(DaskModel, self).transform(df, columns, name_generator)
 
     def sort_values(self, table, names, ascending=False):
         return dask_sort_values(table, names, ascending)

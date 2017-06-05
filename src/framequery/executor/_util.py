@@ -220,8 +220,8 @@ def eval_string_literal(value, quote="'"):
     return str(value)
 
 
-def as_pandas_join_condition(left_columns, right_columns, condition):
-    flat_condition = _flatten_join_condition(condition)
+def as_pandas_join_condition(left_columns, right_columns, condition, name_generator):
+    flat_condition = _flatten_join_condition(condition, name_generator)
 
     left = []
     right = []
@@ -254,7 +254,7 @@ def _is_left(left_columns, right_columns, ref):
     return (left_ref is not None), left_ref if left_ref is not None else right_ref
 
 
-def _flatten_join_condition(condition):
+def _flatten_join_condition(condition, name_generator):
     if not isinstance(condition, a.BinaryOp):
         raise ValueError("can only handle equality joins")
 
@@ -271,7 +271,7 @@ def _flatten_join_condition(condition):
         ):
             raise ValueError("requires column references")
 
-        return [(condition.left.name, condition.right.name)]
+        return [(name_generator.get(condition.left.name), name_generator.get(condition.right.name))]
 
     else:
         raise ValueError("can only handle equality joins")
@@ -333,18 +333,18 @@ def prepare_join(op, left_columns, right_columns):
             left_transforms.append(a.Column(expr.left, left))
             right_transforms.append(a.Column(expr.right, right))
 
-            new_eq.append(expr.update(left=left, right=right))
+            new_eq.append(expr.update(left=a.Name(left), right=a.Name(right)))
 
         else:
             if not isinstance(expr.left, a.Name):
                 unique = Unique()
                 by_origin(left_origin, left_transforms, right_transforms).append(a.Column(expr.left, unique))
-                expr = expr.update(left=unique)
+                expr = expr.update(left=a.Name(unique))
 
             if not isinstance(expr.right, a.Name):
                 unique = Unique()
                 by_origin(right_origin, left_transforms, right_transforms).append(a.Column(expr.right, unique))
-                expr = expr.update(right=unique)
+                expr = expr.update(right=a.Name(unique))
 
             new_eq.append(expr)
 

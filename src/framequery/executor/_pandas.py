@@ -140,6 +140,13 @@ class PandasModel(Model):
 
         return pd.DataFrame(result, index=table.index)
 
+    def add_columns(self, table, columns, name_generator):
+        for col in columns:
+            alias = name_generator.get(col.alias)
+            table[alias] = self.evaluate(table, col.value, name_generator)
+
+        return table
+
     # TODO: add execution hints to allow group-by-apply based aggregate?
     def aggregate(self, table, columns, group_by, name_generator):
         if self.strict:
@@ -216,26 +223,37 @@ class PandasModel(Model):
         return func(*args)
 
     def join(self, left, right, on, how, name_generator):
+        ltransforms, lfilter, rtransforms, rfilter, eq, neq = prepare_join(on, left.columns, right.columns)
+
         if self.strict:
             raise NotImplementedError('strict join not yet implemented')
 
-        # TODO: re-add support for-non-equality joins, re-add support for strict joins
-        assert how in {'inner', 'outer', 'left', 'right'}
+        if how not in {'inner', 'outer', 'left', 'right'}:
+            raise ValueError('only inner, outer, left, right joins supported')
 
-        ltransforms, lfilter, rtransforms, rfilter, eq, neq = prepare_join(on, left.columns, right.columns)
-
-        assert not ltransforms
-        assert not rtransforms
-        assert not neq
+        if neq and how != 'inner':
+            raise ValueError('only inner non-equality joins are supported')
 
         if lfilter:
             left = self.filter_table(left, lfilter, name_generator)
 
+        if ltransforms:
+            left = self.add_columns(left, ltransforms, name_generator)
+
         if rfilter:
             right = self.filter_table(right, rfilter, name_generator)
 
-        left_on, right_on = as_pandas_join_condition(left.columns, right.columns, eq)
-        return left.merge(right, left_on=left_on, right_on=right_on, how=how)
+        if rtransforms:
+            right = self.add_columns(right, rtransforms, name_generator)
+
+        left_on, right_on = as_pandas_join_condition(left.columns, right.columns, eq, name_generator)
+        result = left.merge(right, left_on=left_on, right_on=right_on, how=how)
+
+        if neq:
+            # NOTE: the required cross-join is already implemented in prepare_join(...)
+            result = self.filter_table(result, neq, name_generator)
+
+        return result
 
     def lateral(self, table, name_generator, func, args, alias):
         if func not in self.lateral_functions:

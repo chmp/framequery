@@ -101,7 +101,31 @@ examples = [
         select c2, c4
         from test
         join other
-        on c1 = c3 and c1 = 0
+        on c1 = c3 and c3 = 0
+    ''',
+    '''-- join with transforms (left transform)
+        select c2, c4
+        from test
+        join other
+        on (c1 + 1) % 2 = c3
+    ''',
+    '''-- join with transforms (right transform)
+        select c2, c4
+        from test
+        join other
+        on c1 = (c3 + 1) % 2
+    ''',
+    '''-- join with inequality
+        select c2, c4
+        from test
+        join other
+        on c1 <= c3
+    ''',
+    '''
+        select c2, c4
+        from test
+        left join other
+        on c1 = (c3 + 1) % 2
     ''',
     '''
         select sum(c2), avg(c4)
