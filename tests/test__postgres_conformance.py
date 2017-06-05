@@ -13,11 +13,6 @@ import framequery.util as util
 
 import pytest
 
-ddl = [
-    'drop table if exists test',
-    'create table test (c1 int, c2 int)'
-]
-
 data = {
     'test': dict(
         columns=['c1', 'c2'],
@@ -167,14 +162,11 @@ examples = [
              32 | 3, 17 # 5, ~1, 1 << 4,
              8 >> 2
     ''',
-
-    # '''
+    # '''-- not yet supported numeric operators
     #     select
-
     #         |/ 25.0, ||/ 27.0,
     #         5 !, !! 5, @ -5.0,
     # ''',
-
     'select * from test limit 3',
     'select * from test limit 3 offset 2',
     'select * from test offset 3',

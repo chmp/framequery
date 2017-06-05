@@ -72,7 +72,6 @@ class DaskModel(PandasModel):
 
         return super(DaskModel, self).add_columns(df, columns, name_generator)
 
-
     def get_table(self, scope, name, alias=None):
         if name in self.special_tables:
             return self.get_special_table(scope, name, alias)

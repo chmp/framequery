@@ -280,14 +280,14 @@ def _flatten_join_condition(condition, name_generator):
 def prepare_join(op, left_columns, right_columns):
     """Prepare a join condition for execution.
 
-    Return a tuple of 
+    Return a tuple of
 
     - ``left_transforms``: a list of transformations to be applied to the left table
     - ``left_filter``: a filter expression to be applied to the left table
     - ``right_transforms``: a list of transformations to be applied to the right table
     - ``right_filter``: a filter expression to be applied to the right table
     - ``new_eq`` a single equality condition, possibly depending on transformed columns
-    - ``neq``: a single non-equality condition. If non empty, an equality condition that creates a cross-join is added. 
+    - ``neq``: a single non-equality condition. If non empty, an equality condition that creates a cross-join is added.
         Possibly none.
 
     """
