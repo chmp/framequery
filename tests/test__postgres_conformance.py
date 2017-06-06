@@ -210,6 +210,14 @@ examples = [
     '''select false and true or true''',
     '''select c1, c2 from test order by 1, c2''',
     '''select * from test as a, test as b''',
+
+    # TODO: extend operator precedence test
+    '''
+        select
+            (2.0 + 3.0) ^ 2.0 + (1.0 - 2.0) ^ 2.0,
+            2.0 * 3.0 ^ 2.0,
+            2.0 * 4.0 + 3.0
+    ''',
 ]
 
 dask_xfail_examples = []

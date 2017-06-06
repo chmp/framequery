@@ -252,9 +252,10 @@ def value(value):
     )
 
     value = unary_op(value, '+', '-')
+    value = binary_op(value, '^')
     value = binary_op(value, '*', '/', '%')
     value = binary_op(value, '||')
-    value = binary_op(value, '+', '-', '&', '|', '^')
+    value = binary_op(value, '+', '-', '&', '|')
     value = binary_op(value, '#', '<<', '>>')
     value = unary_op(value, '~')
     value = binary_op(value, '=', '!=', '>', '<', '>=', '<=', '<>', '!>', '!<')
