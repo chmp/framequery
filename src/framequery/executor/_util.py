@@ -107,6 +107,9 @@ def normalize_col_ref(ref, columns, optional=False):
         raise ValueError("column {} not found in {}".format(ref, columns))
 
     if len(candidates) > 1:
+        if optional is True:
+            return None
+
         raise ValueError(
             "column {} is ambigious among {}".format(ref, columns)
         )
@@ -277,7 +280,7 @@ def _flatten_join_condition(condition, name_generator):
         raise ValueError("can only handle equality joins")
 
 
-def prepare_join(op, left_columns, right_columns):
+def prepare_join(op, name_generator, left_columns, right_columns):
     """Prepare a join condition for execution.
 
     Return a tuple of
@@ -299,7 +302,7 @@ def prepare_join(op, left_columns, right_columns):
 
     # split any expressions joined by ands into equality or other expressions
     for op in flatten_ands(op):
-        origin = determine_origin(op, left_columns, right_columns)
+        origin = determine_origin(op, name_generator, left_columns, right_columns)
 
         if origin in {Origin.left, Origin.right}:
             by_origin(origin, left_filter, right_filter).append(op)
@@ -320,8 +323,8 @@ def prepare_join(op, left_columns, right_columns):
     right_transforms = []
 
     for expr in eq:
-        left_origin = determine_origin(expr.left, left_columns, right_columns)
-        right_origin = determine_origin(expr.right, left_columns, right_columns)
+        left_origin = determine_origin(expr.left, name_generator, left_columns, right_columns)
+        right_origin = determine_origin(expr.right, name_generator, left_columns, right_columns)
 
         if Origin.ambigious in {left_origin, right_origin}:
             raise ValueError('ambigious join')
@@ -367,6 +370,10 @@ def by_origin(origin, left, right):
 
 
 def and_join(values):
+    return _and_join(list(values))
+
+
+def _and_join(values):
     if not values:
         return None
 
@@ -375,7 +382,7 @@ def and_join(values):
 
     head, tail = values[0], values[1:]
 
-    return a.BinaryOp(op='and', left=head, right=and_join(tail))
+    return a.BinaryOp(op='and', left=head, right=_and_join(tail))
 
 
 def flatten_ands(op):
@@ -385,19 +392,19 @@ def flatten_ands(op):
     return flatten_ands(op.left) + flatten_ands(op.right)
 
 
-def determine_origin(expr, left_columns, right_columns):
+def determine_origin(expr, name_generator, left_columns, right_columns):
     if isinstance(expr, a.BinaryOp):
         return (
-            determine_origin(expr.left, left_columns, right_columns) &
-            determine_origin(expr.right, left_columns, right_columns)
+            determine_origin(expr.left, name_generator, left_columns, right_columns) &
+            determine_origin(expr.right, name_generator, left_columns, right_columns)
         )
 
     elif isinstance(expr, a.UnaryOp):
-        return determine_origin(expr.arg, left_columns, right_columns)
+        return determine_origin(expr.arg, name_generator, left_columns, right_columns)
 
     elif isinstance(expr, a.Name):
-        left = normalize_col_ref(expr.name, left_columns, optional=True)
-        right = normalize_col_ref(expr.name, right_columns, optional=True)
+        left = normalize_col_ref(name_generator.get(expr.name), left_columns, optional=True)
+        right = normalize_col_ref(name_generator.get(expr.name), right_columns, optional=True)
 
         if left is None and right is None:
             return Origin.unknown

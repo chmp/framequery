@@ -230,7 +230,9 @@ class PandasModel(Model):
         return func(*args)
 
     def join(self, left, right, on, how, name_generator):
-        ltransforms, lfilter, rtransforms, rfilter, eq, neq = prepare_join(on, left.columns, right.columns)
+        ltransforms, lfilter, rtransforms, rfilter, eq, neq = prepare_join(
+            on, name_generator, left.columns, right.columns,
+        )
         left_rowid = Unique()
         right_rowid = Unique()
 

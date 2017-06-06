@@ -6,7 +6,7 @@ The following operations are supported:
 
 - select using where, group-by, having, order-by, limit, offset
 - inner and outer joins using arbitrary join conditions
-- cross joins (currently, with high performance costs)
+- cross joins
 - lateral joins
 - subqueries
 - common table expressions

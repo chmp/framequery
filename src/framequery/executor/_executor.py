@@ -14,11 +14,15 @@ import itertools as it
 import logging
 
 from ._util import (
+    Origin,
     Unique,
     UniqueNameGenerator,
 
+    and_join,
     column_get_table,
+    determine_origin,
     eval_string_literal,
+    flatten_ands,
     internal_column,
     normalize_col_ref,
     to_internal_col,
@@ -170,7 +174,7 @@ def execute_ast_select(execute_ast, node, scope, model, name_generator):
         table = model.dual()
 
     else:
-        table = execute_ast(node.from_clause, scope, model, name_generator)
+        table = execute_from(node, scope, model, name_generator)
 
     columns = normalize_columns(table.columns, node.columns)
 
@@ -325,25 +329,46 @@ def sort(table, values, model):
     return model.sort_values(table, names, ascending=ascending)
 
 
-@execute_ast.rule(m.instanceof(a.FromClause))
-def execute_ast_from_clause(execute_ast, node, scope, model, name_generator):
-    current = node.tables[0]
+def execute_from(node, scope, model, name_generator):
+    from_clause = node.from_clause
 
-    for other in node.tables[1:]:
+    current = execute_ast(from_clause.tables[0], scope, model, name_generator)
+
+    for other in from_clause.tables[1:]:
         if isinstance(other, a.Lateral):
-            current = other.update(to=current)
+            if not isinstance(other.table, a.TableFunction):
+                raise NotImplementedError('cannot perform lateral joins on %s' % type(node.table))
 
-        else:
-            # TODO: add support for optimizing based on where conditions
-            _logger.warning('cross joins are currently inefficient even with filters')
-            current = a.Join(
-                how='inner',
-                left=current,
-                right=other,
-                on=a.BinaryOp('=', a.Integer('1'), a.Integer('1')),
+            current = model.lateral(
+                current, name_generator,
+                other.table.func, other.table.args,
+                alias=(
+                    Unique() if other.table.alias is None else other.table.alias
+                ),
             )
 
-    return execute_ast(current, scope, model, name_generator)
+        else:
+            right = execute_ast(other, scope, model, name_generator)
+            cond = (
+                and_join(
+                    op
+                    for op in flatten_ands(node.where_clause)
+                    if determine_origin(op, name_generator, current.columns, right.columns) in {
+                        Origin.left, Origin.right, Origin.ambigious
+                    }
+                )
+                if node.where_clause else a.BinaryOp('=', a.Integer('1'), a.Integer('1'))
+            )
+            current = model.join(current, right, cond, 'inner', name_generator)
+
+    return current
+
+
+@execute_ast.rule(m.instanceof(a.Join))
+def execute_join(execute_ast, node, scope, model, name_generator):
+    left = execute_ast(node.left, scope, model, name_generator)
+    right = execute_ast(node.right, scope, model, name_generator)
+    return model.join(left, right, node.on, node.how, name_generator)
 
 
 @execute_ast.rule(m.instanceof(a.TableRef))
@@ -366,30 +391,9 @@ def execute_ast_subquery(execute_ast, node, scope, model, name_generator):
     return model.add_table_to_columns(table, node.alias)
 
 
-@execute_ast.rule(m.instanceof(a.Join))
-def execute_ast_join(execute_ast, node, scope, model, name_generator):
-    left = execute_ast(node.left, scope, model, name_generator)
-    right = execute_ast(node.right, scope, model, name_generator)
-    return model.join(left, right, node.on, node.how, name_generator)
-
-
 @execute_ast.rule(m.instanceof(a.TableFunction))
 def execute_ast_all(excecute_ast, node, scope, model, _):
     return model.eval_table_valued(node, scope)
-
-
-@execute_ast.rule(m.instanceof(a.Lateral))
-def execute_lateral(execute_ast, node, scope, model, name_generator):
-    if not isinstance(node.table, a.TableFunction):
-        raise NotImplementedError('cannot perform lateral joins on %s' % type(node.table))
-
-    alias = Unique() if node.table.alias is None else node.table.alias
-
-    table = execute_ast(node.to, scope, model, name_generator)
-    return model.lateral(
-        table, name_generator,
-        node.table.func, node.table.args, alias,
-    )
 
 
 @execute_ast.rule(m.instanceof(a.Show))
