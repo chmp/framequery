@@ -35,6 +35,17 @@ def test_add_dataframe_query():
     assert engine.execute('select * from foo').fetchall() == [(0,), (1,), (2,)]
 
 
+def test_duplicate_names():
+    engine = create_engine('framequery:///')
+    engine.executor.update(foo=pd.DataFrame({'foo': [0, 1, 2]}))
+
+    assert sorted(engine.execute('select * from foo as a, foo as b').fetchall()) == [
+        (0, 0), (0, 1), (0, 2),
+        (1, 0), (1, 1), (1, 2),
+        (2, 0), (2, 1), (2, 2),
+    ]
+
+
 def test_add_dataframe_query__transaction():
     engine = create_engine('framequery:///')
     engine.executor.update(foo=pd.DataFrame({'foo': [0, 1, 2]}))
