@@ -91,3 +91,7 @@ objects:
 engine.execute('select sum(c1) from table').fetchall()
 engine.execute(select([func.count(table.c.c1)]).fetchall()
 ```
+
+## Custom functions
+
+**TODO**
