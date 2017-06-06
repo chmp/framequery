@@ -107,10 +107,15 @@ class Cursor(object):
             'bool': bool,
         }
 
-        for col in self.result.columns:
+        for idx, col in enumerate(self.result.columns):
             name = str(col)
-            typecode = self.result.dtypes[col]
-            typecode = typemap[typecode.name]
+            typecode = self.result.dtypes.iloc[idx]
+
+            try:
+                typecode = typemap[typecode.name]
+
+            except Exception as e:
+                raise RuntimeError('cannot describe col %r with type %r: %r' % (col, typecode, e))
 
             self.description.append((name, typecode, None, None, None, None, None))
 

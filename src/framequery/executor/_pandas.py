@@ -312,8 +312,6 @@ class PandasModel(Model):
             for k, v in zip(table.columns, row.iloc[:num_origin_column]):
                 child_df[k] = v
 
-            print(list(child_df.columns))
-            print(all_columns)
             parts.append(child_df[all_columns])
 
         return pd.concat(parts, axis=0, ignore_index=True)
