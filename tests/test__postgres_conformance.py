@@ -208,6 +208,8 @@ examples = [
         FROM test
     ''',
     '''select false and true or true''',
+    '''select c1, c2 from test order by 1, c2''',
+    '''select * from test as a, test as b''',
 ]
 
 dask_xfail_examples = []

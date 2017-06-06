@@ -300,14 +300,26 @@ def normalize_group_by(table_columns, columns, group_by):
 
 def sort(table, values, model):
     if not m.match(values, m.rep(
-        m.record(a.OrderBy, m.record(a.Name, m.wildcard), m.verb('desc', 'asc'))
+        m.record(
+            a.OrderBy,
+            m.any(
+                m.record(a.Integer, m.wildcard),
+                m.record(a.Name, m.wildcard),
+            ),
+            m.verb('desc', 'asc')
+        )
     )):
-        raise ValueError('cannot sort by: %s' % values)
+        raise ValueError('cannot sort by: {}'.format(values))
 
     names = []
     ascending = []
     for val in values:
-        names += [normalize_col_ref(val.value.name, table.columns)]
+        if isinstance(val.value, a.Integer):
+            names += [table.columns[int(val.value.value) - 1]]
+
+        else:
+            names += [normalize_col_ref(val.value.name, table.columns)]
+
         ascending += [val.order == 'asc']
 
     return model.sort_values(table, names, ascending=ascending)
