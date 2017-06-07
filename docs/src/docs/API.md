@@ -1,5 +1,7 @@
 # framequery API
 
+## framequery
+
 .. autofunction:: framequery.execute
 
 .. autoclass:: framequery.Executor
@@ -10,11 +12,15 @@
 
 .. autoclass:: framequery.PandasModel
 
+## framequery.alchemy
+
+.. autofunction:: framequery.alchemy.get_executor
+
+## framequery.parser
+
 .. autofunction:: framequery.parser.parse
 
 .. autofunction:: framequery.parser.tokenize
-
-.. autofunction:: framequery.alchemy.get_executor
 
 .. automodule:: framequery.parser.ast
 

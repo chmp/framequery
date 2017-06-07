@@ -115,10 +115,10 @@ def autoclass(line):
 
 
 def automodule(line):
-    return autoobject(line, depth=0)
+    return autoobject(line, header=2, depth=0)
 
 
-def autoobject(line, depth=1, skip_args=0):
+def autoobject(line, depth=1, header=3, skip_args=0):
     _, what = line.split('::')
 
     if '(' in what:
@@ -140,7 +140,7 @@ def autoobject(line, depth=1, skip_args=0):
         else:
             signature = ''
 
-    yield '## {}'.format(what)
+    yield '{} {}'.format('#' * header, what)
 
     if signature:
         yield '`{}`'.format(signature)
@@ -265,7 +265,7 @@ class MarkdownWriter(Writer):
 
             if section in {'param', 'ivar'}:
                 if len(parts) == 2:
-                    name, type = parts
+                    type, name = parts
 
                 elif len(parts) == 1:
                     name, = parts
@@ -289,7 +289,7 @@ class MarkdownWriter(Writer):
 
         for key in known_sections:
             if key in by_section:
-                yield f'### {section_titles[key]}\n\n'
+                yield f'#### {section_titles[key]}\n\n'
 
                 for item in by_section[key]:
                     yield f'{item}'
