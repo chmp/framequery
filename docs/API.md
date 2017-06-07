@@ -5,19 +5,22 @@
 
 Execute queries against the provided scope.
 
-**param dict scope** a mapping of table names to dataframes. If not provided the globals and
-locals of the calling scope are used.
+### Parameters
 
-**param Union[str,Model] model** the datamodel to use. Currently `"pandas"` and `"dask"` are
-supported as string values. For better customization create the model
-instances independently and pass them as arguments.
-
-See [framequery.PandasModel](#framequerypandasmodel) and [framequery.DaskModel](#framequerydaskmodel)
-for further information.
-
-**param str basepath** the basepath of `copy from` and `copy to` operations. This argument
-is only when constructing the models. For independently constructed
-models, the basepath can be set via their `__init__` arguments.
+* **dict** (*scope*):
+  a mapping of table names to dataframes. If not provided the globals and
+  locals of the calling scope are used.
+* **Union[str,Model]** (*model*):
+  the datamodel to use. Currently `"pandas"` and `"dask"` are
+  supported as string values. For better customization create the model
+  instances independently and pass them as arguments.
+  
+  See [framequery.PandasModel](#framequerypandasmodel) and [framequery.DaskModel](#framequerydaskmodel)
+  for further information.
+* **str** (*basepath*):
+  the basepath of `copy from` and `copy to` operations. This argument
+  is only when constructing the models. For independently constructed
+  models, the basepath can be set via their `__init__` arguments.
 
 
 
@@ -26,12 +29,15 @@ models, the basepath can be set via their `__init__` arguments.
 
 A persistent executor - to allow reusing scopes and models.
 
-**param scope** a mapping of table-names to dataframes. If not given, an empty scope
-is created.
+### Parameters
 
-**param model** the model to use, see [framequery.execute](#framequeryexecute).
-
-**param str basepath** the basepath of the model.
+* **scope** (*any*):
+  a mapping of table-names to dataframes. If not given, an empty scope
+  is created.
+* **model** (*any*):
+  the model to use, see [framequery.execute](#framequeryexecute).
+* **str** (*basepath*):
+  the basepath of the model.
 
 
 
@@ -40,13 +46,16 @@ is created.
 
 Add a table-function that supports lateral joins.
 
-**param str name** the name of the function.
+### Parameters
 
-**param callable func** the function. It should take any number of positional arguments and
-return a dataframe.
-
-**param Optional[List[Tuple[str,type] meta** an optional meta data list of name-type-pairs. The dask excecutor
-requires meta data information to handle lateral joins.
+* **str** (*name*):
+  the name of the function.
+* **callable** (*func*):
+  the function. It should take any number of positional arguments and
+  return a dataframe.
+* **Optional[List[Tuple[str,type]** (*meta*):
+  an optional meta data list of name-type-pairs. The dask excecutor
+  requires meta data information to handle lateral joins.
 
 
 
@@ -67,10 +76,13 @@ The former will be converted into later automatically, as needed.
 
 A framequery model for `pandas.DataFrame` objects.
 
-**param str basepath** the path relative to which any `copy from` and `copy to` statements
-are interpreted.
+### Parameters
 
-**param bool strict** if True, mimic SQL behavior in group-by and join.
+* **str** (*basepath*):
+  the path relative to which any `copy from` and `copy to` statements
+  are interpreted.
+* **bool** (*strict*):
+  if True, mimic SQL behavior in group-by and join.
 
 
 
@@ -79,9 +91,14 @@ are interpreted.
 
 Parse a query into an `framequery.ast` object.
 
-**param str query** the query to parse
+### Parameters
 
-**returns** an AST object or raises an exception if the query could not be parsed.
+* **str** (*query*):
+  the query to parse
+
+### Returns
+
+{body}
 
 
 
@@ -116,10 +133,13 @@ Module of ast classes.
 
 The ast node of a select statement.
 
-**ivar Sequence[Column] columns** the list of selected columns
+### Instance variables
 
-**ivar Sequence[SubQuery] cte** a list of comment tables, each given a
-[framequery.parser.ast.SubQuery](#framequeryparserastsubquery).
+* **Sequence[Column]** (*columns*):
+  the list of selected columns
+* **Sequence[SubQuery]** (*cte*):
+  a list of comment tables, each given a
+  [framequery.parser.ast.SubQuery](#framequeryparserastsubquery).
 
 
 
@@ -128,4 +148,10 @@ The ast node of a select statement.
 
 A subquery or CTE.
 
-**ivar Select query** **ivar Name alias** 
+### Instance variables
+
+* **Select** (*query*):
+
+* **Name** (*alias*):
+
+

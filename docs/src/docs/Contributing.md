@@ -23,8 +23,10 @@ tox
 The documentation is auto-generated from markdown files extended with a subset
 of sphinx directives. The input files can be found in `docs/src/`, which can be
 built with the `docs/update_docs.py` script. When updating the docs follow 
-these steps:
+these steps all from the root of the framequery repository:
 
-1. Update the documentation sources in `docs/src`
-2. Generate the output with `python docs/update_docs.py`
-3. Commit both source and output files
+1. Install docutils: `pip install docutils`
+2. Install framequery with all dependencies: ` pip install -e .[dask,sqlalchemy]`
+4. Update the documentation sources in `docs/src`
+5. Generate the output with `python docs/update_docs.py`
+6. Commit both source and output files
