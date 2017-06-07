@@ -115,10 +115,10 @@ def autoclass(line):
 
 
 def automodule(line):
-    return autoobject(line, depth=0)
+    return autoobject(line, header=2, depth=0)
 
 
-def autoobject(line, depth=1, skip_args=0):
+def autoobject(line, depth=1, header=3, skip_args=0):
     _, what = line.split('::')
 
     if '(' in what:
@@ -140,7 +140,7 @@ def autoobject(line, depth=1, skip_args=0):
         else:
             signature = ''
 
-    yield '## {}'.format(what)
+    yield '{} {}'.format('#' * header, what)
 
     if signature:
         yield '`{}`'.format(signature)
@@ -250,11 +250,55 @@ class MarkdownWriter(Writer):
     def _translate_literal(self, node):
         yield '`{}`'.format(node.astext())
 
-    def _translate_field_name(self, node):
-        # TODO: parse parameter definitions, i.e., param str name -> param name (str).
-        yield '**{}** '.format(node.astext())
+    def _translate_field_list(self, node):
+        by_section = {}
 
-    _translate_field_list = _translate_field = _translate_field_body = _translate_children
+        for c in node.children:
+            name, body = c.children
+            parts = name.astext().split()
+            section, *parts = parts
+
+            body = ''.join(self._translate_children(body))
+            body.strip()
+            body = '\n'.join('  ' + line for line in body.splitlines())
+            body = body.rstrip()
+
+            if section in {'param', 'ivar'}:
+                if len(parts) == 2:
+                    type, name = parts
+
+                elif len(parts) == 1:
+                    name, = parts
+                    type = 'any'
+
+                else:
+                    raise RuntimeError()
+
+                value = f'* **{name}** (*{type}*):\n{body}\n'
+
+            elif section == 'returns':
+                value = '{body}\n'
+
+            else:
+                raise NotImplementedError('unknown section %s' % section)
+
+            by_section.setdefault(section, []).append(value)
+
+        known_sections = ['param', 'returns', 'ivar']
+        section_titles = {'param': 'Parameters', 'returns': 'Returns', 'ivar': 'Instance variables'}
+
+        for key in known_sections:
+            if key in by_section:
+                yield f'#### {section_titles[key]}\n\n'
+
+                for item in by_section[key]:
+                    yield f'{item}'
+
+                yield '\n'
+
+        unknown_sections = set(by_section) - set(known_sections)
+        if unknown_sections:
+            raise ValueError('unknown sections %s' % unknown_sections)
 
     def _translate_TitledReference(self, node):
         yield '[{0}](#{1})'.format(
