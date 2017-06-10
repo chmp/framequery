@@ -193,11 +193,16 @@ def execute_ast_select(execute_ast, node, scope, model, name_generator):
         post_aggregate, aggregate, pre_aggregate = split.by_levels(2)
 
         # chain group-by columns
-        aggregate = aggregate
         pre_aggregate = pre_aggregate + group_by
 
+        pre_aggregate = normalize_columns(table.columns, pre_aggregate)
         table = model.transform(table, pre_aggregate, name_generator)
+
+        aggregate = normalize_columns(table.columns, aggregate)
+        group_by = normalize_columns(table.columns, group_by)
         table = model.aggregate(table, aggregate, group_by, name_generator)
+
+        post_aggregate = normalize_columns(table.columns, post_aggregate)
         table = model.transform(table, post_aggregate, name_generator)
 
     else:
@@ -241,7 +246,6 @@ def normalize_columns(table_columns, columns):
 
         elif isinstance(col, a.Column):
             alias = get_alias(col)
-
             # make sure a column always has a name
             result.append(col.update(alias=alias))
 

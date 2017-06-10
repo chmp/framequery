@@ -37,7 +37,25 @@ data = {
             (0, 1),
             (1, 2),
         ],
-    )
+    ),
+    'names': dict(
+        columns=['name', 'id'],
+        types=['text', 'int'],
+        data=[
+            ('foo', 0),
+            ('bar', 1),
+            ('baz', 2),
+        ],
+    ),
+    'ages': dict(
+        columns=['age', 'id'],
+        types=['int', 'int'],
+        data=[
+            (20, 0),
+            (30, 1),
+            (40, 2),
+        ],
+    ),
 }
 
 
@@ -79,7 +97,15 @@ examples = [
     'select count(*) from test group by 1 = 1',
     'select count(*) from test',
     'select test.c1, 2 * test.c2 from test',
-    'select c1, count(1) as cnt, sum(c2) from (select c1, 2 * c2 as c2 from test) sq group by c1',
+    '''
+        select
+            c1, count(1) as cnt, sum(c2)
+        from (
+                select c1, 2 * c2 as c2
+                from test
+            ) sq
+        group by c1
+    ''',
     '''-- simple join
         select c2, c4
         from test
@@ -218,15 +244,42 @@ examples = [
             2.0 * 3.0 ^ 2.0,
             2.0 * 4.0 + 3.0
     ''',
+
+    '''
+        select names.id, avg(age)
+        from names
+        join ages
+        on names.id = ages.id
+        group by 1
+    ''',
 ]
 
 dask_xfail_examples = []
 
+xfail_examples = [
+    '''
+        select distinct on (c1)
+            c1,
+            c2,
+            -c2 ^ c1 as c3
+        from test
+        order by c1, c2
+    ''',
+    '''
+        -- order-by with a transformed column
+        select *
+        from test
+        order by 4 * c1
+    ''',
+]
 
 examples = (
     [('pandas', q) for q in examples] +
-    [('dask', q) for q in examples] +
+    [pytest.mark.xfail()(('pandas', q)) for q in xfail_examples] +
     [('pandas', q) for q in dask_xfail_examples] +
+
+    [('dask', q) for q in examples] +
+    [pytest.mark.xfail()(('dask', q)) for q in xfail_examples] +
     [pytest.mark.xfail()(('dask', q)) for q in dask_xfail_examples]
 )
 
