@@ -42,13 +42,13 @@ For a details usage see the [usage guide](docs/Usage.md) and the
 
 ## Changelog
 
-### Development
+### 0.2.0
 
-- refactored code
 - aim for postgres compatibility
 - first-class dask support
 - sqlalchemy support
 - sort_values / order-by for dask
+- refactored code
 
 ### 0.1.0
 
